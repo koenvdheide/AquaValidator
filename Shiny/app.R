@@ -1,14 +1,16 @@
 library(shiny)
+library(shinyjs)
 library(tidyverse)
 library(ggplot2)
 library(leaflet)
 library(readxl)
 library(DT)
+library(reactlog)
 
 library(dbplyr)
 library(odbc)
 
-
+reactlog_enable()
 #check out https://laustep.github.io/stlahblog/posts/DTcallbacks.html#getting-the-selected-rows
 
 
@@ -42,6 +44,7 @@ excel_results_reader <- function(filePath, sheet = NULL) {
       
       # this removes hour/minute/second data for some reason even though %T should cover this, relying on readxl's inbuilt date recognition for now
       # default date recognition does miss MONSTERNAMEDATUM column
+      # try parse_date_time() instead?
       # across(contains(c("datum", "date")),~ as.Date(.x, tryFormats = c("%d-%m-%Y%t%t%T", "%Y-%m-%d%t%t%T", "%Y/%m/%d%t%t%T", "%d-%m-%Y", "%Y-%m-%d", "%Y/%m/%d"))),
       across(contains(
         c(
@@ -93,7 +96,9 @@ excel_results_reader <- function(filePath, sheet = NULL) {
 }
 
 #UI input variables are intentionally in Dutch, should make it easier to keep them separate from output/internal variables
-ui <- navbarPage(
+ui <- tagList( 
+  useShinyjs(),
+  navbarPage(
   "Aqualysis Validatie",
   tabPanel("Fiatteren",
            
@@ -135,9 +140,13 @@ ui <- navbarPage(
                    "fiatteer_grafiek",
                    click = "fiatteer_grafiek_klik",
                    dblclick = dblclickOpts(id = "fiatteer_grafiek_dblklik"),
-                   hover = hoverOpts(id = "fiatteer_grafiek_zweef"),
+                   hover = hoverOpts(id = "fiatteer_grafiek_zweef", delay = 100),
                    brush = brushOpts(id = "fiatteer_grafiek_gebied")
-                 )
+                 ),
+                 plotOutput(
+                   "ratios_grafiek"
+                 ),
+                 DT::dataTableOutput("fiatteer_grafiek_tabel")
                )
              )
            )),
@@ -157,7 +166,7 @@ ui <- navbarPage(
            sidebarLayout(sidebarPanel(),
                          mainPanel()))
 )
-
+)
 server <- function(input, output, session) {
   ################ common server functions #############
   inputUpdater <-
@@ -197,36 +206,28 @@ server <- function(input, output, session) {
   #settings <- reactiveValues(settings = c(""))
   
 
-
+  samples <- NULL
+  results <- NULL
+  ratios <- NULL
   
   sql_connection_string <-
     reactiveVal("Driver=Oracle in OraClient19Home1;Host=db01-dcz-olin;Port=1521;")
   
-  fiatteer_list <-
-    reactive({
-      req(input$fiatteer_input_file)
-      excel_results_reader(input$fiatteer_input_file$datapath, sheet = 1)
-    })
-  
-  fiatteer_results <-
-    reactive({
-      req(input$fiatteer_input_file)
-      excel_results_reader(input$fiatteer_input_file$datapath, sheet = 2)
-    })
-  
   selected_sample <- reactive({
-    req(fiatteer_list())
+    req(samples)
     if (!is.null(input$tabel_fiatteerlijst_rows_selected)) {
-      return(fiatteer_list()[input$tabel_fiatteerlijst_rows_selected,])
+     # print(samples()[input$tabel_fiatteerlijst_rows_selected,])
+      return(samples[input$tabel_fiatteerlijst_rows_selected,])
     }
     else{
-      return(fiatteer_list())
+      return(samples)
     }
   })
   current_result <- reactive({
-    req(fiatteer_results())
+    req(results)
     selected_labnummer <- select(selected_sample(), LABNUMMER)
-    matching_results <- semi_join(fiatteer_results(),
+    #print(selected_labnummer)
+    matching_results <- semi_join(results,
                                   selected_sample(),
                                   by = c('LABNUMMER')) %>% select(
                                     LABNUMMER,
@@ -241,9 +242,10 @@ server <- function(input, output, session) {
   })
   
   historical_results <- reactive({
-    req(fiatteer_results())
+    #includes current result for now
+    req(results)
     selected_meetpunt <- select(selected_sample(), MONSTERPUNTCODE)
-    matching_results <- semi_join(fiatteer_results(),
+    matching_results <- semi_join(results,
                                   selected_sample(),
                                   by = c('MONSTERPUNTCODE')) %>% select(
                                     LABNUMMER,
@@ -255,24 +257,35 @@ server <- function(input, output, session) {
                                     SAMPLINGDATE,
                                     MEASUREDATE
                                   )
-    # CZV_BZV_Ratio = RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[ELEMENTCODE ==
-    #                                                            "BZV5"]
-    # CZV_NKa_Ratio = RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[ELEMENTCODE ==
-    #                                                            "nka"]
-    # BZV_onopa_Ratio = RESULTAAT[ELEMENTCODE == "BZV5"] / RESULTAAT[ELEMENTCODE ==
-    #                                                              "OB"]
-    })
+    graph_selection(rep(FALSE,nrow(matching_results)))
+    return(matching_results)
+    
+  })
   
-  selected_results_widened <- reactive ({
-    historical_results() %>%      pivot_wider(
+  selected_ratios <- reactive({
+    req(ratios)
+    
+  })
+  
+  results_widened <- function (original_results) {
+    original_results %>% pivot_wider(
       id_cols = c(LABNUMMER, RUNNR),
       names_from = c(TESTCODE, ELEMENTCODE),
       values_from = RESULTAAT,
       names_sep = "<br>",
-      unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = list)
+      unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = min) #, CZV_BZV_Ratio = list, CZV_NKa_Ratio = list, BZV_onopa_Ratio = list)
     )
-  })
-  
+  }
+  # selected_results_widened <- reactive ({
+  #   historical_results() %>% pivot_wider(
+  #     id_cols = c(LABNUMMER, RUNNR),
+  #     names_from = c(TESTCODE, ELEMENTCODE),
+  #     values_from = RESULTAAT,
+  #     names_sep = "<br>",
+  #     unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = min) #, CZV_BZV_Ratio = list, CZV_NKa_Ratio = list, BZV_onopa_Ratio = list)
+  #   )
+  # })
+  # 
   fiatteer_plot_user_selection <-
     reactive({
       user_selection <- list(
@@ -287,8 +300,51 @@ server <- function(input, output, session) {
       
       return(user_selection)
     })
+  ratios_calculator <- function(results){
+    #dataframe with labnummer and ratios per labnummer
+    
+
+  }
+  
   observeEvent(input$fiatteer_input_file, {
     loadingtip <- showNotification("Laden...", duration = NULL, closeButton = FALSE)
+    
+    loadedsamples <- excel_results_reader(input$fiatteer_input_file$datapath, sheet = 1)
+    samples <<- loadedsamples[order(loadedsamples$PRIOFINISHDATE),]
+    
+    results <<- excel_results_reader(input$fiatteer_input_file$datapath, sheet = 2)
+    
+    ratios <<-
+      results %>%
+      group_by(LABNUMMER) %>%
+      reframe(
+        SAMPLINGDATE = min(SAMPLINGDATE),
+        CZV_BZV_RATIO = ifelse(
+          any(ELEMENTCODE == "CZV") & any(ELEMENTCODE == "BZV5"),
+          RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[ELEMENTCODE == "BZV5"],
+          NA
+        ),
+        
+        CZV_NKA_RATIO = ifelse(
+          any(ELEMENTCODE == "CZV") &
+            any(TESTCODE == "nka"),
+          RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[TESTCODE == "nka"],
+          NA
+        ),
+        
+        BZV_ONOPA_RATIO = ifelse(
+          any(ELEMENTCODE == "BZV5") &
+            any(TESTCODE == "onopa"),
+          RESULTAAT[ELEMENTCODE == "BZV5"] / RESULTAAT[TESTCODE == "onopa"],
+          NA
+        )
+        
+      ) %>% pivot_longer(
+        cols = c(CZV_BZV_RATIO, CZV_NKA_RATIO, BZV_ONOPA_RATIO),
+        names_to = "RATIO",
+        values_to = "WAARDE"
+      )
+    
     on.exit(removeNotification(loadingtip), add = TRUE)
     on.exit(inputUpdater(uiComponent = "tp", inputId = "fiatteer_beeld",selected = "tab_fiatteerlijst"), add = TRUE)
   })
@@ -302,7 +358,7 @@ server <- function(input, output, session) {
   
   output$tabel_fiatteerlijst <- DT::renderDataTable({
     DT::datatable(
-      data = fiatteer_list()[order(fiatteer_list()$PRIOFINISHDATE),],
+      data = samples,
       filter = "top",
       rownames = FALSE,
       extensions = c("Buttons"),
@@ -317,7 +373,7 @@ server <- function(input, output, session) {
   
    output$tabel_sample <- DT::renderDataTable({
      DT::datatable(
-       data = selected_results_widened(),
+       data = results_widened(historical_results()),
        rownames = FALSE,
        extensions = c("Buttons", "RowGroup"),
        filter = "top",
@@ -338,19 +394,38 @@ server <- function(input, output, session) {
      #toon test resultaten horende bij labnummer dat gebruiker in tabel_fiatteerlijst aaklikt
      #toon laatste resultaten met (last())
    })
-  
+
+   
   output$fiatteer_grafiek <- renderPlot({
-    #plot_data <- selected_results()
+    plot_data <- historical_results()
+
+   # kept_data <- plot_data[graph_selection(), , drop = FALSE]
     #plot_user_choices <- fiatteer_plot_user_selection()
+   # clicked_data <- plot_data[graph_selection(), , drop = FALSE]
+    selected_data <- graph_selection() 
     
-    #plotting only makes sense if there is a x-axis and y-axis
-    
-    plot <- ggplot(data = fiatteer_results(),
-                   mapping = aes(x = SAMPLINGDATE, y = RESULTAAT)) +
-      geom_point(size = 1.5,
-                 alpha = 0.8,
-                 aes(colour = TESTCODE)) +
+    results_plot <- ggplot(data = plot_data,
+                   mapping = aes(x = SAMPLINGDATE, y = RESULTAAT, colour = TESTCODE)) +
+      geom_line() +
+      geom_point() +
+        #aes(shape = selected_data),  
+     # scale_size(limits = c("FALSE","TRUE"), range = c(1.5,2.5)) +
       facet_wrap(vars(TESTCODE), scales = 'free_y')
+    
+
+    
+    # if(!is.null(selected_data)){ #clicked data has to show up in plot
+    #   plot <- plot + geom_point()
+    # }
+
+    
+    #ratios plot idea:
+    # data = ratiosdata, group = ratios, x = SAMPLINGDATE, y = RATIO
+    
+    #move hover_data to something that doesn't call the WHOLE PLOT AGAIN
+    #plot <- plot + geom_text(data = hover_data(), aes(label=LABNUMMER))
+    
+    
     #geom_smooth(method="loess", fullrange = TRUE, span = 0.75, linewidth = 2) +
     #labs(title = plot_user_choices$title)
     
@@ -360,7 +435,66 @@ server <- function(input, output, session) {
     #     plot + facet_wrap(plot_user_choices$wrap_category, scales = 'free_y')
     # }
     #
-    return(plot)
+    return(results_plot)
+  })
+  
+  output$ratios_grafiek <- renderPlot({
+    plot_ratios <- ratios()
+    View(plot_ratios)
+    #selected ratios
+    
+    ratios_plot <-
+      ggplot(data = plot_ratios,
+             mapping = aes(x = SAMPLINGDATE, y = WAARDE, colour = RATIO)) +
+      geom_line() +
+      facet_wrap(vars(RATIO), scales = 'free_y')
+    
+    return(ratios_plot)
+  })
+  
+  graph_selection <- reactiveVal()
+  hover_selection <- reactiveVal()
+  
+  observeEvent(input$fiatteer_grafiek_zweef,{
+    hover_selection(nearPoints(historical_results(),input$fiatteer_grafiek_zweef))
+  })
+  
+  observeEvent(input$fiatteer_grafiek_klik, {
+    graph_selection(nearPoints(historical_results(),
+                               input$fiatteer_grafiek_klik))
+  })
+  
+  observeEvent(input$fiatteer_grafiek_gebied, {
+    graph_selection(brushedPoints(historical_results(), input$fiatteer_grafiek_gebied))
+  })
+  
+  # observeEvent(input$fiatteer_grafiek_dblklik, {
+  #   graph_selection(NULL)
+  # })
+  
+  output$fiatteer_grafiek_tabel <- DT::renderDataTable({
+    req(graph_selection())
+   # selected_data <- filter(historical_results(), graph_selection())
+    selected_data <- graph_selection()
+    DT::datatable(
+      data = selected_data,
+      rownames = FALSE,
+     # extensions = c("Buttons", "RowGroup"),
+      filter = "top",
+      escape = FALSE,
+      options = list(
+        dom = 'tr'
+       # buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+       # rowGroup = list(
+          #dataSrc = 0
+          # startRender = JS(
+          #   "function(rows, group) {",
+          #   "return 'Sampling Datum:' +' ('+rows.count()+' rows)';",
+          #   "}"
+          # )
+         # )
+      ) #
+    )
   })
 }
 

@@ -400,7 +400,6 @@ analysis_options_tabs <- tabsetPanel(
     map
   })# %>% bindCache(input$analyse_input_file) 
   
-}
 
 shinyApp(ui = ui,
          server = server,
