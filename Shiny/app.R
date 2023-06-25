@@ -264,7 +264,9 @@ server <- function(input, output, session) {
   
   selected_ratios <- reactive({
     req(ratios)
-    
+    selected_monsterpuntcode <- select(selected_sample(), MONSTERPUNTCODE)
+    current_ratios <- ratios %>% filter(MONSTERPUNTCODE %in% selected_monsterpuntcode$MONSTERPUNTCODE)
+    return(current_ratios)
   })
   
   results_widened <- function (original_results) {
@@ -316,9 +318,10 @@ server <- function(input, output, session) {
     
     ratios <<-
       results %>%
-      group_by(LABNUMMER) %>%
+      group_by(LABNUMMER,MONSTERPUNTCODE) %>%
       reframe(
         SAMPLINGDATE = min(SAMPLINGDATE),
+        # MONSTERPUNTCODE = list? min? zou allemaal zelfde moeten zijn
         CZV_BZV_RATIO = ifelse(
           any(ELEMENTCODE == "CZV") & any(ELEMENTCODE == "BZV5"),
           RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[ELEMENTCODE == "BZV5"],
@@ -342,9 +345,10 @@ server <- function(input, output, session) {
       ) %>% pivot_longer(
         cols = c(CZV_BZV_RATIO, CZV_NKA_RATIO, BZV_ONOPA_RATIO),
         names_to = "RATIO",
-        values_to = "WAARDE"
+        values_to = "WAARDE",
+        values_drop_na = TRUE #needed so that ggplot's geom_line doesn't stop when it encounters an NA value
       )
-    
+
     on.exit(removeNotification(loadingtip), add = TRUE)
     on.exit(inputUpdater(uiComponent = "tp", inputId = "fiatteer_beeld",selected = "tab_fiatteerlijst"), add = TRUE)
   })
@@ -439,14 +443,15 @@ server <- function(input, output, session) {
   })
   
   output$ratios_grafiek <- renderPlot({
-    plot_ratios <- ratios()
-    View(plot_ratios)
+    plot_ratios <- selected_ratios()
     #selected ratios
-    
+    View(plot_ratios)
     ratios_plot <-
       ggplot(data = plot_ratios,
-             mapping = aes(x = SAMPLINGDATE, y = WAARDE, colour = RATIO)) +
-      geom_line() +
+             mapping = aes(x = SAMPLINGDATE, y = WAARDE, colour = RATIO, group = MONSTERPUNTCODE)) +
+      geom_line(aes(group = MONSTERPUNTCODE)) +
+      geom_point() +
+      geom_abline()
       facet_wrap(vars(RATIO), scales = 'free_y')
     
     return(ratios_plot)
