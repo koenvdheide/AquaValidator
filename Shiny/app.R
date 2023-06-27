@@ -42,8 +42,8 @@ excel_results_reader <- function(filePath, sheet = NULL) {
       # andere mogelijkheid om eerst niet numerieke data etc. uit te filteren dan opnieuw converten via type_convert()?
       across(contains(c("result", "resultaat")) , as.numeric),
       
-      # this removes hour/minute/second data for some reason even though %T should cover this, relying on readxl's inbuilt date recognition for now
-      # default date recognition does miss MONSTERNAMEDATUM column
+      # this removes hour/minute/second from sampling&measurement dates for some reason even though %T should cover this, relying on readxl's inbuilt date recognition for now
+      # default date recognition doesn't see MONSTERNAMEDATUM column as valid dates for some reason
       # try parse_date_time() instead?
       # across(contains(c("datum", "date")),~ as.Date(.x, tryFormats = c("%d-%m-%Y%t%t%T", "%Y-%m-%d%t%t%T", "%Y/%m/%d%t%t%T", "%d-%m-%Y", "%Y-%m-%d", "%Y/%m/%d"))),
       across(contains(
@@ -69,7 +69,7 @@ excel_results_reader <- function(filePath, sheet = NULL) {
   
   #  try({
   
-  #poging tot juiste classes
+  #poging tot juiste classes (niet langer relevant, laat staan voor de zekerheid)
   # excel_data$MEETPUNT <- as.factor(excel_data$MEETPUNT)
   # excel_data$RUNNR <- as.factor(excel_data$RUNNR)
   # excel_data$NAME <- as.factor(excel_data$NAME)
@@ -449,9 +449,9 @@ server <- function(input, output, session) {
     ratios_plot <-
       ggplot(data = plot_ratios,
              mapping = aes(x = SAMPLINGDATE, y = WAARDE, colour = RATIO, group = MONSTERPUNTCODE)) +
-      geom_line(aes(group = MONSTERPUNTCODE)) +
+      geom_line() +
       geom_point() +
-      geom_abline()
+      geom_smooth() +
       facet_wrap(vars(RATIO), scales = 'free_y')
     
     return(ratios_plot)
