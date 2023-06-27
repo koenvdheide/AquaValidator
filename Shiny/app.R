@@ -11,91 +11,8 @@ library(dbplyr)
 library(odbc)
 
 reactlog_enable()
-#check out https://laustep.github.io/stlahblog/posts/DTcallbacks.html#getting-the-selected-rows
 
-
-
-############################ common functions ##########################
-excel_results_reader <- function(filePath, sheet = NULL) {
-  
-  print("loading excel")
-  # idee van: https://readxl.tidyverse.org/articles/cell-and-column-types.html#peek-at-column-names
-  # om tegelijk met het inladen de col_types correct te maken, inclusief "list" (ipv "numeric") voor resultaten aangezien niet-numerieke resultaten mogelijk zijn
-  # column_names <- names(read_excel(excel_file$datapath,n_max = 0))
-  # column_types <- ifelse(grepl(pattern = "^result",x=column_names,ignore.case = TRUE),"list","guess")
-  # hierna, if col_types = character verander naar factor behalve voor opmerkingen
-  
-  
-  #nog validatie check nodig dat het werkelijk een excel bestand is
-  
-  
-  #column_names <- read_excel(filePath, n_max=0) #yeah this means double loading but alternative is scuffed, only looks at first row anyway
-  #column_types <- if_else(grepl((column_names %>% select(contains("result"))),x=column_names,ignore.case = TRUE),"list","guess")
-  excel_data <-
-    read_excel(filePath, progress = TRUE, sheet = sheet) %>%
-    
-    #kan netter?: https://stackoverflow.com/questions/64189561/using-case-when-with-dplyr-across
-    mutate(
-      #causes strange grouping results in datatables 
-      #outputIsText = across(contains("result"), ~ if_else(is.na(as.numeric(.)), TRUE, FALSE)),
-     
-      # andere mogelijkheid om eerst niet numerieke data etc. uit te filteren dan opnieuw converten via type_convert()?
-      across(contains(c("result", "resultaat")) , as.numeric),
-      
-      # this removes hour/minute/second from sampling&measurement dates for some reason even though %T should cover this, relying on readxl's inbuilt date recognition for now
-      # default date recognition doesn't see MONSTERNAMEDATUM column as valid dates for some reason
-      # try parse_date_time() instead?
-      # across(contains(c("datum", "date")),~ as.Date(.x, tryFormats = c("%d-%m-%Y%t%t%T", "%Y-%m-%d%t%t%T", "%Y/%m/%d%t%t%T", "%d-%m-%Y", "%Y-%m-%d", "%Y/%m/%d"))),
-      across(contains(
-        c(
-          "hoednhd",
-          "klant",
-          "code",
-          "smpl",
-          "ID",
-          "labnummer",
-          "status",
-          "groep",
-          "workday",
-          "element",
-          "parameter"
-          
-        )
-      ), as.factor)
-      
-    )
-  
-  
-  
-  #  try({
-  
-  #poging tot juiste classes (niet langer relevant, laat staan voor de zekerheid)
-  # excel_data$MEETPUNT <- as.factor(excel_data$MEETPUNT)
-  # excel_data$RUNNR <- as.factor(excel_data$RUNNR)
-  # excel_data$NAME <- as.factor(excel_data$NAME)
-  # excel_data$STATUS <-
-  #   as.factor(excel_data$STATUS)
-  # excel_data$PROJECT <-
-  #   as.factor(excel_data$PROJECT)
-  # excel_data$PROJECT_OMS <-
-  #   as.factor(excel_data$PROJECT_OMS)
-  # excel_data$LABNR <-
-  #   as.factor(excel_data$LABNR)
-  # excel_data$TESTCODE <-
-  #   as.factor(excel_data$TESTCODE)
-  # excel_data$ID <- as.factor(excel_data$ID)
-  # excel_data$USEDRESULT <-
-  #   as.numeric(excel_data$USEDRESULT) #dit geeft problemen bij niet-numerieke results! (zoals "+")
-  # excel_data$ELEMENTCODE <-
-  #   as.factor(excel_data$ELEMENTCODE)
-  # excel_data$REFCONCLUSION <-
-  #   as.logical(excel_data$REFCONCLUSION)
-  #
-  # }, silent = TRUE)
-  return (excel_data)
-}
-
-#UI input variables are intentionally in Dutch, should make it easier to keep them separate from output/internal variables
+#UI input variables are intentionally in Dutch, makes it easier to keep them separate from output/internal variables on the server side
 ui <- tagList( 
   useShinyjs(),
   navbarPage(
@@ -168,7 +85,108 @@ ui <- tagList(
 )
 )
 server <- function(input, output, session) {
-  ################ common server functions #############
+##################### common server variables #######################  
+  
+  #default groups (can be overridden)
+  #data_groups <- reactiveValues(data_groups = c("MEETPUNT", "LABNR", "TESTCODE", "ELEMENTCODE"))
+  
+  #default settings
+  #settings <- reactiveValues(settings = c(""))
+  
+  #database connection
+  sql_connection_string <-
+    reactiveVal("Driver=Oracle in OraClient19Home1;Host=db01-dcz-olin;Port=1521;")
+  
+  #data
+  samples <- NULL
+  results <- NULL
+  ratios <- NULL
+  
+  #graph user input
+  graph_selection <- reactiveVal()
+  hover_selection <- reactiveVal()
+  
+##################### common server functions #######################
+  
+  excel_results_reader <- function(filePath, sheet = NULL) {
+    
+    print("loading excel")
+    # idee van: https://readxl.tidyverse.org/articles/cell-and-column-types.html#peek-at-column-names
+    # om tegelijk met het inladen de col_types correct te maken, inclusief "list" (ipv "numeric") voor resultaten aangezien niet-numerieke resultaten mogelijk zijn
+    # column_names <- names(read_excel(excel_file$datapath,n_max = 0))
+    # column_types <- ifelse(grepl(pattern = "^result",x=column_names,ignore.case = TRUE),"list","guess")
+    # hierna, if col_types = character verander naar factor behalve voor opmerkingen
+    
+    
+    #nog validatie check nodig dat het werkelijk een excel bestand is
+    
+    
+    #column_names <- read_excel(filePath, n_max=0) #yeah this means double loading but alternative is scuffed, only looks at first row anyway
+    #column_types <- if_else(grepl((column_names %>% select(contains("result"))),x=column_names,ignore.case = TRUE),"list","guess")
+    excel_data <-
+      read_excel(filePath, progress = TRUE, sheet = sheet) %>%
+      
+      #kan netter?: https://stackoverflow.com/questions/64189561/using-case-when-with-dplyr-across
+      mutate(
+        #causes strange grouping results in datatables 
+        #outputIsText = across(contains("result"), ~ if_else(is.na(as.numeric(.)), TRUE, FALSE)),
+        
+        # andere mogelijkheid om eerst niet numerieke data etc. uit te filteren dan opnieuw converten via type_convert()?
+        across(contains(c("result", "resultaat")) , as.numeric),
+        
+        # this removes hour/minute/second from sampling&measurement dates for some reason even though %T should cover this, relying on readxl's inbuilt date recognition for now
+        # default date recognition doesn't see MONSTERNAMEDATUM column as valid dates for some reason
+        # try parse_date_time() instead?
+        # across(contains(c("datum", "date")),~ as.Date(.x, tryFormats = c("%d-%m-%Y%t%t%T", "%Y-%m-%d%t%t%T", "%Y/%m/%d%t%t%T", "%d-%m-%Y", "%Y-%m-%d", "%Y/%m/%d"))),
+        across(contains(
+          c(
+            "hoednhd",
+            "klant",
+            "code",
+            "smpl",
+            "ID",
+            "labnummer",
+            "status",
+            "groep",
+            "workday",
+            "element",
+            "parameter"
+            
+          )
+        ), as.factor)
+        
+      )
+    
+    
+    
+    #  try({
+    
+    #poging tot juiste classes (niet langer relevant, laat staan voor de zekerheid)
+    # excel_data$MEETPUNT <- as.factor(excel_data$MEETPUNT)
+    # excel_data$RUNNR <- as.factor(excel_data$RUNNR)
+    # excel_data$NAME <- as.factor(excel_data$NAME)
+    # excel_data$STATUS <-
+    #   as.factor(excel_data$STATUS)
+    # excel_data$PROJECT <-
+    #   as.factor(excel_data$PROJECT)
+    # excel_data$PROJECT_OMS <-
+    #   as.factor(excel_data$PROJECT_OMS)
+    # excel_data$LABNR <-
+    #   as.factor(excel_data$LABNR)
+    # excel_data$TESTCODE <-
+    #   as.factor(excel_data$TESTCODE)
+    # excel_data$ID <- as.factor(excel_data$ID)
+    # excel_data$USEDRESULT <-
+    #   as.numeric(excel_data$USEDRESULT) #dit geeft problemen bij niet-numerieke results! (zoals "+")
+    # excel_data$ELEMENTCODE <-
+    #   as.factor(excel_data$ELEMENTCODE)
+    # excel_data$REFCONCLUSION <-
+    #   as.logical(excel_data$REFCONCLUSION)
+    #
+    # }, silent = TRUE)
+    return (excel_data)
+  }
+  
   inputUpdater <-
     function(uiComponent,
              inputId,
@@ -197,21 +215,23 @@ server <- function(input, output, session) {
       )
       
     }
-  #############################################################
   
-  #default groups (can be overridden)
-  #data_groups <- reactiveValues(data_groups = c("MEETPUNT", "LABNR", "TESTCODE", "ELEMENTCODE"))
+  results_widened <- function (original_results) {
+    original_results %>% pivot_wider(
+      id_cols = c(LABNUMMER, RUNNR),
+      names_from = c(TESTCODE, ELEMENTCODE),
+      values_from = RESULTAAT,
+      names_sep = "<br>",
+      unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = min)
+    )
+  }
   
-  #default settings
-  #settings <- reactiveValues(settings = c(""))
-  
-
-  samples <- NULL
-  results <- NULL
-  ratios <- NULL
-  
-  sql_connection_string <-
-    reactiveVal("Driver=Oracle in OraClient19Home1;Host=db01-dcz-olin;Port=1521;")
+  ratios_calculator <- function(results){
+    #dataframe with labnummer and ratios per labnummer
+    
+    
+  }
+###########################reactive functions##################################
   
   selected_sample <- reactive({
     req(samples)
@@ -269,15 +289,7 @@ server <- function(input, output, session) {
     return(current_ratios)
   })
   
-  results_widened <- function (original_results) {
-    original_results %>% pivot_wider(
-      id_cols = c(LABNUMMER, RUNNR),
-      names_from = c(TESTCODE, ELEMENTCODE),
-      values_from = RESULTAAT,
-      names_sep = "<br>",
-      unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = min) #, CZV_BZV_Ratio = list, CZV_NKa_Ratio = list, BZV_onopa_Ratio = list)
-    )
-  }
+
   # selected_results_widened <- reactive ({
   #   historical_results() %>% pivot_wider(
   #     id_cols = c(LABNUMMER, RUNNR),
@@ -302,11 +314,8 @@ server <- function(input, output, session) {
       
       return(user_selection)
     })
-  ratios_calculator <- function(results){
-    #dataframe with labnummer and ratios per labnummer
-    
-
-  }
+  
+###########################observers###################################
   
   observeEvent(input$fiatteer_input_file, {
     loadingtip <- showNotification("Laden...", duration = NULL, closeButton = FALSE)
@@ -346,19 +355,33 @@ server <- function(input, output, session) {
         cols = c(CZV_BZV_RATIO, CZV_NKA_RATIO, BZV_ONOPA_RATIO),
         names_to = "RATIO",
         values_to = "WAARDE",
-        values_drop_na = TRUE #needed so that ggplot's geom_line doesn't stop when it encounters an NA value
+        values_drop_na = TRUE #needed so that ggplot's geom_line doesn't stop when it encounters an NA value while plotting the ratios
       )
 
     on.exit(removeNotification(loadingtip), add = TRUE)
     on.exit(inputUpdater(uiComponent = "tp", inputId = "fiatteer_beeld",selected = "tab_fiatteerlijst"), add = TRUE)
   })
   
-  #possibly better select options&other ideas at https://laustep.github.io/stlahblog/posts/DTcallbacks.html
-
+  observeEvent(input$fiatteer_grafiek_zweef,{
+    hover_selection(nearPoints(historical_results(),input$fiatteer_grafiek_zweef))
+  })
+  
+  observeEvent(input$fiatteer_grafiek_klik, {
+    graph_selection(nearPoints(historical_results(),
+                               input$fiatteer_grafiek_klik))
+  })
+  
+  observeEvent(input$fiatteer_grafiek_gebied, {
+    graph_selection(brushedPoints(historical_results(), input$fiatteer_grafiek_gebied))
+  })
+  
+  # observeEvent(input$fiatteer_grafiek_dblklik, {
+  #   graph_selection(NULL)
+  # })
+  
+#######################output functions############################  
 
    # updateTabsetPanel(inputId = "fiatteer_beeld",selected = "tab_sample")
-
-  #check out https://rstudio.github.io/DT/extensions.html
   
   output$tabel_fiatteerlijst <- DT::renderDataTable({
     DT::datatable(
@@ -456,27 +479,7 @@ server <- function(input, output, session) {
     
     return(ratios_plot)
   })
-  
-  graph_selection <- reactiveVal()
-  hover_selection <- reactiveVal()
-  
-  observeEvent(input$fiatteer_grafiek_zweef,{
-    hover_selection(nearPoints(historical_results(),input$fiatteer_grafiek_zweef))
-  })
-  
-  observeEvent(input$fiatteer_grafiek_klik, {
-    graph_selection(nearPoints(historical_results(),
-                               input$fiatteer_grafiek_klik))
-  })
-  
-  observeEvent(input$fiatteer_grafiek_gebied, {
-    graph_selection(brushedPoints(historical_results(), input$fiatteer_grafiek_gebied))
-  })
-  
-  # observeEvent(input$fiatteer_grafiek_dblklik, {
-  #   graph_selection(NULL)
-  # })
-  
+
   output$fiatteer_grafiek_tabel <- DT::renderDataTable({
     req(graph_selection())
    # selected_data <- filter(historical_results(), graph_selection())
