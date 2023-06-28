@@ -76,6 +76,10 @@ ui <- tagList(
                            value = FALSE)
            ),
            mainPanel(
+             numericInput("instellingen_hoeveelheid_resultaten",
+                          "Hoeveel resultaten moeten er per monsterpunt worden getoond?",
+                          value = 10,
+                          min = 1)
              
            ))),
   tabPanel("Hulp",
@@ -226,6 +230,10 @@ server <- function(input, output, session) {
     )
   }
   
+  top_n_results <- function(n = 10, full_results){
+    top_results <- full_results %>% group_by(LABNUMMER)  %>% filter(cur_group_id() >= n_groups(.)-n )
+  }
+  
   ratios_calculator <- function(results){
     #dataframe with labnummer and ratios per labnummer
     
@@ -278,17 +286,13 @@ server <- function(input, output, session) {
                                     MEASUREDATE
                                   ) %>%
       arrange(desc(SAMPLINGDATE)) #it SHOULD already put the most recent result first but this ensures it
-    #if statement for user selecting 10 historical results OR all (or a custom number?)
 
-    first_ten_results <- matching_results %>% group_by(LABNUMMER)  %>% filter(cur_group_id() >= n_groups(.)-10 )
-    matching_results <- first_ten_results
-    
     graph_selection(rep(FALSE, nrow(matching_results))) #fill graph_selection so it doesn't throw out of bounds errors later
     return(matching_results)
     
   })
   
-  
+
   
   selected_ratios <- reactive({
     req(ratios)
@@ -407,8 +411,10 @@ server <- function(input, output, session) {
   })
   
    output$tabel_sample <- DT::renderDataTable({
+     test_results <- top_n_results(input$instellingen_hoeveelheid_resultaten, historical_results())
+     widened_results <- results_widened(test_results)
      DT::datatable(
-       data = results_widened(historical_results()),
+       data = widened_results,
        rownames = FALSE,
        extensions = c("Buttons", "RowGroup"),
        filter = "top",
@@ -432,8 +438,8 @@ server <- function(input, output, session) {
 
    
   output$fiatteer_grafiek <- renderPlot({
-    plot_data <- historical_results()
-
+    plot_data <- top_n_results(input$instellingen_hoeveelheid_resultaten, historical_results())
+  
    # kept_data <- plot_data[graph_selection(), , drop = FALSE]
     #plot_user_choices <- fiatteer_plot_user_selection()
    # clicked_data <- plot_data[graph_selection(), , drop = FALSE]
@@ -475,7 +481,6 @@ server <- function(input, output, session) {
   output$ratios_grafiek <- renderPlot({
     plot_ratios <- selected_ratios()
     #selected ratios
-    View(plot_ratios)
     ratios_plot <-
       ggplot(data = plot_ratios,
              mapping = aes(x = SAMPLINGDATE, y = WAARDE, colour = RATIO, group = MONSTERPUNTCODE)) +
