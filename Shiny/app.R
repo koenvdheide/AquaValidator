@@ -276,8 +276,11 @@ server <- function(input, output, session) {
                                     REFMESSAGE,
                                     SAMPLINGDATE,
                                     MEASUREDATE
-                                  )
-    graph_selection(rep(FALSE,nrow(matching_results)))
+                                  ) %>%
+      arrange(desc(SAMPLINGDATE)) #it SHOULD already put the most recent result first but this ensures it
+    #if statement for user selecting 10 historical results OR all (or a custom number?)
+    
+    graph_selection(rep(FALSE, nrow(matching_results))) #fill graph_selection so it doesn't throw out of bounds errors later
     return(matching_results)
     
   })
@@ -288,7 +291,6 @@ server <- function(input, output, session) {
     current_ratios <- ratios %>% filter(MONSTERPUNTCODE %in% selected_monsterpuntcode$MONSTERPUNTCODE)
     return(current_ratios)
   })
-  
 
   # selected_results_widened <- reactive ({
   #   historical_results() %>% pivot_wider(
@@ -300,6 +302,7 @@ server <- function(input, output, session) {
   #   )
   # })
   # 
+  
   fiatteer_plot_user_selection <-
     reactive({
       user_selection <- list(
@@ -321,7 +324,7 @@ server <- function(input, output, session) {
     loadingtip <- showNotification("Laden...", duration = NULL, closeButton = FALSE)
     
     loadedsamples <- excel_results_reader(input$fiatteer_input_file$datapath, sheet = 1)
-    samples <<- loadedsamples[order(loadedsamples$PRIOFINISHDATE),]
+    samples <<- loadedsamples %>% arrange(PRIOFINISHDATE)
     
     results <<- excel_results_reader(input$fiatteer_input_file$datapath, sheet = 2)
     
@@ -439,7 +442,6 @@ server <- function(input, output, session) {
      # scale_size(limits = c("FALSE","TRUE"), range = c(1.5,2.5)) +
       facet_wrap(vars(TESTCODE), scales = 'free_y')
     
-
     
     # if(!is.null(selected_data)){ #clicked data has to show up in plot
     #   plot <- plot + geom_point()
