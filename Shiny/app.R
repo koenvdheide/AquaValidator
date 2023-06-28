@@ -280,13 +280,15 @@ server <- function(input, output, session) {
       arrange(desc(SAMPLINGDATE)) #it SHOULD already put the most recent result first but this ensures it
     #if statement for user selecting 10 historical results OR all (or a custom number?)
 
-    first_ten_results <- matching_results %>% group_by(LABNUMMER) %>% filter(cur_group_id() <= 10 )
+    first_ten_results <- matching_results %>% group_by(LABNUMMER)  %>% filter(cur_group_id() >= n_groups(.)-10 )
     matching_results <- first_ten_results
     
     graph_selection(rep(FALSE, nrow(matching_results))) #fill graph_selection so it doesn't throw out of bounds errors later
     return(matching_results)
     
   })
+  
+  
   
   selected_ratios <- reactive({
     req(ratios)
