@@ -413,8 +413,8 @@ server <- function(input, output, session) {
   })
   
    output$tabel_sample <- DT::renderDataTable({
-     test_results <- top_n_results(input$instellingen_hoeveelheid_resultaten, historical_results())
-     widened_results <- results_widened(test_results)
+     #test_results <- top_n_results(input$instellingen_hoeveelheid_resultaten, historical_results())
+     widened_results <- results_widened(historical_results())
      DT::datatable(
        data = widened_results,
        rownames = FALSE,
@@ -440,8 +440,8 @@ server <- function(input, output, session) {
 
    
   output$fiatteer_grafiek <- renderPlot({
-    plot_data <- top_n_results(input$instellingen_hoeveelheid_resultaten, historical_results())
-  
+    #plot_data <- top_n_results(input$instellingen_hoeveelheid_resultaten, historical_results())
+    plot_data <- historical_results()
    # kept_data <- plot_data[graph_selection(), , drop = FALSE]
     #plot_user_choices <- fiatteer_plot_user_selection()
    # clicked_data <- plot_data[graph_selection(), , drop = FALSE]
