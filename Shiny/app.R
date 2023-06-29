@@ -258,6 +258,7 @@ server <- function(input, output, session) {
     matching_results <- semi_join(results,
                                   selected_sample(),
                                   by = c('LABNUMMER')) %>% select(
+                                    MONSTERPUNTCODE,
                                     LABNUMMER,
                                     TESTCODE,
                                     ELEMENTCODE,
@@ -276,6 +277,7 @@ server <- function(input, output, session) {
     matching_results <- semi_join(results,
                                   selected_sample(),
                                   by = c('MONSTERPUNTCODE')) %>% select(
+                                    MONSTERPUNTCODE,
                                     LABNUMMER,
                                     TESTCODE,
                                     ELEMENTCODE,
