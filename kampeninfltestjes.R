@@ -60,20 +60,28 @@ result_file$ELEMENTCODE <- as.factor(result_file$ELEMENTCODE)
 result_file$REFCONCLUSION <- as.logical(result_file$REFCONCLUSION)
 
 levels(result_file$MEETPUNT) <- list(Mengmonster = 'o56infl', IJsselmuiden = 'o56infl-ij' , Kampen = 'o56infl-ka' )
-result_file <- result_file %>% group_by(MEETPUNT, TESTCODE, ELEMENTCODE)
-attach(result_file)
+
+top_n_results <- function(n = 10, full_results){
+  grouped_results <- full_results %>% nest(.by = c(MEETPUNT, LABNR)) %>% nest(.by = MEETPUNT)
+  #pick top 10 labnummers per monsterpuntcode
+  #top_results <- full_results %>% group_by(LABNR)  %>% filter(cur_group_id() >= n_groups(.)-n )
+}
+
+test <- top_n_results(full_results = result_file)
+View(test)
 
 
-data_kampen <- subset(result_file,MEETPUNT=='Kampen')
+
+#data_kampen <- subset(result_file,MEETPUNT=='Kampen')
 
 
 
-plot = ggplot(data = data_kampen, mapping = aes(x = SAMPLINGDATE, y = USEDRESULT)) + 
-    geom_point(size=1.5, alpha=0.8, aes(colour = MEETPUNT)) +
-    #geom_smooth(method="loess", fullrange = TRUE, span = 0.75, linewidth = 2)+ 
-    facet_wrap(vars(TESTCODE),scales = 'free_y') +
-    labs(title = 'RWZI Kampen Influent Test Resultaten (o56infl-ka)', x = 'DATUM', y = 'MEETWAARDE', colour = 'Project Omschrijving')
-show(plot)
+# plot = ggplot(data = data_kampen, mapping = aes(x = SAMPLINGDATE, y = USEDRESULT)) + 
+#     geom_point(size=1.5, alpha=0.8, aes(colour = MEETPUNT)) +
+#     #geom_smooth(method="loess", fullrange = TRUE, span = 0.75, linewidth = 2)+ 
+#     facet_wrap(vars(TESTCODE),scales = 'free_y') +
+#     labs(title = 'RWZI Kampen Influent Test Resultaten (o56infl-ka)', x = 'DATUM', y = 'MEETWAARDE', colour = 'Project Omschrijving')
+# show(plot)
 
 # data_bzv_czv <- subset(data_kampen, TESTCODE=='bzv'| TESTCODE== 'czv')
 # bzv_czv_plot = ggplot(data = data_bzv_czv, mapping = aes(x = SAMPLINGDATE, y = USEDRESULT)) +
