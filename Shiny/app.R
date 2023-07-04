@@ -113,16 +113,7 @@ server <- function(input, output, session) {
 ##################### common server functions #######################
   
   excel_results_reader <- function(filePath, sheet = NULL) {
-
-    # idee van: https://readxl.tidyverse.org/articles/cell-and-column-types.html#peek-at-column-names
-    # om tegelijk met het inladen de col_types correct te maken, inclusief "list" (ipv "numeric") voor resultaten aangezien niet-numerieke resultaten mogelijk zijn
-    # column_names <- names(read_excel(excel_file$datapath,n_max = 0))
-    # column_types <- ifelse(grepl(pattern = "^result",x=column_names,ignore.case = TRUE),"list","guess")
-    # hierna, if col_types = character verander naar factor behalve voor opmerkingen
     
-    
-    #column_names <- read_excel(filePath, n_max=0) #yeah this means double loading but alternative is scuffed, only looks at first row anyway
-    #column_types <- if_else(grepl((column_names %>% select(contains("result"))),x=column_names,ignore.case = TRUE),"list","guess")
     excel_data <-
       read_excel(filePath, progress = TRUE, sheet = sheet) %>%
       
@@ -154,31 +145,6 @@ server <- function(input, output, session) {
           )
         ), as.factor)
       )
-    #  try({
-    
-    #poging tot juiste classes (niet langer relevant, laat staan voor de zekerheid)
-    # excel_data$MEETPUNT <- as.factor(excel_data$MEETPUNT)
-    # excel_data$RUNNR <- as.factor(excel_data$RUNNR)
-    # excel_data$NAME <- as.factor(excel_data$NAME)
-    # excel_data$STATUS <-
-    #   as.factor(excel_data$STATUS)
-    # excel_data$PROJECT <-
-    #   as.factor(excel_data$PROJECT)
-    # excel_data$PROJECT_OMS <-
-    #   as.factor(excel_data$PROJECT_OMS)
-    # excel_data$LABNR <-
-    #   as.factor(excel_data$LABNR)
-    # excel_data$TESTCODE <-
-    #   as.factor(excel_data$TESTCODE)
-    # excel_data$ID <- as.factor(excel_data$ID)
-    # excel_data$USEDRESULT <-
-    #   as.numeric(excel_data$USEDRESULT) #dit geeft problemen bij niet-numerieke results! (zoals "+")
-    # excel_data$ELEMENTCODE <-
-    #   as.factor(excel_data$ELEMENTCODE)
-    # excel_data$REFCONCLUSION <-
-    #   as.logical(excel_data$REFCONCLUSION)
-    #
-    # }, silent = TRUE)
     return (excel_data)
   }
   
