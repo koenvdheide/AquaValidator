@@ -113,16 +113,12 @@ server <- function(input, output, session) {
 ##################### common server functions #######################
   
   excel_results_reader <- function(filePath, sheet = NULL) {
-    
-    print("loading excel")
+
     # idee van: https://readxl.tidyverse.org/articles/cell-and-column-types.html#peek-at-column-names
     # om tegelijk met het inladen de col_types correct te maken, inclusief "list" (ipv "numeric") voor resultaten aangezien niet-numerieke resultaten mogelijk zijn
     # column_names <- names(read_excel(excel_file$datapath,n_max = 0))
     # column_types <- ifelse(grepl(pattern = "^result",x=column_names,ignore.case = TRUE),"list","guess")
     # hierna, if col_types = character verander naar factor behalve voor opmerkingen
-    
-    
-    #nog validatie check nodig dat het werkelijk een excel bestand is
     
     
     #column_names <- read_excel(filePath, n_max=0) #yeah this means double loading but alternative is scuffed, only looks at first row anyway
@@ -155,14 +151,9 @@ server <- function(input, output, session) {
             "workday",
             "element",
             "parameter"
-            
           )
         ), as.factor)
-        
       )
-    
-    
-    
     #  try({
     
     #poging tot juiste classes (niet langer relevant, laat staan voor de zekerheid)
@@ -340,11 +331,12 @@ server <- function(input, output, session) {
   
   observeEvent(input$fiatteer_input_file, {
     loadingtip <- showNotification("Laden...", duration = NULL, closeButton = FALSE)
+    print(input$fiatteer_input_file$datapath)
     
-    loadedsamples <- excel_results_reader(input$fiatteer_input_file$datapath, sheet = 1)
+    loadedsamples <- excel_results_reader(input$fiatteer_input_file$datapath, sheet = "fiatteerlijst")
     samples <<- loadedsamples %>% arrange(PRIOFINISHDATE)
     
-    results <<- excel_results_reader(input$fiatteer_input_file$datapath, sheet = 2)
+    results <<- excel_results_reader(input$fiatteer_input_file$datapath, sheet = "resultaten")
     
     ratios <<-
       results %>%
