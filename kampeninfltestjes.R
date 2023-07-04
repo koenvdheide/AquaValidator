@@ -62,9 +62,13 @@ result_file$REFCONCLUSION <- as.logical(result_file$REFCONCLUSION)
 levels(result_file$MEETPUNT) <- list(Mengmonster = 'o56infl', IJsselmuiden = 'o56infl-ij' , Kampen = 'o56infl-ka' )
 
 top_n_results <- function(n = 10, full_results){
-  grouped_results <- full_results %>% nest(.by = c(MEETPUNT, LABNR)) %>% nest(.by = MEETPUNT)
+  nested_results <- full_results %>% nest(.by = c(MEETPUNT, LABNR), .key = "TESTS") %>% nest(.by = MEETPUNT, .key = "SAMPLES")
+  View(nested_results)
+  top_labnummers <- nested_results[[2]][1:3]  # %>% pluck(2) %>% (head(n=n))
+  
   #pick top 10 labnummers per monsterpuntcode
   #top_results <- full_results %>% group_by(LABNR)  %>% filter(cur_group_id() >= n_groups(.)-n )
+  return(top_labnummers)
 }
 
 test <- top_n_results(full_results = result_file)
