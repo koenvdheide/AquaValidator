@@ -242,7 +242,6 @@ server <- function(input, output, session) {
   selected_sample <- reactive({
     req(samples)
     if (!is.null(input$tabel_fiatteerlijst_rows_selected)) {
-     # print(samples()[input$tabel_fiatteerlijst_rows_selected,])
       return(samples[input$tabel_fiatteerlijst_rows_selected,])
     }
     else{
@@ -285,14 +284,13 @@ server <- function(input, output, session) {
                                     SAMPLINGDATE,
                                     MEASUREDATE
                                   ) %>%
-      arrange(desc(SAMPLINGDATE)) %>% top_n_results(n = input$instellingen_hoeveelheid_resultaten) #it SHOULD already put the most recent result first but this ensures it
-    #top_n_results(full_results = matching_results)
+      arrange(desc(SAMPLINGDATE)) %>% #it SHOULD already put the most recent result first but this ensures it
+      top_n_results(n = input$instellingen_hoeveelheid_resultaten)
+    
     graph_selection(rep(FALSE, nrow(matching_results))) #fill graph_selection so it doesn't throw out of bounds errors later
     return(matching_results)
     
   })
-  
-
   
   selected_ratios <- reactive({
     req(ratios)
@@ -331,7 +329,6 @@ server <- function(input, output, session) {
   
   observeEvent(input$fiatteer_input_file, {
     loadingtip <- showNotification("Laden...", duration = NULL, closeButton = FALSE)
-    print(input$fiatteer_input_file$datapath)
     tryCatch({
       loadedsamples <-
         excel_results_reader(input$fiatteer_input_file$datapath, sheet = "fiatteerlijst")
