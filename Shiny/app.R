@@ -332,45 +332,49 @@ server <- function(input, output, session) {
   observeEvent(input$fiatteer_input_file, {
     loadingtip <- showNotification("Laden...", duration = NULL, closeButton = FALSE)
     print(input$fiatteer_input_file$datapath)
-    
-    loadedsamples <- excel_results_reader(input$fiatteer_input_file$datapath, sheet = "fiatteerlijst")
-    samples <<- loadedsamples %>% arrange(PRIOFINISHDATE)
-    
-    results <<- excel_results_reader(input$fiatteer_input_file$datapath, sheet = "resultaten")
-    
-    ratios <<-
-      results %>%
-      group_by(LABNUMMER,MONSTERPUNTCODE) %>%
-      reframe(
-        SAMPLINGDATE = min(SAMPLINGDATE),
-        # MONSTERPUNTCODE = list? min? zou allemaal zelfde moeten zijn
-        CZV_BZV_RATIO = ifelse(
-          any(ELEMENTCODE == "CZV") & any(ELEMENTCODE == "BZV5"),
-          RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[ELEMENTCODE == "BZV5"],
-          NA
-        ),
-        
-        CZV_NKA_RATIO = ifelse(
-          any(ELEMENTCODE == "CZV") &
-            any(TESTCODE == "nka"),
-          RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[TESTCODE == "nka"],
-          NA
-        ),
-        
-        BZV_ONOPA_RATIO = ifelse(
-          any(ELEMENTCODE == "BZV5") &
-            any(TESTCODE == "onopa"),
-          RESULTAAT[ELEMENTCODE == "BZV5"] / RESULTAAT[TESTCODE == "onopa"],
-          NA
+    tryCatch({
+      loadedsamples <-
+        excel_results_reader(input$fiatteer_input_file$datapath, sheet = "fiatteerlijst")
+      samples <<- loadedsamples %>% arrange(PRIOFINISHDATE)
+      results <<-
+        excel_results_reader(input$fiatteer_input_file$datapath, sheet = "resultaten")
+      
+      ratios <<-
+        results %>%
+        group_by(LABNUMMER, MONSTERPUNTCODE) %>%
+        reframe(
+          SAMPLINGDATE = min(SAMPLINGDATE),
+          # MONSTERPUNTCODE = list? min? zou allemaal zelfde moeten zijn
+          CZV_BZV_RATIO = ifelse(
+            any(ELEMENTCODE == "CZV") & any(ELEMENTCODE == "BZV5"),
+            RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[ELEMENTCODE == "BZV5"],
+            NA
+          ),
+          
+          CZV_NKA_RATIO = ifelse(
+            any(ELEMENTCODE == "CZV") &
+              any(TESTCODE == "nka"),
+            RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[TESTCODE == "nka"],
+            NA
+          ),
+          
+          BZV_ONOPA_RATIO = ifelse(
+            any(ELEMENTCODE == "BZV5") &
+              any(TESTCODE == "onopa"),
+            RESULTAAT[ELEMENTCODE == "BZV5"] / RESULTAAT[TESTCODE == "onopa"],
+            NA
+          )
+          
+        ) %>% pivot_longer(
+          cols = c(CZV_BZV_RATIO, CZV_NKA_RATIO, BZV_ONOPA_RATIO),
+          names_to = "RATIO",
+          values_to = "WAARDE",
+          values_drop_na = TRUE #needed so that ggplot's geom_line doesn't stop when it encounters an NA value while plotting the ratios
         )
-        
-      ) %>% pivot_longer(
-        cols = c(CZV_BZV_RATIO, CZV_NKA_RATIO, BZV_ONOPA_RATIO),
-        names_to = "RATIO",
-        values_to = "WAARDE",
-        values_drop_na = TRUE #needed so that ggplot's geom_line doesn't stop when it encounters an NA value while plotting the ratios
-      )
-
+    }, error = function(e){
+      showModal(modalDialog(title = "Error",e))
+    })
+    
     on.exit(removeNotification(loadingtip), add = TRUE)
     on.exit(inputUpdater(uiComponent = "tp", inputId = "fiatteer_beeld",selected = "tab_fiatteerlijst"), add = TRUE)
   })
