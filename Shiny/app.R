@@ -113,16 +113,12 @@ server <- function(input, output, session) {
 ##################### common server functions #######################
   
   excel_results_reader <- function(filePath, sheet = NULL) {
-    
-    print("loading excel")
+
     # idee van: https://readxl.tidyverse.org/articles/cell-and-column-types.html#peek-at-column-names
     # om tegelijk met het inladen de col_types correct te maken, inclusief "list" (ipv "numeric") voor resultaten aangezien niet-numerieke resultaten mogelijk zijn
     # column_names <- names(read_excel(excel_file$datapath,n_max = 0))
     # column_types <- ifelse(grepl(pattern = "^result",x=column_names,ignore.case = TRUE),"list","guess")
     # hierna, if col_types = character verander naar factor behalve voor opmerkingen
-    
-    
-    #nog validatie check nodig dat het werkelijk een excel bestand is
     
     
     #column_names <- read_excel(filePath, n_max=0) #yeah this means double loading but alternative is scuffed, only looks at first row anyway
@@ -155,14 +151,9 @@ server <- function(input, output, session) {
             "workday",
             "element",
             "parameter"
-            
           )
         ), as.factor)
-        
       )
-    
-    
-    
     #  try({
     
     #poging tot juiste classes (niet langer relevant, laat staan voor de zekerheid)
@@ -230,8 +221,15 @@ server <- function(input, output, session) {
     )
   }
   
-  top_n_results <- function(n = 10, full_results){
-    top_results <- full_results %>% group_by(LABNUMMER)  %>% filter(cur_group_id() >= n_groups(.)-n )
+  top_n_results <- function(n = 10, full_results) {
+    #grouped_results <- full_results %>% nest(.by = c(LABNUMMER, MONSTERPUNTCODE)) %>% nest(.by = MONSTERPUNTCODE)
+    #View(grouped_results)
+    #pick top 10 labnummers per monsterpuntcode
+    #top_results <- full_results %>% group_by(LABNUMMER)  %>% filter(cur_group_id() >= n_groups(.)-n )
+    top_results <-
+      full_results %>% group_by(MONSTERPUNTCODE)  %>% group_modify(~ {
+        .x %>% group_by(LABNUMMER) %>% filter(cur_group_id() >= n_groups(.) - n)
+      })
   }
   
   ratios_calculator <- function(results){
@@ -258,6 +256,7 @@ server <- function(input, output, session) {
     matching_results <- semi_join(results,
                                   selected_sample(),
                                   by = c('LABNUMMER')) %>% select(
+                                    MONSTERPUNTCODE,
                                     LABNUMMER,
                                     TESTCODE,
                                     ELEMENTCODE,
@@ -276,6 +275,7 @@ server <- function(input, output, session) {
     matching_results <- semi_join(results,
                                   selected_sample(),
                                   by = c('MONSTERPUNTCODE')) %>% select(
+                                    MONSTERPUNTCODE,
                                     LABNUMMER,
                                     TESTCODE,
                                     ELEMENTCODE,
@@ -285,8 +285,8 @@ server <- function(input, output, session) {
                                     SAMPLINGDATE,
                                     MEASUREDATE
                                   ) %>%
-      arrange(desc(SAMPLINGDATE)) #it SHOULD already put the most recent result first but this ensures it
-
+      arrange(desc(SAMPLINGDATE)) %>% top_n_results(n = input$instellingen_hoeveelheid_resultaten) #it SHOULD already put the most recent result first but this ensures it
+    #top_n_results(full_results = matching_results)
     graph_selection(rep(FALSE, nrow(matching_results))) #fill graph_selection so it doesn't throw out of bounds errors later
     return(matching_results)
     
@@ -331,45 +331,50 @@ server <- function(input, output, session) {
   
   observeEvent(input$fiatteer_input_file, {
     loadingtip <- showNotification("Laden...", duration = NULL, closeButton = FALSE)
-    
-    loadedsamples <- excel_results_reader(input$fiatteer_input_file$datapath, sheet = 1)
-    samples <<- loadedsamples %>% arrange(PRIOFINISHDATE)
-    
-    results <<- excel_results_reader(input$fiatteer_input_file$datapath, sheet = 2)
-    
-    ratios <<-
-      results %>%
-      group_by(LABNUMMER,MONSTERPUNTCODE) %>%
-      reframe(
-        SAMPLINGDATE = min(SAMPLINGDATE),
-        # MONSTERPUNTCODE = list? min? zou allemaal zelfde moeten zijn
-        CZV_BZV_RATIO = ifelse(
-          any(ELEMENTCODE == "CZV") & any(ELEMENTCODE == "BZV5"),
-          RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[ELEMENTCODE == "BZV5"],
-          NA
-        ),
-        
-        CZV_NKA_RATIO = ifelse(
-          any(ELEMENTCODE == "CZV") &
-            any(TESTCODE == "nka"),
-          RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[TESTCODE == "nka"],
-          NA
-        ),
-        
-        BZV_ONOPA_RATIO = ifelse(
-          any(ELEMENTCODE == "BZV5") &
-            any(TESTCODE == "onopa"),
-          RESULTAAT[ELEMENTCODE == "BZV5"] / RESULTAAT[TESTCODE == "onopa"],
-          NA
+    print(input$fiatteer_input_file$datapath)
+    tryCatch({
+      loadedsamples <-
+        excel_results_reader(input$fiatteer_input_file$datapath, sheet = "fiatteerlijst")
+      samples <<- loadedsamples %>% arrange(PRIOFINISHDATE)
+      results <<-
+        excel_results_reader(input$fiatteer_input_file$datapath, sheet = "resultaten")
+      
+      ratios <<-
+        results %>%
+        group_by(LABNUMMER, MONSTERPUNTCODE) %>%
+        reframe(
+          SAMPLINGDATE = min(SAMPLINGDATE),
+          # MONSTERPUNTCODE = list? min? zou allemaal zelfde moeten zijn
+          CZV_BZV_RATIO = ifelse(
+            any(ELEMENTCODE == "CZV") & any(ELEMENTCODE == "BZV5"),
+            RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[ELEMENTCODE == "BZV5"],
+            NA
+          ),
+          
+          CZV_NKA_RATIO = ifelse(
+            any(ELEMENTCODE == "CZV") &
+              any(TESTCODE == "nka"),
+            RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[TESTCODE == "nka"],
+            NA
+          ),
+          
+          BZV_ONOPA_RATIO = ifelse(
+            any(ELEMENTCODE == "BZV5") &
+              any(TESTCODE == "onopa"),
+            RESULTAAT[ELEMENTCODE == "BZV5"] / RESULTAAT[TESTCODE == "onopa"],
+            NA
+          )
+          
+        ) %>% pivot_longer(
+          cols = c(CZV_BZV_RATIO, CZV_NKA_RATIO, BZV_ONOPA_RATIO),
+          names_to = "RATIO",
+          values_to = "WAARDE",
+          values_drop_na = TRUE #needed so that ggplot's geom_line doesn't stop when it encounters an NA value while plotting the ratios
         )
-        
-      ) %>% pivot_longer(
-        cols = c(CZV_BZV_RATIO, CZV_NKA_RATIO, BZV_ONOPA_RATIO),
-        names_to = "RATIO",
-        values_to = "WAARDE",
-        values_drop_na = TRUE #needed so that ggplot's geom_line doesn't stop when it encounters an NA value while plotting the ratios
-      )
-
+    }, error = function(e){
+      showModal(modalDialog(title = "Error",e))
+    })
+    
     on.exit(removeNotification(loadingtip), add = TRUE)
     on.exit(inputUpdater(uiComponent = "tp", inputId = "fiatteer_beeld",selected = "tab_fiatteerlijst"), add = TRUE)
   })
@@ -411,8 +416,8 @@ server <- function(input, output, session) {
   })
   
    output$tabel_sample <- DT::renderDataTable({
-     test_results <- top_n_results(input$instellingen_hoeveelheid_resultaten, historical_results())
-     widened_results <- results_widened(test_results)
+     #test_results <- top_n_results(input$instellingen_hoeveelheid_resultaten, historical_results())
+     widened_results <- results_widened(historical_results())
      DT::datatable(
        data = widened_results,
        rownames = FALSE,
@@ -438,15 +443,15 @@ server <- function(input, output, session) {
 
    
   output$fiatteer_grafiek <- renderPlot({
-    plot_data <- top_n_results(input$instellingen_hoeveelheid_resultaten, historical_results())
-  
+    #plot_data <- top_n_results(input$instellingen_hoeveelheid_resultaten, historical_results())
+    plot_data <- historical_results()
    # kept_data <- plot_data[graph_selection(), , drop = FALSE]
     #plot_user_choices <- fiatteer_plot_user_selection()
    # clicked_data <- plot_data[graph_selection(), , drop = FALSE]
     selected_data <- graph_selection() 
     
     results_plot <- ggplot(data = plot_data,
-                   mapping = aes(x = SAMPLINGDATE, y = RESULTAAT, colour = TESTCODE)) +
+                   mapping = aes(x = SAMPLINGDATE, y = RESULTAAT, colour = TESTCODE, group = MONSTERPUNTCODE, shape = MONSTERPUNTCODE)) +
       geom_line() +
       geom_point() +
         #aes(shape = selected_data),  
