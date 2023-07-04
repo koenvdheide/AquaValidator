@@ -64,7 +64,9 @@ levels(result_file$MEETPUNT) <- list(Mengmonster = 'o56infl', IJsselmuiden = 'o5
 top_n_results <- function(n = 10, full_results){
   nested_results <- full_results %>% nest(.by = c(MEETPUNT, LABNR), .key = "TESTS") %>% nest(.by = MEETPUNT, .key = "SAMPLES")
   View(nested_results)
-  top_labnummers <- nested_results[[2]][1:3]  # %>% pluck(2) %>% (head(n=n))
+  #top_labnummers <- nested_results[[2]] %>% lapply("[",1)
+  #top_labnummers <- nested_results %>% pluck(2) %>% (head(n=n))
+  top_labnummers <- nested_results %>% map(2)
   
   #pick top 10 labnummers per monsterpuntcode
   #top_results <- full_results %>% group_by(LABNR)  %>% filter(cur_group_id() >= n_groups(.)-n )
