@@ -455,7 +455,7 @@ server <- function(input, output, session) {
     selected_data <- graph_selection() 
     
     results_plot <- ggplot(data = plot_data,
-                   mapping = aes(x = SAMPLINGDATE, y = RESULTAAT, colour = TESTCODE, group = MONSTERPUNTCODE)) +
+                   mapping = aes(x = SAMPLINGDATE, y = RESULTAAT, colour = TESTCODE, group = MONSTERPUNTCODE, shape = MONSTERPUNTCODE)) +
       geom_line() +
       geom_point() +
         #aes(shape = selected_data),  
