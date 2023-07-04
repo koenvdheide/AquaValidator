@@ -230,8 +230,15 @@ server <- function(input, output, session) {
     )
   }
   
-  top_n_results <- function(n = 10, full_results){
-    top_results <- full_results %>% group_by(LABNUMMER)  %>% filter(cur_group_id() >= n_groups(.)-n )
+  top_n_results <- function(n = 10, full_results) {
+    #grouped_results <- full_results %>% nest(.by = c(LABNUMMER, MONSTERPUNTCODE)) %>% nest(.by = MONSTERPUNTCODE)
+    #View(grouped_results)
+    #pick top 10 labnummers per monsterpuntcode
+    #top_results <- full_results %>% group_by(LABNUMMER)  %>% filter(cur_group_id() >= n_groups(.)-n )
+    top_results <-
+      full_results %>% group_by(MONSTERPUNTCODE)  %>% group_modify(~ {
+        .x %>% group_by(LABNUMMER) %>% filter(cur_group_id() >= n_groups(.) - n)
+      })
   }
   
   ratios_calculator <- function(results){
@@ -287,8 +294,8 @@ server <- function(input, output, session) {
                                     SAMPLINGDATE,
                                     MEASUREDATE
                                   ) %>%
-      arrange(desc(SAMPLINGDATE)) #it SHOULD already put the most recent result first but this ensures it
-
+      arrange(desc(SAMPLINGDATE)) %>% top_n_results(n = input$instellingen_hoeveelheid_resultaten) #it SHOULD already put the most recent result first but this ensures it
+    #top_n_results(full_results = matching_results)
     graph_selection(rep(FALSE, nrow(matching_results))) #fill graph_selection so it doesn't throw out of bounds errors later
     return(matching_results)
     
