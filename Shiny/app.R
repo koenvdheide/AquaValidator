@@ -179,7 +179,7 @@ server <- function(input, output, session) {
   
   results_widened <- function (original_results) {
     original_results %>% pivot_wider(
-      id_cols = c(LABNUMMER, RUNNR),
+      id_cols = c(NAAM,LABNUMMER, RUNNR),
       names_from = c(TESTCODE, ELEMENTCODE),
       values_from = RESULTAAT,
       names_sep = "<br>",
@@ -188,8 +188,6 @@ server <- function(input, output, session) {
   }
   
   top_n_results <- function(n = 10, full_results) {
-    #grouped_results <- full_results %>% nest(.by = c(LABNUMMER, MONSTERPUNTCODE)) %>% nest(.by = MONSTERPUNTCODE)
-    #View(grouped_results)
     #pick top 10 labnummers per monsterpuntcode
     #top_results <- full_results %>% group_by(LABNUMMER)  %>% filter(cur_group_id() >= n_groups(.)-n )
     top_results <-
@@ -218,10 +216,11 @@ server <- function(input, output, session) {
     req(results)
     selected_labnummer <- select(selected_sample(), LABNUMMER)
     #print(selected_labnummer)
-    matching_results <- semi_join(results,
+    matching_result <- semi_join(results,
                                   selected_sample(),
                                   by = c('LABNUMMER')) %>% select(
                                     MONSTERPUNTCODE,
+                                    NAAM,
                                     LABNUMMER,
                                     TESTCODE,
                                     ELEMENTCODE,
@@ -236,11 +235,13 @@ server <- function(input, output, session) {
   historical_results <- reactive({
     #includes current result for now
     req(results)
+    print(current_result())
     selected_meetpunt <- select(selected_sample(), MONSTERPUNTCODE)
     matching_results <- semi_join(results,
                                   selected_sample(),
                                   by = c('MONSTERPUNTCODE')) %>% select(
                                     MONSTERPUNTCODE,
+                                    NAAM,
                                     LABNUMMER,
                                     TESTCODE,
                                     ELEMENTCODE,
