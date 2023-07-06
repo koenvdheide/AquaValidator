@@ -235,7 +235,7 @@ server <- function(input, output, session) {
   historical_results <- reactive({
     #includes current result for now
     req(results)
-    print(current_result())
+    View(current_result())
     selected_meetpunt <- select(selected_sample(), MONSTERPUNTCODE)
     matching_results <- semi_join(results,
                                   selected_sample(),
@@ -407,7 +407,6 @@ server <- function(input, output, session) {
 
    
   output$fiatteer_grafiek <- renderPlot({
-    #plot_data <- top_n_results(input$instellingen_hoeveelheid_resultaten, historical_results())
     plot_data <- historical_results()
    # kept_data <- plot_data[graph_selection(), , drop = FALSE]
     #plot_user_choices <- fiatteer_plot_user_selection()
@@ -415,10 +414,10 @@ server <- function(input, output, session) {
     selected_data <- graph_selection() 
     
     results_plot <- ggplot(data = plot_data,
-                   mapping = aes(x = SAMPLINGDATE, y = RESULTAAT, colour = TESTCODE, group = MONSTERPUNTCODE, shape = MONSTERPUNTCODE)) +
+                   mapping = aes(x = SAMPLINGDATE, y = RESULTAAT, colour = NAAM, group = MONSTERPUNTCODE )) +
       geom_line() +
       geom_point() +
-        #aes(shape = selected_data),  
+  
      # scale_size(limits = c("FALSE","TRUE"), range = c(1.5,2.5)) +
       facet_wrap(vars(TESTCODE), scales = 'free_y')
     
@@ -452,7 +451,7 @@ server <- function(input, output, session) {
     #selected ratios
     ratios_plot <-
       ggplot(data = plot_ratios,
-             mapping = aes(x = SAMPLINGDATE, y = WAARDE, colour = RATIO, group = MONSTERPUNTCODE)) +
+             mapping = aes(x = SAMPLINGDATE, y = WAARDE, colour = MONSTERPUNTCODE, group = MONSTERPUNTCODE)) +
       geom_line() +
       geom_point() +
       geom_smooth() +
