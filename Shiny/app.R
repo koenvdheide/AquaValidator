@@ -392,13 +392,14 @@ server <- function(input, output, session) {
          dom = 'Bltipr',
          buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
          rowGroup = list(
-           dataSrc = 0
+           dataSrc = c(0,1)
            # startRender = JS(
            #   "function(rows, group) {",
            #   "return 'Sampling Datum:' +' ('+rows.count()+' rows)';",
            #   "}"
            # )
-         )
+         ),
+         columnDefs = list(list(visible=FALSE , targets = c(0,1)))
        ) #dom needed to remove search bar (redundant with column search)
      )
      #toon test resultaten horende bij labnummer dat gebruiker in tabel_fiatteerlijst aaklikt
