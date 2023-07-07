@@ -46,7 +46,7 @@ ui <- tagList(
                #   DT::dataTableOutput("tabel_samenvatting")
                # ),
                tabPanel(
-                 title = "Sample",
+                 title = "Samples",          #textOutput("tab_sample_titel") 
                  value = "tab_sample",
                  DT::dataTableOutput("tabel_sample")
                ),
@@ -364,6 +364,15 @@ server <- function(input, output, session) {
 
    # updateTabsetPanel(inputId = "fiatteer_beeld",selected = "tab_sample")
   
+  # output$tab_sample_titel <- renderText({
+  #   if (!is.null(isolate(historical_results()))) {
+  #     paste("Samples", "(", length(unique(historical_results()$LABNUMMER)), ")")
+  #   }
+  #   else{
+  #     paste("Samples")
+  #   }
+  # })
+  
   output$tabel_fiatteerlijst <- DT::renderDataTable({
     DT::datatable(
       data = samples,
@@ -372,10 +381,10 @@ server <- function(input, output, session) {
       extensions = c("Buttons"),
       options = list(
         searchHighlight = TRUE,
-        dom = 'Bltipr',
+        dom = 'Bltipr', #dom needed to remove search bar (redundant with column search) 
         buttons = c('copy', 'csv', 'excel', 'pdf', 'print')
       )
-    ) #dom needed to remove search bar (redundant with column search)    )
+    )    
     
   })
   
