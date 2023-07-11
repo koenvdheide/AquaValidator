@@ -432,6 +432,7 @@ server <- function(input, output, session) {
       geom_line() +
       geom_point() +
       geom_point(data = current_result(), aes(size = 2.5)) +
+      guides(size = FALSE) +
       facet_wrap(vars(TESTCODE), scales = 'free_y')
     
     # if(!is.null(selected_data)){ #clicked data has to show up in plot
@@ -458,6 +459,7 @@ server <- function(input, output, session) {
       geom_line() +
       geom_point() +
       geom_point(data = current_ratio(), aes(size = 2.5)) +
+      guides(size = FALSE) +
       facet_wrap(vars(RATIO), scales = 'free_y')
     
     return(ratios_plot)
