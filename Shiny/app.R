@@ -187,9 +187,7 @@ server <- function(input, output, session) {
     )
   }
   
-  top_n_results <- function(n = 10, full_results) {
-    #pick top 10 labnummers per monsterpuntcode
-    #top_results <- full_results %>% group_by(LABNUMMER)  %>% filter(cur_group_id() >= n_groups(.)-n )
+  top_n_results <- function(n, full_results) {
     top_results <-
       full_results %>% group_by(MONSTERPUNTCODE)  %>% group_modify(~ {
         .x %>% group_by(LABNUMMER) %>% filter(cur_group_id() >= n_groups(.) - n)
@@ -235,7 +233,6 @@ server <- function(input, output, session) {
   historical_results <- reactive({
     #includes current result for now
     req(results)
-    View(current_result())
     selected_meetpunt <- select(selected_sample(), MONSTERPUNTCODE)
     matching_results <- semi_join(results,
                                   selected_sample(),
@@ -398,7 +395,7 @@ server <- function(input, output, session) {
        filter = "top",
        escape = FALSE,
        options = list(
-         dom = 'Bltipr',
+         dom = 'Bltipr', #dom needed to remove search bar (redundant with column search)
          buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
          rowGroup = list(
            dataSrc = c(0,1)
@@ -409,17 +406,15 @@ server <- function(input, output, session) {
            # )
          ),
          columnDefs = list(list(visible=FALSE , targets = c(0,1)))
-       ) #dom needed to remove search bar (redundant with column search)
+       ) 
      )
-     #toon test resultaten horende bij labnummer dat gebruiker in tabel_fiatteerlijst aaklikt
-     #toon laatste resultaten met (last())
    })
 
    
   output$fiatteer_grafiek <- renderPlot({
     plot_data <- historical_results()
-   # kept_data <- plot_data[graph_selection(), , drop = FALSE]
     #plot_user_choices <- fiatteer_plot_user_selection()
+    
    # clicked_data <- plot_data[graph_selection(), , drop = FALSE]
     selected_data <- graph_selection() 
     
@@ -428,25 +423,14 @@ server <- function(input, output, session) {
       geom_line() +
       geom_point() +
       geom_point(data = current_result(), aes(size = 5)) +
-  
-     # scale_size(limits = c("FALSE","TRUE"), range = c(1.5,2.5)) +
       facet_wrap(vars(TESTCODE), scales = 'free_y')
-    
     
     # if(!is.null(selected_data)){ #clicked data has to show up in plot
     #   plot <- plot + geom_point()
     # }
 
-    
-    #ratios plot idea:
-    # data = ratiosdata, group = ratios, x = SAMPLINGDATE, y = RATIO
-    
     #move hover_data to something that doesn't call the WHOLE PLOT AGAIN
     #plot <- plot + geom_text(data = hover_data(), aes(label=LABNUMMER))
-    
-    
-    #geom_smooth(method="loess", fullrange = TRUE, span = 0.75, linewidth = 2) +
-    #labs(title = plot_user_choices$title)
     
     # if (plot_user_choices$fiatteer_wrap_choice == TRUE)
     # {
@@ -459,13 +443,11 @@ server <- function(input, output, session) {
   
   output$ratios_grafiek <- renderPlot({
     plot_ratios <- selected_ratios()
-    #selected ratios
     ratios_plot <-
       ggplot(data = plot_ratios,
              mapping = aes(x = SAMPLINGDATE, y = WAARDE, colour = MONSTERPUNTCODE, group = MONSTERPUNTCODE)) +
       geom_line() +
       geom_point() +
-      #geom_smooth() +
       facet_wrap(vars(RATIO), scales = 'free_y')
     
     return(ratios_plot)
@@ -473,7 +455,6 @@ server <- function(input, output, session) {
 
   output$fiatteer_grafiek_tabel <- DT::renderDataTable({
     req(graph_selection())
-   # selected_data <- filter(historical_results(), graph_selection())
     selected_data <- graph_selection()
     DT::datatable(
       data = selected_data,
