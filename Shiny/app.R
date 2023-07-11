@@ -424,9 +424,10 @@ server <- function(input, output, session) {
     selected_data <- graph_selection() 
     
     results_plot <- ggplot(data = plot_data,
-                   mapping = aes(x = SAMPLINGDATE, y = RESULTAAT, colour = NAAM, group = MONSTERPUNTCODE )) +
+                   mapping = aes(x = SAMPLINGDATE, y = RESULTAAT, colour = NAAM, group = MONSTERPUNTCODE)) +
       geom_line() +
       geom_point() +
+      geom_point(data = current_result(), aes(size = 5)) +
   
      # scale_size(limits = c("FALSE","TRUE"), range = c(1.5,2.5)) +
       facet_wrap(vars(TESTCODE), scales = 'free_y')
