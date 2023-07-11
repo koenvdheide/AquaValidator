@@ -255,8 +255,14 @@ server <- function(input, output, session) {
     return(matching_results)
     
   })
+  current_ratio <-  reactive({
+    req(ratios)
+    selected_monsterpuntcode <- select(current_result(), LABNUMMER)
+    current_ratio <- ratios %>% filter(LABNUMMER %in% selected_monsterpuntcode$LABNUMMER)
+    return(current_ratio)
+  })
   
-  selected_ratios <- reactive({
+  historical_ratios <- reactive({
     req(ratios)
     selected_monsterpuntcode <- select(historical_results(), LABNUMMER)
     current_ratios <- ratios %>% filter(LABNUMMER %in% selected_monsterpuntcode$LABNUMMER)
@@ -423,7 +429,7 @@ server <- function(input, output, session) {
                    mapping = aes(x = SAMPLINGDATE, y = RESULTAAT, colour = NAAM, group = MONSTERPUNTCODE)) +
       geom_line() +
       geom_point() +
-      geom_point(data = current_result(), aes(size = 5)) +
+      geom_point(data = current_result(), aes(size = 2.5)) +
       facet_wrap(vars(TESTCODE), scales = 'free_y')
     
     # if(!is.null(selected_data)){ #clicked data has to show up in plot
@@ -443,12 +449,13 @@ server <- function(input, output, session) {
   })
   
   output$ratios_grafiek <- renderPlot({
-    plot_ratios <- selected_ratios()
+    plot_ratios <- historical_ratios()
     ratios_plot <-
       ggplot(data = plot_ratios,
              mapping = aes(x = SAMPLINGDATE, y = WAARDE, colour = MONSTERPUNTCODE, group = MONSTERPUNTCODE)) +
       geom_line() +
       geom_point() +
+      geom_point(data = current_ratio(), aes(size = 2.5)) +
       facet_wrap(vars(RATIO), scales = 'free_y')
     
     return(ratios_plot)
