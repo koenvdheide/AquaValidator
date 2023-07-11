@@ -397,6 +397,7 @@ server <- function(input, output, session) {
        options = list(
          dom = 'Bltipr', #dom needed to remove search bar (redundant with column search)
          buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+         ordering= 0, 
          rowGroup = list(
            dataSrc = c(0,1)
            # startRender = JS(
