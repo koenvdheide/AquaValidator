@@ -233,9 +233,9 @@ server <- function(input, output, session) {
   historical_results <- reactive({
     #includes current result for now
     req(results)
-    selected_meetpunt <- select(selected_sample(), MONSTERPUNTCODE)
+    selected_meetpunt <- select(current_result(), MONSTERPUNTCODE)
     matching_results <- semi_join(results,
-                                  selected_sample(),
+                                  current_result(),
                                   by = c('MONSTERPUNTCODE')) %>% select(
                                     MONSTERPUNTCODE,
                                     NAAM,
