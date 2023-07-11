@@ -310,7 +310,8 @@ server <- function(input, output, session) {
         results %>%
         group_by(LABNUMMER, MONSTERPUNTCODE) %>%
         reframe(
-          SAMPLINGDATE = min(SAMPLINGDATE),
+          NAAM = NAAM, 
+          SAMPLINGDATE = SAMPLINGDATE,
           # MONSTERPUNTCODE = list? min? zou allemaal zelfde moeten zijn
           CZV_BZV_RATIO = ifelse(
             any(ELEMENTCODE == "CZV") & any(ELEMENTCODE == "BZV5"),
@@ -452,7 +453,7 @@ server <- function(input, output, session) {
     plot_ratios <- historical_ratios()
     ratios_plot <-
       ggplot(data = plot_ratios,
-             mapping = aes(x = SAMPLINGDATE, y = WAARDE, colour = MONSTERPUNTCODE, group = MONSTERPUNTCODE)) +
+             mapping = aes(x = SAMPLINGDATE, y = WAARDE, colour = NAAM, group = MONSTERPUNTCODE)) +
       geom_line() +
       geom_point() +
       geom_point(data = current_ratio(), aes(size = 2.5)) +
