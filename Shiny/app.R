@@ -261,8 +261,8 @@ server <- function(input, output, session) {
   
   selected_ratios <- reactive({
     req(ratios)
-    selected_monsterpuntcode <- select(selected_sample(), MONSTERPUNTCODE)
-    current_ratios <- ratios %>% filter(MONSTERPUNTCODE %in% selected_monsterpuntcode$MONSTERPUNTCODE)
+    selected_monsterpuntcode <- select(historical_results(), LABNUMMER)
+    current_ratios <- ratios %>% filter(LABNUMMER %in% selected_monsterpuntcode$LABNUMMER)
     return(current_ratios)
   })
 
@@ -465,7 +465,7 @@ server <- function(input, output, session) {
              mapping = aes(x = SAMPLINGDATE, y = WAARDE, colour = MONSTERPUNTCODE, group = MONSTERPUNTCODE)) +
       geom_line() +
       geom_point() +
-      geom_smooth() +
+      #geom_smooth() +
       facet_wrap(vars(RATIO), scales = 'free_y')
     
     return(ratios_plot)
