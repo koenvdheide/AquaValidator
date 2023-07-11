@@ -404,17 +404,16 @@ server <- function(input, output, session) {
        options = list(
          dom = 'Bltipr', #dom needed to remove search bar (redundant with column search)
          buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
-         #order = list(list(1, 'asc')),
-         ordering= 0, 
+         order = list(list(1, 'desc')),
          rowGroup = list(
-           dataSrc = c(0,1)
+           dataSrc = c(0)
            # startRender = JS(
            #   "function(rows, group) {",
            #   "return 'Sampling Datum:' +' ('+rows.count()+' rows)';",
            #   "}"
            # )
          ),
-         columnDefs = list(list(visible=FALSE , targets = c(0,1)))
+         columnDefs = list(list(visible=FALSE , targets = c(0)))
        ) 
      )
    })
