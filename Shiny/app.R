@@ -222,6 +222,7 @@ server <- function(input, output, session) {
                                     LABNUMMER,
                                     TESTCODE,
                                     ELEMENTCODE,
+                                    TESTSTATUS,
                                     RESULTAAT,
                                     RUNNR,
                                     REFMESSAGE,
@@ -242,6 +243,7 @@ server <- function(input, output, session) {
                                     LABNUMMER,
                                     TESTCODE,
                                     ELEMENTCODE,
+                                    TESTSTATUS,
                                     RESULTAAT,
                                     RUNNR,
                                     REFMESSAGE,
@@ -305,7 +307,6 @@ server <- function(input, output, session) {
       samples <<- loadedsamples %>% arrange(PRIOFINISHDATE)
       results <<-
         excel_results_reader(input$fiatteer_input_file$datapath, sheet = "resultaten")
-      
       ratios <<-
         results %>%
         group_by(LABNUMMER, MONSTERPUNTCODE) %>%
