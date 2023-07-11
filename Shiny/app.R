@@ -226,8 +226,10 @@ server <- function(input, output, session) {
                                     RESULTAAT,
                                     RUNNR,
                                     REFMESSAGE,
+                                    REFCONCLUSION,
                                     SAMPLINGDATE,
-                                    MEASUREDATE
+                                    MEASUREDATE,
+                                    SOORTWATER
                                   )
   })
   
@@ -247,12 +249,13 @@ server <- function(input, output, session) {
                                     RESULTAAT,
                                     RUNNR,
                                     REFMESSAGE,
+                                    REFCONCLUSION,
                                     SAMPLINGDATE,
-                                    MEASUREDATE
+                                    MEASUREDATE,
+                                    SOORTWATER
                                   ) %>%
       arrange(desc(SAMPLINGDATE)) %>% #it SHOULD already put the most recent result first but this ensures it
       top_n_results(n = input$instellingen_hoeveelheid_resultaten)
-    
     graph_selection(rep(FALSE, nrow(matching_results))) #fill graph_selection so it doesn't throw out of bounds errors later
     return(matching_results)
     
