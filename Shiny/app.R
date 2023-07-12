@@ -425,12 +425,13 @@ server <- function(input, output, session) {
          ),
          columnDefs = list(list(visible=FALSE , targets = c(0)))
        ) 
-     )
+     ) #%>% formatStyle()
    })
 
    
   output$fiatteer_grafiek <- renderPlot({
     plot_data <- historical_results()
+    current_data <- current_result()
     #plot_user_choices <- fiatteer_plot_user_selection()
     
    # clicked_data <- plot_data[graph_selection(), , drop = FALSE]
@@ -439,8 +440,8 @@ server <- function(input, output, session) {
     results_plot <- ggplot(data = plot_data,
                    mapping = aes(x = SAMPLINGDATE, y = RESULTAAT, colour = NAAM, group = MONSTERPUNTCODE)) +
       geom_line() +
-      geom_point() +
-      geom_point(data = current_result(), aes(size = 2.5)) +
+      geom_point(size = 2.5) +
+      geom_point(data = current_data, size = 5) +
       guides(size = FALSE) +
       facet_wrap(vars(TESTCODE), scales = 'free_y')
     
@@ -466,8 +467,8 @@ server <- function(input, output, session) {
       ggplot(data = plot_ratios,
              mapping = aes(x = SAMPLINGDATE, y = WAARDE, colour = NAAM, group = MONSTERPUNTCODE)) +
       geom_line() +
-      geom_point() +
-      geom_point(data = current_ratio(), aes(size = 2.5)) +
+      geom_point(size = 2.5) +
+      geom_point(data = current_ratio(), size = 5) +
       guides(size = FALSE) +
       facet_wrap(vars(RATIO), scales = 'free_y')
     
