@@ -227,6 +227,7 @@ server <- function(input, output, session) {
                                     RUNNR,
                                     REFMESSAGE,
                                     REFCONCLUSION,
+                                    GEVALIDEERD,
                                     SAMPLINGDATE,
                                     MEASUREDATE,
                                     SOORTWATER
@@ -250,6 +251,7 @@ server <- function(input, output, session) {
                                     RUNNR,
                                     REFMESSAGE,
                                     REFCONCLUSION,
+                                    GEVALIDEERD,
                                     SAMPLINGDATE,
                                     MEASUREDATE,
                                     SOORTWATER
