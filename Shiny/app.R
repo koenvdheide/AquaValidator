@@ -46,7 +46,7 @@ ui <- tagList(
                #   DT::dataTableOutput("tabel_samenvatting")
                # ),
                tabPanel(
-                 title = "Sample",
+                 title = "Samples",          #textOutput("tab_sample_titel") 
                  value = "tab_sample",
                  DT::dataTableOutput("tabel_sample")
                ),
@@ -113,16 +113,7 @@ server <- function(input, output, session) {
 ##################### common server functions #######################
   
   excel_results_reader <- function(filePath, sheet = NULL) {
-
-    # idee van: https://readxl.tidyverse.org/articles/cell-and-column-types.html#peek-at-column-names
-    # om tegelijk met het inladen de col_types correct te maken, inclusief "list" (ipv "numeric") voor resultaten aangezien niet-numerieke resultaten mogelijk zijn
-    # column_names <- names(read_excel(excel_file$datapath,n_max = 0))
-    # column_types <- ifelse(grepl(pattern = "^result",x=column_names,ignore.case = TRUE),"list","guess")
-    # hierna, if col_types = character verander naar factor behalve voor opmerkingen
     
-    
-    #column_names <- read_excel(filePath, n_max=0) #yeah this means double loading but alternative is scuffed, only looks at first row anyway
-    #column_types <- if_else(grepl((column_names %>% select(contains("result"))),x=column_names,ignore.case = TRUE),"list","guess")
     excel_data <-
       read_excel(filePath, progress = TRUE, sheet = sheet) %>%
       
@@ -154,31 +145,6 @@ server <- function(input, output, session) {
           )
         ), as.factor)
       )
-    #  try({
-    
-    #poging tot juiste classes (niet langer relevant, laat staan voor de zekerheid)
-    # excel_data$MEETPUNT <- as.factor(excel_data$MEETPUNT)
-    # excel_data$RUNNR <- as.factor(excel_data$RUNNR)
-    # excel_data$NAME <- as.factor(excel_data$NAME)
-    # excel_data$STATUS <-
-    #   as.factor(excel_data$STATUS)
-    # excel_data$PROJECT <-
-    #   as.factor(excel_data$PROJECT)
-    # excel_data$PROJECT_OMS <-
-    #   as.factor(excel_data$PROJECT_OMS)
-    # excel_data$LABNR <-
-    #   as.factor(excel_data$LABNR)
-    # excel_data$TESTCODE <-
-    #   as.factor(excel_data$TESTCODE)
-    # excel_data$ID <- as.factor(excel_data$ID)
-    # excel_data$USEDRESULT <-
-    #   as.numeric(excel_data$USEDRESULT) #dit geeft problemen bij niet-numerieke results! (zoals "+")
-    # excel_data$ELEMENTCODE <-
-    #   as.factor(excel_data$ELEMENTCODE)
-    # excel_data$REFCONCLUSION <-
-    #   as.logical(excel_data$REFCONCLUSION)
-    #
-    # }, silent = TRUE)
     return (excel_data)
   }
   
@@ -213,19 +179,15 @@ server <- function(input, output, session) {
   
   results_widened <- function (original_results) {
     original_results %>% pivot_wider(
-      id_cols = c(LABNUMMER, RUNNR),
+      id_cols = c(NAAM,LABNUMMER, RUNNR),
       names_from = c(TESTCODE, ELEMENTCODE),
       values_from = RESULTAAT,
       names_sep = "<br>",
-      unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = min)
+      unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = list)
     )
   }
   
-  top_n_results <- function(n = 10, full_results) {
-    #grouped_results <- full_results %>% nest(.by = c(LABNUMMER, MONSTERPUNTCODE)) %>% nest(.by = MONSTERPUNTCODE)
-    #View(grouped_results)
-    #pick top 10 labnummers per monsterpuntcode
-    #top_results <- full_results %>% group_by(LABNUMMER)  %>% filter(cur_group_id() >= n_groups(.)-n )
+  top_n_results <- function(n, full_results) {
     top_results <-
       full_results %>% group_by(MONSTERPUNTCODE)  %>% group_modify(~ {
         .x %>% group_by(LABNUMMER) %>% filter(cur_group_id() >= n_groups(.) - n)
@@ -242,7 +204,6 @@ server <- function(input, output, session) {
   selected_sample <- reactive({
     req(samples)
     if (!is.null(input$tabel_fiatteerlijst_rows_selected)) {
-     # print(samples()[input$tabel_fiatteerlijst_rows_selected,])
       return(samples[input$tabel_fiatteerlijst_rows_selected,])
     }
     else{
@@ -253,51 +214,65 @@ server <- function(input, output, session) {
     req(results)
     selected_labnummer <- select(selected_sample(), LABNUMMER)
     #print(selected_labnummer)
-    matching_results <- semi_join(results,
+    matching_result <- semi_join(results,
                                   selected_sample(),
                                   by = c('LABNUMMER')) %>% select(
                                     MONSTERPUNTCODE,
+                                    NAAM,
                                     LABNUMMER,
                                     TESTCODE,
                                     ELEMENTCODE,
+                                    TESTSTATUS,
                                     RESULTAAT,
                                     RUNNR,
                                     REFMESSAGE,
+                                    REFCONCLUSION,
+                                    GEVALIDEERD,
                                     SAMPLINGDATE,
-                                    MEASUREDATE
+                                    MEASUREDATE,
+                                    SOORTWATER
                                   )
   })
   
   historical_results <- reactive({
     #includes current result for now
     req(results)
-    selected_meetpunt <- select(selected_sample(), MONSTERPUNTCODE)
+    selected_meetpunt <- select(current_result(), MONSTERPUNTCODE)
     matching_results <- semi_join(results,
-                                  selected_sample(),
+                                  current_result(),
                                   by = c('MONSTERPUNTCODE')) %>% select(
                                     MONSTERPUNTCODE,
+                                    NAAM,
                                     LABNUMMER,
                                     TESTCODE,
                                     ELEMENTCODE,
+                                    TESTSTATUS,
                                     RESULTAAT,
                                     RUNNR,
                                     REFMESSAGE,
+                                    REFCONCLUSION,
+                                    GEVALIDEERD,
                                     SAMPLINGDATE,
-                                    MEASUREDATE
+                                    MEASUREDATE,
+                                    SOORTWATER
                                   ) %>%
-      arrange(desc(SAMPLINGDATE)) %>% top_n_results(n = input$instellingen_hoeveelheid_resultaten) #it SHOULD already put the most recent result first but this ensures it
-    #top_n_results(full_results = matching_results)
+      arrange(desc(SAMPLINGDATE)) %>% #it SHOULD already put the most recent result first but this ensures it
+      top_n_results(n = input$instellingen_hoeveelheid_resultaten)
     graph_selection(rep(FALSE, nrow(matching_results))) #fill graph_selection so it doesn't throw out of bounds errors later
     return(matching_results)
     
   })
-  
-
-  
-  selected_ratios <- reactive({
+  current_ratio <-  reactive({
     req(ratios)
-    selected_monsterpuntcode <- select(selected_sample(), MONSTERPUNTCODE)
-    current_ratios <- ratios %>% filter(MONSTERPUNTCODE %in% selected_monsterpuntcode$MONSTERPUNTCODE)
+    selected_monsterpuntcode <- select(current_result(), LABNUMMER)
+    current_ratio <- ratios %>% filter(LABNUMMER %in% selected_monsterpuntcode$LABNUMMER)
+    return(current_ratio)
+  })
+  
+  historical_ratios <- reactive({
+    req(ratios)
+    selected_monsterpuntcode <- select(historical_results(), LABNUMMER)
+    current_ratios <- ratios %>% filter(LABNUMMER %in% selected_monsterpuntcode$LABNUMMER)
     return(current_ratios)
   })
 
@@ -331,20 +306,21 @@ server <- function(input, output, session) {
   
   observeEvent(input$fiatteer_input_file, {
     loadingtip <- showNotification("Laden...", duration = NULL, closeButton = FALSE)
-    print(input$fiatteer_input_file$datapath)
     tryCatch({
       loadedsamples <-
         excel_results_reader(input$fiatteer_input_file$datapath, sheet = "fiatteerlijst")
       samples <<- loadedsamples %>% arrange(PRIOFINISHDATE)
+      
       results <<-
-        excel_results_reader(input$fiatteer_input_file$datapath, sheet = "resultaten")
+        excel_results_reader(input$fiatteer_input_file$datapath, sheet = "resultaten") %>%
+        mutate(GEVALIDEERD = TESTSTATUS == 300)
       
       ratios <<-
         results %>%
         group_by(LABNUMMER, MONSTERPUNTCODE) %>%
         reframe(
-          SAMPLINGDATE = min(SAMPLINGDATE),
-          # MONSTERPUNTCODE = list? min? zou allemaal zelfde moeten zijn
+          NAAM = NAAM, 
+          SAMPLINGDATE = SAMPLINGDATE,
           CZV_BZV_RATIO = ifelse(
             any(ELEMENTCODE == "CZV") & any(ELEMENTCODE == "BZV5"),
             RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[ELEMENTCODE == "BZV5"],
@@ -400,6 +376,15 @@ server <- function(input, output, session) {
 
    # updateTabsetPanel(inputId = "fiatteer_beeld",selected = "tab_sample")
   
+  # output$tab_sample_titel <- renderText({
+  #   if (!is.null(isolate(historical_results()))) {
+  #     paste("Samples", "(", length(unique(historical_results()$LABNUMMER)), ")")
+  #   }
+  #   else{
+  #     paste("Samples")
+  #   }
+  # })
+  
   output$tabel_fiatteerlijst <- DT::renderDataTable({
     DT::datatable(
       data = samples,
@@ -408,10 +393,10 @@ server <- function(input, output, session) {
       extensions = c("Buttons"),
       options = list(
         searchHighlight = TRUE,
-        dom = 'Bltipr',
+        dom = 'Bltipr', #dom needed to remove search bar (redundant with column search) 
         buttons = c('copy', 'csv', 'excel', 'pdf', 'print')
       )
-    ) #dom needed to remove search bar (redundant with column search)    )
+    )    
     
   })
   
@@ -425,54 +410,46 @@ server <- function(input, output, session) {
        filter = "top",
        escape = FALSE,
        options = list(
-         dom = 'Bltipr',
+         dom = 'Bltipr', #dom needed to remove search bar (redundant with column search)
          buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+         order = list(list(1, 'desc')),
+         #ordering= 0, 
          rowGroup = list(
-           dataSrc = 0
+           dataSrc = c(0)
            # startRender = JS(
            #   "function(rows, group) {",
            #   "return 'Sampling Datum:' +' ('+rows.count()+' rows)';",
            #   "}"
            # )
-         )
-       ) #dom needed to remove search bar (redundant with column search)
-     )
-     #toon test resultaten horende bij labnummer dat gebruiker in tabel_fiatteerlijst aaklikt
-     #toon laatste resultaten met (last())
+         ),
+         columnDefs = list(list(visible=FALSE , targets = c(0)))
+       ) 
+     ) #%>% formatStyle()
    })
 
    
   output$fiatteer_grafiek <- renderPlot({
-    #plot_data <- top_n_results(input$instellingen_hoeveelheid_resultaten, historical_results())
     plot_data <- historical_results()
-   # kept_data <- plot_data[graph_selection(), , drop = FALSE]
+    current_data <- current_result()
     #plot_user_choices <- fiatteer_plot_user_selection()
+    
    # clicked_data <- plot_data[graph_selection(), , drop = FALSE]
     selected_data <- graph_selection() 
     
     results_plot <- ggplot(data = plot_data,
-                   mapping = aes(x = SAMPLINGDATE, y = RESULTAAT, colour = TESTCODE, group = MONSTERPUNTCODE, shape = MONSTERPUNTCODE)) +
-      geom_line() +
-      geom_point() +
-        #aes(shape = selected_data),  
-     # scale_size(limits = c("FALSE","TRUE"), range = c(1.5,2.5)) +
+                   mapping = aes(x = SAMPLINGDATE, y = RESULTAAT, colour = NAAM, group = MONSTERPUNTCODE)) +
+      geom_line(alpha = 0.7) +
+      geom_point(size = 2.5, alpha = 0.5,aes(shape = GEVALIDEERD)) +
+      geom_point(data = current_data, size = 3.5,aes(shape = GEVALIDEERD)) +
+      guides(size = FALSE) +
       facet_wrap(vars(TESTCODE), scales = 'free_y')
-    
     
     # if(!is.null(selected_data)){ #clicked data has to show up in plot
     #   plot <- plot + geom_point()
     # }
 
-    
-    #ratios plot idea:
-    # data = ratiosdata, group = ratios, x = SAMPLINGDATE, y = RATIO
-    
     #move hover_data to something that doesn't call the WHOLE PLOT AGAIN
     #plot <- plot + geom_text(data = hover_data(), aes(label=LABNUMMER))
-    
-    
-    #geom_smooth(method="loess", fullrange = TRUE, span = 0.75, linewidth = 2) +
-    #labs(title = plot_user_choices$title)
     
     # if (plot_user_choices$fiatteer_wrap_choice == TRUE)
     # {
@@ -484,14 +461,14 @@ server <- function(input, output, session) {
   })
   
   output$ratios_grafiek <- renderPlot({
-    plot_ratios <- selected_ratios()
-    #selected ratios
+    plot_ratios <- historical_ratios()
     ratios_plot <-
       ggplot(data = plot_ratios,
-             mapping = aes(x = SAMPLINGDATE, y = WAARDE, colour = RATIO, group = MONSTERPUNTCODE)) +
+             mapping = aes(x = SAMPLINGDATE, y = WAARDE, colour = NAAM, group = MONSTERPUNTCODE)) +
       geom_line() +
-      geom_point() +
-      geom_smooth() +
+      geom_point(size = 2.5) +
+      geom_point(data = current_ratio(), size = 5) +
+      guides(size = FALSE) +
       facet_wrap(vars(RATIO), scales = 'free_y')
     
     return(ratios_plot)
@@ -499,7 +476,6 @@ server <- function(input, output, session) {
 
   output$fiatteer_grafiek_tabel <- DT::renderDataTable({
     req(graph_selection())
-   # selected_data <- filter(historical_results(), graph_selection())
     selected_data <- graph_selection()
     DT::datatable(
       data = selected_data,
