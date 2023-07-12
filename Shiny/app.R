@@ -307,16 +307,19 @@ server <- function(input, output, session) {
     tryCatch({
       loadedsamples <-
         excel_results_reader(input$fiatteer_input_file$datapath, sheet = "fiatteerlijst")
+      
       samples <<- loadedsamples %>% arrange(PRIOFINISHDATE)
+      
       results <<-
-        excel_results_reader(input$fiatteer_input_file$datapath, sheet = "resultaten")
+        excel_results_reader(input$fiatteer_input_file$datapath, sheet = "resultaten") %>%
+        mutate(GEVALIDEERD = TESTSTATUS == 300)
+      View(results)
       ratios <<-
         results %>%
         group_by(LABNUMMER, MONSTERPUNTCODE) %>%
         reframe(
           NAAM = NAAM, 
           SAMPLINGDATE = SAMPLINGDATE,
-          # MONSTERPUNTCODE = list? min? zou allemaal zelfde moeten zijn
           CZV_BZV_RATIO = ifelse(
             any(ELEMENTCODE == "CZV") & any(ELEMENTCODE == "BZV5"),
             RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[ELEMENTCODE == "BZV5"],
