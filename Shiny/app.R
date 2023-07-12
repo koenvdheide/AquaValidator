@@ -228,6 +228,7 @@ server <- function(input, output, session) {
                                     REFMESSAGE,
                                     REFCONCLUSION,
                                     GEVALIDEERD,
+                                    UITVALLEND,
                                     SAMPLINGDATE,
                                     MEASUREDATE,
                                     SOORTWATER
@@ -252,6 +253,7 @@ server <- function(input, output, session) {
                                     REFMESSAGE,
                                     REFCONCLUSION,
                                     GEVALIDEERD,
+                                    UITVALLEND,
                                     SAMPLINGDATE,
                                     MEASUREDATE,
                                     SOORTWATER
@@ -313,8 +315,9 @@ server <- function(input, output, session) {
       
       results <<-
         excel_results_reader(input$fiatteer_input_file$datapath, sheet = "resultaten") %>%
-        mutate(GEVALIDEERD = TESTSTATUS == 300)
-      
+        mutate(GEVALIDEERD = TESTSTATUS == 300,
+               UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0)
+      View(results)
       ratios <<-
         results %>%
         group_by(LABNUMMER, MONSTERPUNTCODE) %>%
