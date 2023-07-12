@@ -309,13 +309,12 @@ server <- function(input, output, session) {
     tryCatch({
       loadedsamples <-
         excel_results_reader(input$fiatteer_input_file$datapath, sheet = "fiatteerlijst")
-      
       samples <<- loadedsamples %>% arrange(PRIOFINISHDATE)
       
       results <<-
         excel_results_reader(input$fiatteer_input_file$datapath, sheet = "resultaten") %>%
         mutate(GEVALIDEERD = TESTSTATUS == 300)
-      View(results)
+      
       ratios <<-
         results %>%
         group_by(LABNUMMER, MONSTERPUNTCODE) %>%
