@@ -440,8 +440,8 @@ server <- function(input, output, session) {
     results_plot <- ggplot(data = plot_data,
                    mapping = aes(x = SAMPLINGDATE, y = RESULTAAT, colour = NAAM, group = MONSTERPUNTCODE)) +
       geom_line(alpha = 0.7) +
-      geom_point(size = 2.5, alpha = 0.5) +
-      geom_point(data = current_data, size = 3.5) +
+      geom_point(size = 2.5, alpha = 0.5,aes(shape = GEVALIDEERD)) +
+      geom_point(data = current_data, size = 3.5,aes(shape = GEVALIDEERD)) +
       guides(size = FALSE) +
       facet_wrap(vars(TESTCODE), scales = 'free_y')
     
