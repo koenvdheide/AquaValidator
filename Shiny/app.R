@@ -191,7 +191,7 @@ server <- function(input, output, session) {
     top_results <-
       full_results %>% group_by(MONSTERPUNTCODE)  %>% group_modify(~ {
         .x %>% group_by(LABNUMMER) %>% filter(cur_group_id() >= n_groups(.) - n)
-      })
+      }) %>% ungroup()
   }
   
   ratios_calculator <- function(results){
@@ -228,6 +228,7 @@ server <- function(input, output, session) {
                                     REFMESSAGE,
                                     REFCONCLUSION,
                                     GEVALIDEERD,
+                                    UITVALLEND,
                                     SAMPLINGDATE,
                                     MEASUREDATE,
                                     SOORTWATER
@@ -252,6 +253,7 @@ server <- function(input, output, session) {
                                     REFMESSAGE,
                                     REFCONCLUSION,
                                     GEVALIDEERD,
+                                    UITVALLEND,
                                     SAMPLINGDATE,
                                     MEASUREDATE,
                                     SOORTWATER
@@ -313,7 +315,8 @@ server <- function(input, output, session) {
       
       results <<-
         excel_results_reader(input$fiatteer_input_file$datapath, sheet = "resultaten") %>%
-        mutate(GEVALIDEERD = TESTSTATUS == 300)
+        mutate(GEVALIDEERD = TESTSTATUS == 300,
+               UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0)
       
       ratios <<-
         results %>%
@@ -348,9 +351,8 @@ server <- function(input, output, session) {
           values_drop_na = TRUE #needed so that ggplot's geom_line doesn't stop when it encounters an NA value while plotting the ratios
         )
     }, error = function(e){
-      showModal(modalDialog(title = "Error",e))
+      showModal(modalDialog(title = "Error",e)) #geef de error als een popup scherm zodat de gebruiker het ziet
     })
-    
     on.exit(removeNotification(loadingtip), add = TRUE)
     on.exit(inputUpdater(uiComponent = "tp", inputId = "fiatteer_beeld",selected = "tab_fiatteerlijst"), add = TRUE)
   })
@@ -360,12 +362,18 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$fiatteer_grafiek_klik, {
-    graph_selection(nearPoints(historical_results(),
-                               input$fiatteer_grafiek_klik))
+    selected_test <- nearPoints(historical_results(),
+                      input$fiatteer_grafiek_klik)
+    selected_sample <- semi_join(historical_results(), selected_test, by = 'LABNUMMER')
+    
+    graph_selection(selected_sample)
   })
   
   observeEvent(input$fiatteer_grafiek_gebied, {
-    graph_selection(brushedPoints(historical_results(), input$fiatteer_grafiek_gebied))
+    selected_tests <- brushedPoints(historical_results(), input$fiatteer_grafiek_gebied)
+    selected_samples <- semi_join(historical_results(), selected_tests, by = 'LABNUMMER')
+    
+    graph_selection(selected_samples)
   })
   
   # observeEvent(input$fiatteer_grafiek_dblklik, {
@@ -424,7 +432,10 @@ server <- function(input, output, session) {
          ),
          columnDefs = list(list(visible=FALSE , targets = c(0)))
        ) 
-     ) #%>% formatStyle()
+     )  %>% formatStyle(columns = 'LABNUMMER',
+                        valueColumns = 'LABNUMMER',
+                        backgroundColor = styleEqual(current_result()$LABNUMMER, 'red',default = 'gray')
+                        )
    })
 
    
@@ -433,20 +444,25 @@ server <- function(input, output, session) {
     current_data <- current_result()
     #plot_user_choices <- fiatteer_plot_user_selection()
     
-   # clicked_data <- plot_data[graph_selection(), , drop = FALSE]
-    selected_data <- graph_selection() 
+    #selected_data <- graph_selection() 
     
     results_plot <- ggplot(data = plot_data,
                    mapping = aes(x = SAMPLINGDATE, y = RESULTAAT, colour = NAAM, group = MONSTERPUNTCODE)) +
       geom_line(alpha = 0.7) +
-      geom_point(size = 2.5, alpha = 0.5,aes(shape = GEVALIDEERD)) +
-      geom_point(data = current_data, size = 3.5,aes(shape = GEVALIDEERD)) +
+      geom_point(size = 2.5, alpha = 0.5, aes(shape = UITVALLEND)) +
+      geom_point(data = current_data, size = 3.5, aes(shape = UITVALLEND)) +
       guides(size = FALSE) +
       facet_wrap(vars(TESTCODE), scales = 'free_y')
     
-    # if(!is.null(selected_data)){ #clicked data has to show up in plot
-    #   plot <- plot + geom_point()
-    # }
+    #clicked data has to exist first
+    if (isTruthy(graph_selection()))
+    {
+      results_plot <-
+        results_plot + geom_point(data = graph_selection(),
+                                  size = 3.5,
+                                  aes(shape = UITVALLEND))
+    }
+    
 
     #move hover_data to something that doesn't call the WHOLE PLOT AGAIN
     #plot <- plot + geom_text(data = hover_data(), aes(label=LABNUMMER))
@@ -465,40 +481,38 @@ server <- function(input, output, session) {
     ratios_plot <-
       ggplot(data = plot_ratios,
              mapping = aes(x = SAMPLINGDATE, y = WAARDE, colour = NAAM, group = MONSTERPUNTCODE)) +
-      geom_line() +
-      geom_point(size = 2.5) +
-      geom_point(data = current_ratio(), size = 5) +
+      geom_line(alpha = 0.7) +
+      geom_point(size = 2.5, alpha = 0.5) +
+      geom_point(data = current_ratio(), size = 3.5) +
       guides(size = FALSE) +
       facet_wrap(vars(RATIO), scales = 'free_y')
     
     return(ratios_plot)
   })
-
+  
+  
   output$fiatteer_grafiek_tabel <- DT::renderDataTable({
     req(graph_selection())
-    selected_data <- graph_selection()
+    selected_data <-
+      graph_selection() %>% select(NAAM, LABNUMMER:REFMESSAGE, SAMPLINGDATE, MEASUREDATE)
     DT::datatable(
       data = selected_data,
       rownames = FALSE,
-     # extensions = c("Buttons", "RowGroup"),
+      extensions = ("RowGroup"),
       filter = "top",
       escape = FALSE,
       options = list(
-        dom = 'tr'
-       # buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
-       # rowGroup = list(
-          #dataSrc = 0
-          # startRender = JS(
-          #   "function(rows, group) {",
-          #   "return 'Sampling Datum:' +' ('+rows.count()+' rows)';",
-          #   "}"
-          # )
-         # )
-      ) #
+        dom = 'tr',
+        # buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+        order = list(list(1, 'desc')),
+        rowGroup = list(dataSrc = c(0,1)),
+        columnDefs = list(list(
+          visible = FALSE , targets = c(0)
+        ))
+      )
     )
   })
 }
-
 
 shinyApp(ui = ui,
          server = server,
