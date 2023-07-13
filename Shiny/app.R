@@ -453,7 +453,7 @@ server <- function(input, output, session) {
       geom_line(alpha = 0.7) +
       geom_point(size = 2.5, alpha = 0.5, aes(shape = UITVALLEND)) +
       geom_point(data = current_data, size = 3.5, aes(shape = UITVALLEND)) +
-      guides(size = FALSE) +
+      guides(size = "none") +
       facet_wrap(vars(TESTCODE), scales = 'free_y')
     
     selected_data <- graph_selection() 
@@ -494,25 +494,31 @@ server <- function(input, output, session) {
       geom_line(alpha = 0.7) +
       geom_point(size = 2.5, alpha = 0.5) +
       geom_point(data = current_ratios, size = 3.5) +
-      guides(size = FALSE) +
+      guides(size = "none") +
       facet_wrap(vars(RATIO), scales = 'free_y')
     
     #clicked data has to exist first
     if (isTruthy(input$ratios_grafiek_klik)) {
-      selected_ratio <-
+      selected_ratios <-
         nearPoints(historical_ratios(), input$ratios_grafiek_klik)
       
       ratios_plot <-
-        ratios_plot + geom_point(data = selected_ratio,
+        ratios_plot + geom_point(data = selected_ratios,
                                  size = 3.5)
+      
+      selected_samples <- semi_join(historical_results(), selected_ratios, by = 'LABNUMMER')
+      graph_selection(selected_samples)
     } else if (isTruthy(input$ratios_grafiek_gebied)) {
       #klik heeft priority over area selection, is dit gewenst?
-      selected_ratio <-
+      selected_ratios <-
         brushedPoints(historical_ratios(), input$ratios_grafiek_gebied)
       
       ratios_plot <-
-        ratios_plot + geom_point(data = selected_ratio,
+        ratios_plot + geom_point(data = selected_ratios,
                                  size = 3.5)
+      
+      selected_samples <- semi_join(historical_results(), selected_ratios, by = 'LABNUMMER')
+      graph_selection(selected_samples)
     }
     return(ratios_plot)
   })
