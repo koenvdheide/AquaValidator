@@ -191,7 +191,7 @@ server <- function(input, output, session) {
     top_results <-
       full_results %>% group_by(MONSTERPUNTCODE)  %>% group_modify(~ {
         .x %>% group_by(LABNUMMER) %>% filter(cur_group_id() >= n_groups(.) - n)
-      })
+      }) %>% ungroup()
   }
   
   ratios_calculator <- function(results){
