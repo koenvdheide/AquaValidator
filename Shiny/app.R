@@ -443,8 +443,8 @@ server <- function(input, output, session) {
     plot_data <- historical_results()
     current_data <- current_result()
     #plot_user_choices <- fiatteer_plot_user_selection()
-   # clicked_data <- plot_data[graph_selection(), , drop = FALSE]
-    selected_data <- graph_selection() 
+    
+    #selected_data <- graph_selection() 
     
     results_plot <- ggplot(data = plot_data,
                    mapping = aes(x = SAMPLINGDATE, y = RESULTAAT, colour = NAAM, group = MONSTERPUNTCODE)) +
@@ -454,9 +454,15 @@ server <- function(input, output, session) {
       guides(size = FALSE) +
       facet_wrap(vars(TESTCODE), scales = 'free_y')
     
-    # if(!is.null(selected_data)){ #clicked data has to show up in plot
-    #   plot <- plot + geom_point()
-    # }
+    #clicked data has to exist first
+    if (isTruthy(graph_selection()))
+    {
+      results_plot <-
+        results_plot + geom_point(data = graph_selection(),
+                                  size = 3.5,
+                                  aes(shape = UITVALLEND))
+    }
+    
 
     #move hover_data to something that doesn't call the WHOLE PLOT AGAIN
     #plot <- plot + geom_text(data = hover_data(), aes(label=LABNUMMER))
@@ -483,7 +489,8 @@ server <- function(input, output, session) {
     
     return(ratios_plot)
   })
-
+  
+  
   output$fiatteer_grafiek_tabel <- DT::renderDataTable({
     req(graph_selection())
     selected_data <-
