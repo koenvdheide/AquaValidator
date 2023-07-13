@@ -486,23 +486,24 @@ server <- function(input, output, session) {
 
   output$fiatteer_grafiek_tabel <- DT::renderDataTable({
     req(graph_selection())
-    selected_data <- graph_selection()
+    selected_data <-
+      graph_selection() %>% select(NAAM, LABNUMMER:REFMESSAGE, SAMPLINGDATE, MEASUREDATE)
     DT::datatable(
       data = selected_data,
       rownames = FALSE,
-     # extensions = c("Buttons", "RowGroup"),
+      extensions = ("RowGroup"),
       filter = "top",
       escape = FALSE,
       options = list(
-        dom = 'tr'
+        dom = 'tr',
        # buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
-       # rowGroup = list(
-          #dataSrc = 0
+        rowGroup = list(
+          dataSrc = 0
           # startRender = JS(
           #   "function(rows, group) {",
           #   "return 'Sampling Datum:' +' ('+rows.count()+' rows)';",
           #   "}"
-          # )
+          )
          # )
       ) #
     )
