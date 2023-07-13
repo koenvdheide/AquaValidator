@@ -317,7 +317,7 @@ server <- function(input, output, session) {
         excel_results_reader(input$fiatteer_input_file$datapath, sheet = "resultaten") %>%
         mutate(GEVALIDEERD = TESTSTATUS == 300,
                UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0)
-      View(results)
+      
       ratios <<-
         results %>%
         group_by(LABNUMMER, MONSTERPUNTCODE) %>%
@@ -351,9 +351,8 @@ server <- function(input, output, session) {
           values_drop_na = TRUE #needed so that ggplot's geom_line doesn't stop when it encounters an NA value while plotting the ratios
         )
     }, error = function(e){
-      showModal(modalDialog(title = "Error",e))
+      showModal(modalDialog(title = "Error",e)) #geef de error als een popup scherm zodat de gebruiker het ziet
     })
-    
     on.exit(removeNotification(loadingtip), add = TRUE)
     on.exit(inputUpdater(uiComponent = "tp", inputId = "fiatteer_beeld",selected = "tab_fiatteerlijst"), add = TRUE)
   })
@@ -363,12 +362,18 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$fiatteer_grafiek_klik, {
-    graph_selection(nearPoints(historical_results(),
-                               input$fiatteer_grafiek_klik))
+    selected_test <- nearPoints(historical_results(),
+                      input$fiatteer_grafiek_klik)
+    selected_sample <- semi_join(historical_results(), selected_test, by = 'LABNUMMER')
+    
+    graph_selection(selected_sample)
   })
   
   observeEvent(input$fiatteer_grafiek_gebied, {
-    graph_selection(brushedPoints(historical_results(), input$fiatteer_grafiek_gebied))
+    selected_tests <- brushedPoints(historical_results(), input$fiatteer_grafiek_gebied)
+    selected_samples <- semi_join(historical_results(), selected_tests, by = 'LABNUMMER')
+    
+    graph_selection(selected_samples)
   })
   
   # observeEvent(input$fiatteer_grafiek_dblklik, {
