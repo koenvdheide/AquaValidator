@@ -496,20 +496,16 @@ server <- function(input, output, session) {
       escape = FALSE,
       options = list(
         dom = 'tr',
-       # buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
-        rowGroup = list(
-          dataSrc = 0
-          # startRender = JS(
-          #   "function(rows, group) {",
-          #   "return 'Sampling Datum:' +' ('+rows.count()+' rows)';",
-          #   "}"
-          )
-         # )
-      ) #
+        # buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+        order = list(list(1, 'desc')),
+        rowGroup = list(dataSrc = c(0,1)),
+        columnDefs = list(list(
+          visible = FALSE , targets = c(0)
+        ))
+      )
     )
   })
 }
-
 
 shinyApp(ui = ui,
          server = server,
