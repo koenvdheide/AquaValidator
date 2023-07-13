@@ -427,7 +427,10 @@ server <- function(input, output, session) {
          ),
          columnDefs = list(list(visible=FALSE , targets = c(0)))
        ) 
-     ) #%>% formatStyle(columns = c(0))
+     )  %>% formatStyle(columns = 'LABNUMMER',
+                        valueColumns = 'LABNUMMER',
+                        backgroundColor = styleEqual(current_result()$LABNUMMER, 'red',default = 'gray')
+                        )
    })
 
    
@@ -435,7 +438,6 @@ server <- function(input, output, session) {
     plot_data <- historical_results()
     current_data <- current_result()
     #plot_user_choices <- fiatteer_plot_user_selection()
-    
    # clicked_data <- plot_data[graph_selection(), , drop = FALSE]
     selected_data <- graph_selection() 
     
