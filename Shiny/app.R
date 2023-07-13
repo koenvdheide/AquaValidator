@@ -57,11 +57,15 @@ ui <- tagList(
                    "fiatteer_grafiek",
                    click = "fiatteer_grafiek_klik",
                    dblclick = dblclickOpts(id = "fiatteer_grafiek_dblklik"),
-                   hover = hoverOpts(id = "fiatteer_grafiek_zweef", delay = 100),
+                   hover = hoverOpts(id = "fiatteer_grafiek_zweef"),
                    brush = brushOpts(id = "fiatteer_grafiek_gebied")
                  ),
                  plotOutput(
-                   "ratios_grafiek"
+                   "ratios_grafiek",
+                   click = "ratios_grafiek_klik",
+                   dblclick = dblclickOpts(id = "ratios_grafiek_dblklik"),
+                   hover = hoverOpts(id = "ratios_grafiek_zweef"),
+                   brush = brushOpts(id = "ratios_grafiek_gebied")
                  ),
                  DT::dataTableOutput("fiatteer_grafiek_tabel")
                )
