@@ -448,8 +448,6 @@ server <- function(input, output, session) {
     current_data <- current_result()
     #plot_user_choices <- fiatteer_plot_user_selection()
     
-    #selected_data <- graph_selection() 
-    
     results_plot <- ggplot(data = plot_data,
                    mapping = aes(x = SAMPLINGDATE, y = RESULTAAT, colour = NAAM, group = MONSTERPUNTCODE)) +
       geom_line(alpha = 0.7) +
@@ -458,11 +456,12 @@ server <- function(input, output, session) {
       guides(size = FALSE) +
       facet_wrap(vars(TESTCODE), scales = 'free_y')
     
+    selected_data <- graph_selection() 
     #clicked data has to exist first
-    if (isTruthy(graph_selection()))
+    if (isTruthy(selected_data))
     {
       results_plot <-
-        results_plot + geom_point(data = graph_selection(),
+        results_plot + geom_point(data = selected_data,
                                   size = 3.5,
                                   aes(shape = UITVALLEND))
     }
@@ -482,15 +481,39 @@ server <- function(input, output, session) {
   
   output$ratios_grafiek <- renderPlot({
     plot_ratios <- historical_ratios()
+    current_ratios <- current_ratio()
+    
+
+    
+    #input$ratios_grafiek_dblklik
+    #input$ratios_grafiek_zweef
+    
     ratios_plot <-
       ggplot(data = plot_ratios,
              mapping = aes(x = SAMPLINGDATE, y = WAARDE, colour = NAAM, group = MONSTERPUNTCODE)) +
       geom_line(alpha = 0.7) +
       geom_point(size = 2.5, alpha = 0.5) +
-      geom_point(data = current_ratio(), size = 3.5) +
+      geom_point(data = current_ratios, size = 3.5) +
       guides(size = FALSE) +
       facet_wrap(vars(RATIO), scales = 'free_y')
     
+    #clicked data has to exist first
+    if (isTruthy(input$ratios_grafiek_klik)) {
+      selected_ratio <-
+        nearPoints(historical_ratios(), input$ratios_grafiek_klik)
+      
+      ratios_plot <-
+        ratios_plot + geom_point(data = selected_ratio,
+                                 size = 3.5)
+    } else if (isTruthy(input$ratios_grafiek_gebied)) {
+      #klik heeft priority over area selection, is dit gewenst?
+      selected_ratio <-
+        brushedPoints(historical_ratios(), input$ratios_grafiek_gebied)
+      
+      ratios_plot <-
+        ratios_plot + geom_point(data = selected_ratio,
+                                 size = 3.5)
+    }
     return(ratios_plot)
   })
   
