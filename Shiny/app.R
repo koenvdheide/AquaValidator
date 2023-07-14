@@ -439,7 +439,7 @@ server <- function(input, output, session) {
      )  %>% formatStyle(columns = 'LABNUMMER',
                         valueColumns = 'LABNUMMER',
                         backgroundColor = styleEqual(current_result()$LABNUMMER, 'red',default = 'gray')
-                        ) %>% formatSignif(columns = ~ LABNUMMER + RUNNR + MEASUREDATE + SAMPLINGDATE, digits = 3)
+                        ) %>% formatSignif(columns = -2, digits = 3)
 
    })
 
