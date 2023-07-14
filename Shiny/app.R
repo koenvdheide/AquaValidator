@@ -366,18 +366,25 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$fiatteer_grafiek_klik, {
-    selected_test <- nearPoints(historical_results(),
-                      input$fiatteer_grafiek_klik)
-    selected_sample <- semi_join(historical_results(), selected_test, by = 'LABNUMMER')
-    
-    graph_selection(selected_sample)
+    isolate({
+      selected_test <- nearPoints(historical_results(),
+                                  input$fiatteer_grafiek_klik)
+      selected_sample <-
+        semi_join(historical_results(), selected_test, by = 'LABNUMMER')
+      
+      graph_selection(selected_sample)
+    })
   })
   
   observeEvent(input$fiatteer_grafiek_gebied, {
-    selected_tests <- brushedPoints(historical_results(), input$fiatteer_grafiek_gebied)
-    selected_samples <- semi_join(historical_results(), selected_tests, by = 'LABNUMMER')
-    
-    graph_selection(selected_samples)
+    isolate({
+      selected_tests <-
+        brushedPoints(historical_results(), input$fiatteer_grafiek_gebied)
+      selected_samples <-
+        semi_join(historical_results(), selected_tests, by = 'LABNUMMER')
+      
+      graph_selection(selected_samples)
+    })
   })
   
   # heeft dit zin?
@@ -458,14 +465,16 @@ server <- function(input, output, session) {
       guides(size = "none") +
       facet_wrap(vars(TESTCODE), scales = 'free_y')
     
-    selected_data <- graph_selection() 
-    #clicked data has to exist first
-    if (isTruthy(selected_data))
+        #clicked data has to exist first
+    if (isTruthy(graph_selection()))
     {
-      results_plot <-
-        results_plot + geom_point(data = selected_data,
-                                  size = 3.5,
-                                  aes(shape = UITVALLEND))
+      isolate({
+        selected_data <- graph_selection()
+        results_plot <-
+          results_plot + geom_point(data = selected_data,
+                                    size = 3.5,
+                                    aes(shape = UITVALLEND))
+      })
     }
     
 
