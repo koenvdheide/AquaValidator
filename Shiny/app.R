@@ -187,7 +187,7 @@ server <- function(input, output, session) {
       names_from = c(TESTCODE, ELEMENTCODE),
       values_from = RESULTAAT,
       names_sep = "<br>",
-      unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = list)
+      unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = list, UITVALLEND = list)
     )
   }
   
