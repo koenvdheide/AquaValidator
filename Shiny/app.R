@@ -440,7 +440,7 @@ server <- function(input, output, session) {
      )  %>% formatStyle(columns = 'LABNUMMER',
                         valueColumns = 'LABNUMMER',
                         backgroundColor = styleEqual(current_result()$LABNUMMER, 'red',default = 'gray')
-                        ) %>% formatSignif(columns = c(-2,-3), digits = 3)
+                        ) #%>% formatSignif(columns = c(-2,-3), digits = 3) #nog kijken hoe we datums uitzonderen
 
    })
 
