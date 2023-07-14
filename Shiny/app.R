@@ -397,8 +397,8 @@ server <- function(input, output, session) {
     isolate({
       selected_ratios <-
         nearPoints(historical_ratios(), input$ratios_grafiek_klik)
-      
-      ratio_selection(selected_ratios)
+      related_ratios <- semi_join(historical_ratios(),selected_ratios, by = 'LABNUMMER')
+      ratio_selection(related_ratios)
       
       selected_samples <-
         semi_join(historical_results(), selected_ratios, by = 'LABNUMMER')
@@ -410,7 +410,8 @@ server <- function(input, output, session) {
     isolate({
       selected_ratios <-
         brushedPoints(historical_ratios(), input$ratios_grafiek_gebied)
-      ratio_selection(selected_ratios)
+      related_ratios <- semi_join(historical_ratios(),selected_ratios, by = 'LABNUMMER')
+      ratio_selection(related_ratios)
       
       selected_samples <- semi_join(historical_results(), selected_ratios, by = 'LABNUMMER')
       graph_selection(selected_samples)
