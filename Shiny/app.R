@@ -113,6 +113,7 @@ server <- function(input, output, session) {
   #graph user input
   graph_selection <- reactiveVal()
   hover_selection <- reactiveVal()
+  ratio_selection <- reactiveVal()
   
 ##################### common server functions #######################
   
@@ -392,6 +393,30 @@ server <- function(input, output, session) {
   #   graph_selection(NULL)
   # })
   
+  observeEvent(input$ratios_grafiek_klik, {
+    isolate({
+      selected_ratios <-
+        nearPoints(historical_ratios(), input$ratios_grafiek_klik)
+      
+      ratio_selection(selected_ratios)
+      
+      selected_samples <-
+        semi_join(historical_results(), selected_ratios, by = 'LABNUMMER')
+      graph_selection(selected_samples)
+    })
+  })
+  
+  observeEvent(input$ratios_grafiek_gebied, {
+    isolate({
+      selected_ratios <-
+        brushedPoints(historical_ratios(), input$ratios_grafiek_gebied)
+      ratio_selection(selected_ratios)
+      
+      selected_samples <- semi_join(historical_results(), selected_ratios, by = 'LABNUMMER')
+      graph_selection(selected_samples)
+    })
+  })
+  
 #######################output functions############################  
 
    # updateTabsetPanel(inputId = "fiatteer_beeld",selected = "tab_sample")
@@ -509,28 +534,17 @@ server <- function(input, output, session) {
       facet_wrap(vars(RATIO), scales = 'free_y')
     
     #clicked data has to exist first
-    if (isTruthy(input$ratios_grafiek_klik)) {
-      selected_ratios <-
-        nearPoints(historical_ratios(), input$ratios_grafiek_klik)
-      
-      ratios_plot <-
-        ratios_plot + geom_point(data = selected_ratios,
-                                 size = 3.5)
-      
-      selected_samples <- semi_join(historical_results(), selected_ratios, by = 'LABNUMMER')
-      graph_selection(selected_samples)
-    } else if (isTruthy(input$ratios_grafiek_gebied)) {
-      #klik heeft priority over area selection, is dit gewenst?
-      selected_ratios <-
-        brushedPoints(historical_ratios(), input$ratios_grafiek_gebied)
-      
-      ratios_plot <-
-        ratios_plot + geom_point(data = selected_ratios,
-                                 size = 3.5)
-      
-      selected_samples <- semi_join(historical_results(), selected_ratios, by = 'LABNUMMER')
-      graph_selection(selected_samples)
+    if (isTruthy(ratio_selection()))
+    {
+      isolate({
+        selected_ratios <- ratio_selection()
+        ratios_plot <-
+          ratios_plot + geom_point(data = selected_ratios,
+                                   size = 3.5)
+        
+      })
     }
+    
     return(ratios_plot)
   })
   
