@@ -380,6 +380,7 @@ server <- function(input, output, session) {
     graph_selection(selected_samples)
   })
   
+  # heeft dit zin?
   # observeEvent(input$fiatteer_grafiek_dblklik, {
   #   graph_selection(NULL)
   # })
