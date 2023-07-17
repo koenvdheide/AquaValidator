@@ -68,6 +68,7 @@ ui <- tagList(
                    brush = brushOpts(id = "ratios_grafiek_gebied")
                  ),
                  DT::dataTableOutput("fiatteer_grafiek_tabel")
+                 
                )
              )
            )),
@@ -360,6 +361,10 @@ server <- function(input, output, session) {
     })
     on.exit(removeNotification(loadingtip), add = TRUE)
     on.exit(inputUpdater(uiComponent = "tp", inputId = "fiatteer_beeld",selected = "tab_fiatteerlijst"), add = TRUE)
+  })
+  
+  observeEvent(input$tabel_sample_rows_selected,{
+   
   })
   
   observeEvent(input$fiatteer_grafiek_zweef,{
