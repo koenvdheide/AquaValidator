@@ -388,6 +388,7 @@ server <- function(input, output, session) {
         semi_join(historical_results(), selected_tests, by = 'LABNUMMER')
       
       graph_selection(selected_samples)
+      #showModal(modalDialog(DT::dataTableOutput("fiatteer_grafiek_tabel")))
     })
 
   })
@@ -400,6 +401,8 @@ server <- function(input, output, session) {
         semi_join(historical_results(), selected_test, by = 'LABNUMMER')
       
       graph_selection(selected_sample)
+      #showModal(modalDialog(DT::dataTableOutput("fiatteer_grafiek_tabel")))
+
     })
   })
   
@@ -427,6 +430,7 @@ server <- function(input, output, session) {
       
       selected_samples <- semi_join(historical_results(), selected_ratios, by = 'LABNUMMER')
       graph_selection(selected_samples)
+      #showModal(modalDialog(DT::dataTableOutput("fiatteer_grafiek_tabel")))
     })
   })
   
@@ -440,6 +444,7 @@ server <- function(input, output, session) {
       selected_samples <-
         semi_join(historical_results(), selected_ratios, by = 'LABNUMMER')
       graph_selection(selected_samples)
+      #showModal(modalDialog(DT::dataTableOutput("fiatteer_grafiek_tabel")))
     })
   })
   
