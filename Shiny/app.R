@@ -208,7 +208,7 @@ server <- function(input, output, session) {
   
   selected_sample <- reactive({
     req(samples)
-    if (!is.null(input$tabel_fiatteerlijst_rows_selected)) {
+    if (isTruthy(input$tabel_fiatteerlijst_rows_selected)) {
       return(samples[input$tabel_fiatteerlijst_rows_selected,])
     }
     else{
