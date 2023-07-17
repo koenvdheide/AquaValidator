@@ -578,7 +578,17 @@ server <- function(input, output, session) {
   output$fiatteer_grafiek_tabel <- DT::renderDataTable({
     req(graph_selection())
     selected_data <-
-      graph_selection() %>% select(NAAM, LABNUMMER:REFMESSAGE, SAMPLINGDATE, MEASUREDATE)
+      graph_selection() %>% select(
+        NAAM,
+        LABNUMMER,
+        RUNNR,
+        TESTCODE,
+        ELEMENTCODE,
+        RESULTAAT,
+        REFMESSAGE,
+        SAMPLINGDATE,
+        MEASUREDATE
+      )
     DT::datatable(
       data = selected_data,
       rownames = FALSE,
@@ -589,7 +599,7 @@ server <- function(input, output, session) {
         dom = 'tr',
         # buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
         order = list(list(1, 'desc')),
-        rowGroup = list(dataSrc = c(0,1)),
+        rowGroup = list(dataSrc = c(0, 1)),
         columnDefs = list(list(
           visible = FALSE , targets = c(0)
         ))
