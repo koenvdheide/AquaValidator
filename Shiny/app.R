@@ -367,17 +367,20 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$fiatteer_grafiek_klik, {
-    isolate({
-      selected_test <- nearPoints(historical_results(),
-                                  input$fiatteer_grafiek_klik)
-      selected_sample <-
-        semi_join(historical_results(), selected_test, by = 'LABNUMMER')
-      
-      graph_selection(selected_sample)
-    })
+    #moved to double click because of a shiny issue with firing click events while making a brush selection
+    
+    # isolate({
+    #   selected_test <- nearPoints(historical_results(),
+    #                               input$fiatteer_grafiek_klik)
+    #   selected_sample <-
+    #     semi_join(historical_results(), selected_test, by = 'LABNUMMER')
+    # 
+    #   graph_selection(selected_sample)
+    # })
   })
   
   observeEvent(input$fiatteer_grafiek_gebied, {
+    #freezeReactiveValue(input, "ratios_grafiek_klik") #helpt niet
     isolate({
       selected_tests <-
         brushedPoints(historical_results(), input$fiatteer_grafiek_gebied)
@@ -386,24 +389,33 @@ server <- function(input, output, session) {
       
       graph_selection(selected_samples)
     })
+
   })
   
-  # heeft dit zin?
-  # observeEvent(input$fiatteer_grafiek_dblklik, {
-  #   graph_selection(NULL)
-  # })
+  observeEvent(input$fiatteer_grafiek_dblklik, {
+    isolate({
+      selected_test <- nearPoints(historical_results(),
+                                  input$fiatteer_grafiek_dblklik)
+      selected_sample <-
+        semi_join(historical_results(), selected_test, by = 'LABNUMMER')
+      
+      graph_selection(selected_sample)
+    })
+  })
   
   observeEvent(input$ratios_grafiek_klik, {
-    isolate({
-      selected_ratios <-
-        nearPoints(historical_ratios(), input$ratios_grafiek_klik)
-      related_ratios <- semi_join(historical_ratios(),selected_ratios, by = 'LABNUMMER')
-      ratio_selection(related_ratios)
-      
-      selected_samples <-
-        semi_join(historical_results(), selected_ratios, by = 'LABNUMMER')
-      graph_selection(selected_samples)
-    })
+    #moved to double click because of a shiny issue with firing click events while making a brush selection
+    
+    # isolate({
+    #   selected_ratios <-
+    #     nearPoints(historical_ratios(), input$ratios_grafiek_klik)
+    #   related_ratios <- semi_join(historical_ratios(),selected_ratios, by = 'LABNUMMER')
+    #   ratio_selection(related_ratios)
+    #   
+    #   selected_samples <-
+    #     semi_join(historical_results(), selected_ratios, by = 'LABNUMMER')
+    #   graph_selection(selected_samples)
+    # })
   })
   
   observeEvent(input$ratios_grafiek_gebied, {
@@ -414,6 +426,19 @@ server <- function(input, output, session) {
       ratio_selection(related_ratios)
       
       selected_samples <- semi_join(historical_results(), selected_ratios, by = 'LABNUMMER')
+      graph_selection(selected_samples)
+    })
+  })
+  
+  observeEvent(input$ratios_grafiek_dblklik, {
+    isolate({
+      selected_ratios <-
+        nearPoints(historical_ratios(), input$ratios_grafiek_dblklik)
+      related_ratios <- semi_join(historical_ratios(),selected_ratios, by = 'LABNUMMER')
+      ratio_selection(related_ratios)
+      
+      selected_samples <-
+        semi_join(historical_results(), selected_ratios, by = 'LABNUMMER')
       graph_selection(selected_samples)
     })
   })
