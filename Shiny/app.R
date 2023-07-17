@@ -601,7 +601,7 @@ server <- function(input, output, session) {
       filter = "top",
       escape = FALSE,
       options = list(
-        dom = 'tr',
+        dom = 'ltipr',         #dom = 'tr',
         # buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
         order = list(list(1, 'desc')),
         rowGroup = list(dataSrc = c(0, 1)),
