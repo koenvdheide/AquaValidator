@@ -393,6 +393,9 @@ server <- function(input, output, session) {
         semi_join(historical_results(), selected_tests, by = 'LABNUMMER')
       
       graph_selection(selected_samples)
+      
+      related_ratios <- semi_join(historical_ratios(),selected_tests, by = 'LABNUMMER')
+      ratio_selection(related_ratios)
       #showModal(modalDialog(DT::dataTableOutput("fiatteer_grafiek_tabel")))
     })
 
@@ -406,6 +409,9 @@ server <- function(input, output, session) {
         semi_join(historical_results(), selected_test, by = 'LABNUMMER')
       
       graph_selection(selected_sample)
+      
+      related_ratios <- semi_join(historical_ratios(),selected_test, by = 'LABNUMMER')
+      ratio_selection(related_ratios)
       #showModal(modalDialog(DT::dataTableOutput("fiatteer_grafiek_tabel")))
 
     })
