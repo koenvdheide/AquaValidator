@@ -4,6 +4,7 @@ library(tidyverse)
 library(ggplot2)
 library(leaflet)
 library(readxl)
+library(askpass)
 library(DT)
 library(reactlog)
 
@@ -103,8 +104,21 @@ server <- function(input, output, session) {
   #settings <- reactiveValues(settings = c(""))
   
   #database connection
-  sql_connection_string <-
-    reactiveVal("Driver=Oracle in OraClient19Home1;Host=db01-dcz-olin;Port=1521;")
+  # sql_connection_string <-
+  #   "Driver=Oracle in OraClient19Home1;Host=;Port=1521;"
+  # 
+  sql_connection <- DBI::dbConnect(
+    odbc::odbc(),
+    Driver = 'Oracle in OraClient19Home1',
+    Host = 'db01-dcz-olin',
+    #SVC    = "(schema)",
+    UID = 'kheide',
+    PWD = askpass(prompt = "DB password:"),
+    Port = 1521
+  )
+  
+  
+  
   
   #data
   samples <- NULL
