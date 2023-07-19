@@ -208,6 +208,10 @@ server <- function(input, output, session) {
     )
   }
   
+  results_selection <- function(){
+    
+  }
+  
   top_n_results <- function(n, full_results) {
     top_results <-
       full_results %>% group_by(MONSTERPUNTCODE)  %>% group_modify(~ {
@@ -218,6 +222,9 @@ server <- function(input, output, session) {
   ratios_calculator <- function(results){
     #dataframe with labnummer and ratios per labnummer
     
+    
+  }
+  plot_builder <- function(){
     
   }
 ###########################reactive functions##################################
