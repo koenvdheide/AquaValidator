@@ -107,15 +107,16 @@ server <- function(input, output, session) {
   # sql_connection_string <-
   #   "Driver=Oracle in OraClient19Home1;Host=;Port=1521;"
   # 
-  sql_connection <- DBI::dbConnect(
-    odbc::odbc(),
-    Driver = 'Oracle in OraClient19Home1',
-    Host = 'db01-dcz-olin',
-    #SVC    = "(schema)",
-    UID = 'kheide',
-    PWD = askpass(prompt = "DB password:"),
-    Port = 1521
-  )
+  # sql_connection <- DBI::dbConnect(
+  #   odbc::odbc(),
+  #   Driver = 'Oracle in OraClient19Home1',
+  #   Host = 'db01-dcz-olin',
+  #   Service = QMP,
+  #   #SVC    = "(schema)",
+  #   UID = 'kheide',
+  #   #PWD = askpass(prompt = "DB paswoord:"),
+  #   Port = 1521
+  # )
   
   
   
