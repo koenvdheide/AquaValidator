@@ -225,7 +225,7 @@ server <- function(input, output, session) {
     
   }
   plot_builder <- function(){
-    
+    #common code for building results & ratios plots
   }
 ###########################reactive functions##################################
   
@@ -388,7 +388,7 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$tabel_sample_rows_selected,{
-   
+   #look at selected_sample() but keep in mind this table has widened results!
   })
   
   observeEvent(input$fiatteer_grafiek_zweef,{
