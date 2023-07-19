@@ -140,10 +140,9 @@ server <- function(input, output, session) {
       
       #kan netter?: https://stackoverflow.com/questions/64189561/using-case-when-with-dplyr-across
       mutate(
-        #causes strange grouping results in datatables 
-        NON_NUMERICAL_VALUE = across(contains(c("result", "resultaat")), ~ if_else(is.na(as.numeric(.)), ., NA)),
-        
-        across(contains(c("result", "resultaat")) , as.numeric),
+        #NON_NUMERICAL_VALUE = across(contains(c("result", "resultaat")), ~ if_else(is.na(as.numeric(.)), ., NA)),
+        #across(contains(c("result", "resultaat")), as.list),
+        across(contains(c("result", "resultaat")), as.numeric),
         
         
         # this removes hour/minute/second from sampling&measurement dates for some reason even though %T should cover this, relying on readxl's inbuilt date recognition for now
@@ -209,7 +208,7 @@ server <- function(input, output, session) {
   }
   
   results_selection <- function(){
-    
+    #historical results & current_result
   }
   
   top_n_results <- function(n, full_results) {
@@ -252,7 +251,7 @@ server <- function(input, output, session) {
                                     ELEMENTCODE,
                                     TESTSTATUS,
                                     RESULTAAT,
-                                    NON_NUMERICAL_VALUE,
+                                    #NON_NUMERICAL_VALUE,
                                     RUNNR,
                                     REFMESSAGE,
                                     REFCONCLUSION,
@@ -278,7 +277,7 @@ server <- function(input, output, session) {
                                     ELEMENTCODE,
                                     TESTSTATUS,
                                     RESULTAAT,
-                                    NON_NUMERICAL_VALUE,
+                                    #NON_NUMERICAL_VALUE,
                                     RUNNR,
                                     REFMESSAGE,
                                     REFCONCLUSION,
@@ -350,6 +349,7 @@ server <- function(input, output, session) {
       
       ratios <<-
         results %>%
+        #mutate(RESULTAAT = as.numeric(unlist)) %>%
         group_by(LABNUMMER, MONSTERPUNTCODE) %>%
         reframe(
           NAAM = NAAM, 
@@ -380,6 +380,7 @@ server <- function(input, output, session) {
           values_to = "WAARDE",
           values_drop_na = TRUE #needed so that ggplot's geom_line doesn't stop when it encounters an NA value while plotting the ratios
         )
+
     }, error = function(e){
       showModal(modalDialog(title = "Error",e)) #geef de error als een popup scherm zodat de gebruiker het ziet
     })
