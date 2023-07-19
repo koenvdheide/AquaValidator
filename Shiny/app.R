@@ -12,6 +12,7 @@ library(dbplyr)
 library(odbc)
 
 reactlog_enable()
+options(shiny.maxRequestSize=30*1024^2)
 
 #UI input variables are intentionally in Dutch, makes it easier to keep them separate from output/internal variables on the server side
 ui <- tagList( 
