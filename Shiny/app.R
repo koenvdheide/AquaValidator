@@ -141,10 +141,10 @@ server <- function(input, output, session) {
       #kan netter?: https://stackoverflow.com/questions/64189561/using-case-when-with-dplyr-across
       mutate(
         #causes strange grouping results in datatables 
-        #outputIsText = across(contains("result"), ~ if_else(is.na(as.numeric(.)), TRUE, FALSE)),
+        NON_NUMERICAL_VALUE = across(contains(c("result", "resultaat")), ~ if_else(is.na(as.numeric(.)), ., NA)),
         
-        # andere mogelijkheid om eerst niet numerieke data etc. uit te filteren dan opnieuw converten via type_convert()?
         across(contains(c("result", "resultaat")) , as.numeric),
+        
         
         # this removes hour/minute/second from sampling&measurement dates for some reason even though %T should cover this, relying on readxl's inbuilt date recognition for now
         # default date recognition doesn't see MONSTERNAMEDATUM column as valid dates for some reason
