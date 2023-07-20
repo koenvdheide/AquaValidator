@@ -539,17 +539,17 @@ server <- function(input, output, session) {
          options = list(
            dom = 'Bltipr', #dom needed to remove search bar (redundant with column search)
            buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
-           order = list(list(1, 'desc')),
+           order = list(list(2, 'desc')),
            #ordering= 0, 
            rowGroup = list(
-             dataSrc = c(0)
+             dataSrc = c(1,2)
              # startRender = JS(
              #   "function(rows, group) {",
              #   "return 'Sampling Datum:' +' ('+rows.count()+' rows)';",
              #   "}"
              # )
-           )
-          # columnDefs = list(list(visible=FALSE , targets = c(0)))
+           ),
+           columnDefs = list(list(visible=FALSE , targets = c("MONSTERPUNTCODE","NAAM","TESTSTATUS","REFCONCLUSION","UITVALLEND","SOORTWATER")))
          ) 
        )  %>% formatStyle(columns = 'LABNUMMER',
                           valueColumns = 'LABNUMMER',
