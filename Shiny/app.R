@@ -97,7 +97,7 @@ ui <- tagList(
                tabPanel(
                  "Samples",
                  checkboxInput("instellingen_roteer_tabel",
-                               "Roteer sample tabel")
+                               "Toon resultaten als rijen i.p.v. kolommen")
                )
              )
            ))),
@@ -105,7 +105,8 @@ ui <- tagList(
   tabPanel("Hulp",
            id = "hulp_tab",
            sidebarLayout(sidebarPanel(),
-                         mainPanel()))
+                         mainPanel())),
+
 )
 )
 server <- function(input, output, session) {
