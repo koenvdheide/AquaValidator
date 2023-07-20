@@ -527,8 +527,42 @@ server <- function(input, output, session) {
   })
   
    output$tabel_sample <- DT::renderDataTable({
-     #test_results <- top_n_results(input$instellingen_hoeveelheid_resultaten, historical_results())
-     widened_results <- results_widened(historical_results())
+     results <- historical_results()
+     
+     if(input$instellingen_roteer_tabel == TRUE){
+       DT::datatable(
+         data = results,
+         rownames = FALSE,
+         extensions = c("Buttons", "RowGroup"),
+         filter = "top",
+         escape = FALSE,
+         options = list(
+           dom = 'Bltipr', #dom needed to remove search bar (redundant with column search)
+           buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+           order = list(list(1, 'desc')),
+           #ordering= 0, 
+           rowGroup = list(
+             dataSrc = c(0)
+             # startRender = JS(
+             #   "function(rows, group) {",
+             #   "return 'Sampling Datum:' +' ('+rows.count()+' rows)';",
+             #   "}"
+             # )
+           )
+          # columnDefs = list(list(visible=FALSE , targets = c(0)))
+         ) 
+       )  %>% formatStyle(columns = 'LABNUMMER',
+                          valueColumns = 'LABNUMMER',
+                          backgroundColor = styleEqual(current_result()$LABNUMMER, 'yellow',default = 'gray')
+       ) %>% formatStyle(columns = 'RESULTAAT',
+                         valueColumns = 'UITVALLEND',
+                         target = 'cell',
+                         backgroundColor = styleEqual(TRUE,'salmon'))
+       
+       
+       #%>% formatSignif(columns = c(-2,-3), digits = 3) #nog kijken hoe we datums uitzonderen
+     } else { 
+     widened_results <- results_widened(results)
      DT::datatable(
        data = widened_results,
        rownames = FALSE,
@@ -560,7 +594,7 @@ server <- function(input, output, session) {
      
      
      #%>% formatSignif(columns = c(-2,-3), digits = 3) #nog kijken hoe we datums uitzonderen
-
+}
    })
 
    
