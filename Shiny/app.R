@@ -566,7 +566,6 @@ server <- function(input, output, session) {
                          target = 'cell',
                          backgroundColor = styleEqual(TRUE,'salmon'))
        
-       
        #%>% formatSignif(columns = c(-2,-3), digits = 3) #nog kijken hoe we datums uitzonderen
      } else { 
      widened_results <- results_widened(results)
@@ -647,11 +646,6 @@ server <- function(input, output, session) {
     plot_ratios <- historical_ratios()
     current_ratios <- current_ratio()
     
-
-    
-    #input$ratios_grafiek_dblklik
-    #input$ratios_grafiek_zweef
-    
     ratios_plot <-
       ggplot(data = plot_ratios,
              mapping = aes(x = SAMPLINGDATE, y = WAARDE, colour = NAAM, group = MONSTERPUNTCODE)) +
@@ -669,10 +663,8 @@ server <- function(input, output, session) {
         ratios_plot <-
           ratios_plot + geom_point(data = selected_ratios,
                                    size = 3.5)
-        
       })
     }
-    
     return(ratios_plot)
   })
   
@@ -692,6 +684,7 @@ server <- function(input, output, session) {
         MEASUREDATE,
         UITVALLEND
       )
+    
     DT::datatable(
       data = selected_data,
       rownames = FALSE,
