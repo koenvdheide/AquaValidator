@@ -83,12 +83,25 @@ ui <- tagList(
                            value = FALSE)
            ),
            mainPanel(
-             numericInput("instellingen_hoeveelheid_resultaten",
-                          "Hoeveel resultaten moeten er per monsterpunt worden getoond?",
-                          value = 10,
-                          min = 1)
-             
+             tabsetPanel(
+               tabPanel(
+                 "Algemeen",
+                 numericInput(
+                   "instellingen_hoeveelheid_resultaten",
+                   "Hoeveel resultaten moeten er per monsterpunt worden getoond?",
+                   value = 10,
+                   min = 1
+                 )
+               ),
+               tabPanel("Fiatteerlijst"),
+               tabPanel(
+                 "Samples",
+                 checkboxInput("instellingen_roteer_tabel",
+                               "Roteer sample tabel")
+               )
+             )
            ))),
+  
   tabPanel("Hulp",
            id = "hulp_tab",
            sidebarLayout(sidebarPanel(),
