@@ -635,7 +635,8 @@ server <- function(input, output, session) {
         RESULTAAT,
         REFMESSAGE,
         SAMPLINGDATE,
-        MEASUREDATE
+        MEASUREDATE,
+        UITVALLEND
       )
     DT::datatable(
       data = selected_data,
@@ -649,10 +650,13 @@ server <- function(input, output, session) {
         order = list(list(1, 'desc')),
         rowGroup = list(dataSrc = c(0, 1)),
         columnDefs = list(list(
-          visible = FALSE , targets = c(0)
+          visible = FALSE , targets = c('NAAM','UITVALLEND')
         ))
       )
-    )
+    ) %>% formatStyle(columns = 'RESULTAAT',
+                      valueColumns = 'UITVALLEND',
+                      target = 'cell',
+                      backgroundColor = styleEqual(TRUE,'salmon'))
   })
 }
 
