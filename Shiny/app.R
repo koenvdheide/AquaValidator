@@ -393,12 +393,18 @@ server <- function(input, output, session) {
           CZV_TOC_RATIO = ifelse(
             any(ELEMENTCODE == "CZV") &
               any(ELEMENTCODE == "TOC"),
-            RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[TESTCODE == "TOC"],
+            RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[ELEMENTCODE == "TOC"],
             NA
           ),
+          CZV_TNB_RATIO =ifelse(
+            any(ELEMENTCODE == "CZV") &
+              any(TESTCODE == "tnb"),
+            RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[TESTCODE == "tnb"],
+            NA
+          )
           
         ) %>% pivot_longer(
-          cols = c(CZV_BZV_RATIO, CZV_NKA_RATIO, BZV_ONOPA_RATIO,CZV_TOC_RATIO),
+          cols = c(CZV_BZV_RATIO, CZV_NKA_RATIO, BZV_ONOPA_RATIO,CZV_TOC_RATIO,CZV_TNB_RATIO),
           names_to = "RATIO",
           values_to = "WAARDE",
           values_drop_na = TRUE #needed so that ggplot's geom_line doesn't stop when it encounters an NA value while plotting the ratios
