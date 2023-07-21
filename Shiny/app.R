@@ -51,6 +51,14 @@ ui <- tagList(
                tabPanel(
                  title = "Testresultaten",          #textOutput("tab_sample_titel") 
                  value = "tab_sample",
+                 radioButtons(
+                   "instellingen_roteer_tabel",
+                   label = "Gebruik als kolom:",
+                   choices = c("Labnummer" = "labnr",
+                               "Tests" = "test",
+                               "Sample Info" = "sample"),
+                   inline = TRUE
+                 ),
                  # checkboxInput("instellingen_roteer_tabel",
                  #               "Toon resultaten als rijen i.p.v. kolommen"),
                  DT::dataTableOutput("tabel_sample")
@@ -545,8 +553,34 @@ server <- function(input, output, session) {
   
    output$tabel_sample <- DT::renderDataTable({
      results <- historical_results()
+      if(input$instellingen_roteer_tabel  == "labnr"){
+        labnr_widened_results <- results
+        
+        DT::datatable(
+          data = labnr_widened_results,
+          rownames = FALSE,
+          extensions = c("Buttons", "RowGroup"),
+          filter = "top",
+          escape = FALSE,
+          options = list(
+            dom = 'Bltipr', #dom needed to remove search bar (redundant with column search)
+            buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+            order = list(list(0, 'desc')),
+            #ordering= 0, 
+            rowGroup = list(
+              dataSrc = c(0)
+              # startRender = JS(
+              #   "function(rows, group) {",
+              #   "return 'Sampling Datum:' +' ('+rows.count()+' rows)';",
+              #   "}"
+              # )
+            ),
+           # columnDefs = list(list(visible=FALSE , targets = c("MONSTERPUNTCODE","NAAM","TESTSTATUS","REFCONCLUSION","UITVALLEND","SOORTWATER")))
+          ) 
+        )
+      }
      
-     if(input$instellingen_roteer_tabel == TRUE){
+     if(input$instellingen_roteer_tabel == "sample"){
        DT::datatable(
          data = results,
          rownames = FALSE,
@@ -577,10 +611,10 @@ server <- function(input, output, session) {
                          backgroundColor = styleEqual(TRUE,'salmon'))
        
        #%>% formatSignif(columns = c(-2,-3), digits = 3) #nog kijken hoe we datums uitzonderen
-     } else { 
-     widened_results <- results_widened(results)
+     } else if (input$instellingen_roteer_tabel == "test"){ 
+     test_widened_results <- results_widened(results)
      DT::datatable(
-       data = widened_results,
+       data = test_widened_results,
        rownames = FALSE,
        extensions = c("Buttons", "RowGroup"),
        filter = "top",
@@ -663,7 +697,7 @@ server <- function(input, output, session) {
       geom_point(size = 2.5, alpha = 0.5) +
       geom_point(data = current_ratios, size = 3.5) +
       guides(size = "none") +
-      facet_wrap(vars(RATIO), scales = 'free_y')
+      facet_wrap(vars(RATIO), scales = 'free_y') #still need to check ratio's really exist
     
     #clicked data has to exist first
     if (isTruthy(ratio_selection()))
