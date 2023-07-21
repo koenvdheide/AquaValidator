@@ -552,9 +552,18 @@ server <- function(input, output, session) {
   })
   
    output$tabel_sample <- DT::renderDataTable({
+     
      results <- historical_results()
+     #results <- current_result()
+     
       if(input$instellingen_roteer_tabel  == "labnr"){
-        labnr_widened_results <- results
+        labnr_widened_results <- results %>% pivot_wider(
+          id_cols = c(TESTCODE,ELEMENTCODE),
+          names_from = c(NAAM,LABNUMMER,RUNNR),
+          values_from = RESULTAAT,
+          names_sep = "<br>"
+          # unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = list, UITVALLEND = list)
+        )
         
         DT::datatable(
           data = labnr_widened_results,
@@ -565,10 +574,10 @@ server <- function(input, output, session) {
           options = list(
             dom = 'Bltipr', #dom needed to remove search bar (redundant with column search)
             buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
-            order = list(list(0, 'desc')),
+            order = list(list(0, 'desc'))
             #ordering= 0, 
-            rowGroup = list(
-              dataSrc = c(0)
+            #rowGroup = list(
+              #dataSrc = c(0)
               # startRender = JS(
               #   "function(rows, group) {",
               #   "return 'Sampling Datum:' +' ('+rows.count()+' rows)';",
@@ -576,11 +585,9 @@ server <- function(input, output, session) {
               # )
             ),
            # columnDefs = list(list(visible=FALSE , targets = c("MONSTERPUNTCODE","NAAM","TESTSTATUS","REFCONCLUSION","UITVALLEND","SOORTWATER")))
-          ) 
+          #) 
         )
-      }
-     
-     if(input$instellingen_roteer_tabel == "sample"){
+      }else if(input$instellingen_roteer_tabel == "sample"){
        DT::datatable(
          data = results,
          rownames = FALSE,
