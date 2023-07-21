@@ -49,7 +49,7 @@ ui <- tagList(
                #   DT::dataTableOutput("tabel_samenvatting")
                # ),
                tabPanel(
-                 title = "Samples",          #textOutput("tab_sample_titel") 
+                 title = "Testresultaten",          #textOutput("tab_sample_titel") 
                  value = "tab_sample",
                  checkboxInput("instellingen_roteer_tabel",
                                "Toon resultaten als rijen i.p.v. kolommen"),
