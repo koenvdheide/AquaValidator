@@ -51,6 +51,8 @@ ui <- tagList(
                tabPanel(
                  title = "Samples",          #textOutput("tab_sample_titel") 
                  value = "tab_sample",
+                 checkboxInput("instellingen_roteer_tabel",
+                               "Toon resultaten als rijen i.p.v. kolommen"),
                  DT::dataTableOutput("tabel_sample")
                ),
                tabPanel(
