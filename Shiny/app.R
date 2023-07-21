@@ -591,7 +591,7 @@ server <- function(input, output, session) {
          order = list(list(1, 'desc')),
          #ordering= 0, 
          rowGroup = list(
-           dataSrc = c(0)
+           dataSrc = c(0,1)
            # startRender = JS(
            #   "function(rows, group) {",
            #   "return 'Sampling Datum:' +' ('+rows.count()+' rows)';",
