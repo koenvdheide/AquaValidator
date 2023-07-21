@@ -59,8 +59,8 @@ ui <- tagList(
                                "Sample Info" = "sample"),
                    inline = TRUE
                  ),
-                 # checkboxInput("instellingen_roteer_tabel",
-                 #               "Toon resultaten als rijen i.p.v. kolommen"),
+                  checkboxInput("instellingen_verberg_historie_tabel",
+                                "Toon alleen huidig sample"),
                  DT::dataTableOutput("tabel_sample")
                ),
                tabPanel(
@@ -553,9 +553,12 @@ server <- function(input, output, session) {
   
    output$tabel_sample <- DT::renderDataTable({
      
-     results <- historical_results()
-     #results <- current_result()
-     
+     if(input$instellingen_verberg_historie_tabel  == TRUE){
+       results <- current_result()
+     }else{
+       results <- historical_results()
+     }
+    
       if(input$instellingen_roteer_tabel  == "labnr"){
         labnr_widened_results <- results %>% pivot_wider(
           id_cols = c(TESTCODE,ELEMENTCODE),
