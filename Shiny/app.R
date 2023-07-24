@@ -259,11 +259,16 @@ server <- function(input, output, session) {
       return(samples[input$tabel_fiatteerlijst_rows_selected,])
     }
     else{
-      return(samples)
+      showModal(modalDialog(
+        title = "selectie_missing",
+        "Kies eerst een sample!",
+        easyClose = TRUE
+      ))
+      return()
     }
   })
   current_result <- reactive({
-    req(results)
+    req(selected_sample())
     selected_labnummer <- select(selected_sample(), LABNUMMER)
     #print(selected_labnummer)
     matching_result <- semi_join(results,
