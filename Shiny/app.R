@@ -18,10 +18,9 @@ options(shiny.maxRequestSize=30*1024^2)
 ui <- tagList( 
   useShinyjs(),
   navbarPage(
-    title="Aqualysis Validatie",
-#tags$img(src='Logo-Aqualysis-RGB-HR.png',
-  tabPanel("Fiatteren",
-           
+    title= div(tags$img(src='Logo-Aqualysis-RGB-HR.png', align = 'left', width = "130px", height = "34px"),HTML('&nbsp;'),  "Validatie"),
+  
+    tabPanel("Fiatteren",
            fluidPage(
              tabsetPanel(
                id = "fiatteer_beeld",
