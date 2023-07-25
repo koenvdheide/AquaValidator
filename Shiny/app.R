@@ -15,7 +15,8 @@ reactlog_enable()
 options(shiny.maxRequestSize=30*1024^2)
 
 #UI input variables are intentionally in Dutch, makes it easier to keep them separate from output/internal variables on the server side
-ui <- tagList( 
+ui <- function(request) {
+  tagList( 
   useShinyjs(),
   navbarPage(
     title= div(tags$img(src='Logo-Aqualysis-RGB-HR.png', align = 'left', width = "130px", height = "34px"),HTML('&nbsp;'),  "Validatie"),
@@ -160,7 +161,7 @@ ui <- tagList(
                          mainPanel())),
 
 )
-)
+)}
 server <- function(input, output, session) {
 ##################### common server variables #######################  
   
@@ -817,4 +818,5 @@ server <- function(input, output, session) {
 
 shinyApp(ui = ui,
          server = server,
+         enableBookmarking = "server",
          options = list())  
