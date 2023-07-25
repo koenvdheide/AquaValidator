@@ -29,13 +29,15 @@ ui <- tagList(
                  value = "tab_bestand",
                  br(),
                  fileInput(
-                   "fiatteer_input_file",
+                   "input_file",
                    
                    #ook (bijvoorbeeld) csv en tsv?
                    label = "Kies Excel samplelijst",
                    accept = c(".xlsx", ".xls")
                  )
-               ),
+
+               
+             ),
                
                tabPanel(
                  title = "Fiatteerlijst",
@@ -103,7 +105,29 @@ ui <- tagList(
                    min = 1
                  )
                ),
-               tabPanel("Fiatteerlijst"),
+               tabPanel(
+                 "Input",
+                 textInput(
+                   "input_file_fiatteer_blad",
+                   label = "Naam fiatteerlijst in Excel (hoofdlettergevoelig!)",
+                   value = "fiatteerlijst",
+                   placeholder = "Naam van het blad met de fiatteerlijst"
+                 ),
+                 textInput(
+                   "input_file_resultaten_blad",
+                   label = "Naam resultaten in Excel (hoofdlettergevoelig!)",
+                   value = "resultaten",
+                   placeholder = "Naam van het blad met de resultaten"
+                 ),
+                 br(),
+                 textInput(
+                   "input_file_labnummer_kolom",
+                   label = "Welke kolom identificeert een sample?",
+                   value = "LABNUMMER",
+                   placeholder = "Naam van de kolom met een unieke waarde per sample"
+                 )
+               ),
+               tabPanel("Fiatteerlijst"), 
                tabPanel(
                  "Testresultaten",
                  # checkboxInput("instellingen_roteer_tabel",
@@ -123,8 +147,11 @@ server <- function(input, output, session) {
 ##################### common server variables #######################  
   
   #default groups (can be overridden)
-  #data_groups <- reactiveValues(data_groups = c("MEETPUNT", "LABNR", "TESTCODE", "ELEMENTCODE"))
-  
+  #input_format <- reactiveValues(
+
+      
+    #data_groups = c("MEETPUNT", "LABNR", "TESTCODE", "ELEMENTCODE")
+  #)
   #default settings
   #settings <- reactiveValues(settings = c(""))
   
@@ -370,12 +397,16 @@ server <- function(input, output, session) {
     loadingtip <- showNotification("Laden...", duration = NULL, closeButton = FALSE)
     tryCatch({
       file_path = input$input_file$datapath
+      
+      fiatteerblad = input$input_file_fiatteer_blad
+      resultatenblad = input$input_file_resultaten_blad
+      
       loadedsamples <-
-        excel_results_reader(file_path, sheet = "fiatteerlijst")
+        excel_results_reader(file_path, sheet = fiatteerblad)
       samples <<- loadedsamples %>% arrange(PRIOFINISHDATE)
       
       results <<-
-        excel_results_reader(file_path, sheet = "resultaten") %>%
+        excel_results_reader(file_path, sheet = resultatenblad) %>%
         mutate(GEVALIDEERD = TESTSTATUS == 300,
                UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0)
       
