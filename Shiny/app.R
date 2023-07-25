@@ -159,20 +159,17 @@ ui <- function(request) {
            id = "hulp_tab",
            sidebarLayout(sidebarPanel(),
                          mainPanel())),
-
+  header = bookmarkButton(
+    label = "Sla fiatteer voortgang & opmerkingen op"
+  )
 )
 )}
 server <- function(input, output, session) {
 ##################### common server variables #######################  
   
-  #default groups (can be overridden)
-  #input_format <- reactiveValues(
-
-      
-    #data_groups = c("MEETPUNT", "LABNR", "TESTCODE", "ELEMENTCODE")
-  #)
-  #default settings
-  #settings <- reactiveValues(settings = c(""))
+  settings <- reactiveValues(
+    username = NULL
+  )
   
   #database connection
   # sql_connection_string <-
@@ -188,9 +185,6 @@ server <- function(input, output, session) {
   #   #PWD = askpass(prompt = "DB paswoord:"),
   #   Port = 1521
   # )
-  
-  
-  
   
   #data
   samples <- NULL
