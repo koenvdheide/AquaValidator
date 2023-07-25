@@ -98,6 +98,12 @@ ui <- tagList(
              tabsetPanel(
                tabPanel(
                  "Algemeen",
+                 # textInput(
+                 #   "instellingen_gebruiker",
+                 #   label = "Gebruiker",
+                 #   value = "",
+                 #   placeholder = "Je naam (initialen)"
+                 # ),
                  numericInput(
                    "instellingen_hoeveelheid_resultaten",
                    "Hoeveel resultaten moeten er per monsterpunt worden getoond?",
@@ -125,7 +131,19 @@ ui <- tagList(
                    label = "Welke kolom identificeert een sample?",
                    value = "LABNUMMER",
                    placeholder = "Naam van de kolom met een unieke waarde per sample"
-                 )
+                 ),
+                 textInput(
+                   "input_file_meetpunt_kolom",
+                   label = "Welke kolom identificeert een meetpunt?",
+                   value = "MONSTERPUNTCODE",
+                   placeholder = "Naam van de kolom met een unieke waarde per meetpunt"
+                 ),
+                 textInput(
+                   "input_file_testresultaat_kolom",
+                   label = "Welke kolom identificeert een testresultaat?",
+                   value = "RESULTAAT",
+                   placeholder = "Naam van de kolom met de testresultaten"
+                 ),
                ),
                tabPanel("Fiatteerlijst"), 
                tabPanel(
