@@ -366,15 +366,16 @@ server <- function(input, output, session) {
   
 ###########################observers###################################
   
-  observeEvent(input$fiatteer_input_file, {
+  observeEvent(input$input_file, {
     loadingtip <- showNotification("Laden...", duration = NULL, closeButton = FALSE)
     tryCatch({
+      file_path = input$input_file$datapath
       loadedsamples <-
-        excel_results_reader(input$fiatteer_input_file$datapath, sheet = "fiatteerlijst")
+        excel_results_reader(file_path, sheet = "fiatteerlijst")
       samples <<- loadedsamples %>% arrange(PRIOFINISHDATE)
       
       results <<-
-        excel_results_reader(input$fiatteer_input_file$datapath, sheet = "resultaten") %>%
+        excel_results_reader(file_path, sheet = "resultaten") %>%
         mutate(GEVALIDEERD = TESTSTATUS == 300,
                UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0)
       
