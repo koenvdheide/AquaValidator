@@ -98,12 +98,12 @@ ui <- tagList(
              tabsetPanel(
                tabPanel(
                  "Algemeen",
-                 # textInput(
-                 #   "instellingen_gebruiker",
-                 #   label = "Gebruiker",
-                 #   value = "",
-                 #   placeholder = "Je naam (initialen)"
-                 # ),
+                 textInput(
+                   "instellingen_gebruiker",
+                   label = "Gebruiker",
+                   value = "",
+                   placeholder = "Je naam (initialen)"
+                 ),
                  numericInput(
                    "instellingen_hoeveelheid_resultaten",
                    "Hoeveel resultaten moeten er per monsterpunt worden getoond?",
