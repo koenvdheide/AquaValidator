@@ -204,8 +204,14 @@ server <- function(input, output, session) {
   
 ##################### common server functions #######################
   
-  excel_results_reader <- function(filePath, sheet = NULL) {
-    
+  excel_results_reader <-
+    function(filePath,
+             sheet = NULL
+             #resultcolumn,
+             #labnummercolumn,
+             #meetpuntcolumn
+             ){
+      
     excel_data <-
       read_excel(filePath, progress = TRUE, sheet = sheet) %>%
       
@@ -214,6 +220,9 @@ server <- function(input, output, session) {
         #NON_NUMERICAL_VALUE = across(contains(c("result", "resultaat")), ~ if_else(is.na(as.numeric(.)), ., NA)),
         #across(contains(c("result", "resultaat")), as.list),
         across(contains(c("result", "resultaat")), as.numeric),
+        #"{resultcolumn}" := as.numeric,
+        #"{labnummercolumn}" := as.numeric,
+        #"{meetpuntcolumn}" := as.factor,
         
         
         # this removes hour/minute/second from sampling&measurement dates for some reason even though %T should cover this, relying on readxl's inbuilt date recognition for now
@@ -415,17 +424,33 @@ server <- function(input, output, session) {
   observeEvent(input$input_file, {
     loadingtip <- showNotification("Laden...", duration = NULL, closeButton = FALSE)
     tryCatch({
-      file_path = input$input_file$datapath
+      file_path <- input$input_file$datapath
       
-      fiatteerblad = input$input_file_fiatteer_blad
-      resultatenblad = input$input_file_resultaten_blad
+      fiatteerblad <- input$input_file_fiatteer_blad
+      resultatenblad <- input$input_file_resultaten_blad
+      measurepointcolumn <- input$input_file_meetpunt_kolom
+      resultscolumn <- input$input_file_testresultaat_kolom
+      labnrcolumn <- input$input_file_labnummer_kolom
       
-      loadedsamples <-
-        excel_results_reader(file_path, sheet = fiatteerblad)
-      samples <<- loadedsamples %>% arrange(PRIOFINISHDATE)
+
+        
+      samples <<- excel_results_reader(
+        file_path,
+        sheet = fiatteerblad
+        #resultcolumn = resultscolumn,
+        #labnummercolumn = labnrcolumn,
+        #meetpuntcolumn = measurepointcolumn
+        ) %>% 
+        arrange(PRIOFINISHDATE)
       
       results <<-
-        excel_results_reader(file_path, sheet = resultatenblad) %>%
+        excel_results_reader(
+          file_path,
+          sheet = resultatenblad
+          #resultcolumn = resultscolumn,
+          #labnummercolumn = labnrcolumn,
+          #meetpuntcolumn = measurepointcolumn
+        ) %>% 
         mutate(GEVALIDEERD = TESTSTATUS == 300,
                UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0)
       
