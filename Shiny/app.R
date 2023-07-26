@@ -310,7 +310,7 @@ server <- function(input, output, session) {
     }
     else{
       showModal(modalDialog(
-        title = "selectie_missing",
+        title = "Geen Selectie",
         "Kies eerst een sample!",
         easyClose = TRUE
       ))
