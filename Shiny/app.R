@@ -62,7 +62,7 @@ ui <- function(request) {
                    inline = TRUE
                  ),
                   checkboxInput("instellingen_verberg_historie_tabel",
-                                "Toon alleen huidig sample"),
+                                "Toon alleen huidig geselecteerde sample(s)"),
                  DT::dataTableOutput("tabel_sample")
                ),
                tabPanel(
