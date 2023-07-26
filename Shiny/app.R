@@ -612,7 +612,6 @@ server <- function(input, output, session) {
   output$tabel_fiatteerlijst <- DT::renderDataTable({
     req(samples)
     relevant_data <- samples %>% select(
-      OPMERKINGEN,
       LABNUMMER,
       MONSTERNAMEDATUM,
       OMSCHRIJVING,
