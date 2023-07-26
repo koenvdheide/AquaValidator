@@ -208,6 +208,7 @@ server <- function(input, output, session) {
       
     excel_data <-
       read_excel(filePath, progress = TRUE, sheet = sheet) %>%
+      #separate_wider_regex(RESULTAAT, NIET_NUMBER ="\\",  RESULTAAT = "\\D+") %>% 
       
       #kan netter?: https://stackoverflow.com/questions/64189561/using-case-when-with-dplyr-across
       mutate(
