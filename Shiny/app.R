@@ -211,9 +211,10 @@ server <- function(input, output, session) {
       
       #kan netter?: https://stackoverflow.com/questions/64189561/using-case-when-with-dplyr-across
       mutate(
-        #NON_NUMERICAL_VALUE = across(contains(c("result", "resultaat")), ~ if_else(is.na(as.numeric(.)), ., NA)),
+        NIET_NUMBER = across(contains(c("result", "resultaat")), ~ if_else(is.na(as.numeric(.)), ., NA)),
         #across(contains(c("result", "resultaat")), as.list),
         across(contains(c("result", "resultaat")), as.numeric),
+        
         #"{resultcolumn}" := as.numeric,
         #"{labnummercolumn}" := as.numeric,
         #"{meetpuntcolumn}" := as.factor,
@@ -447,27 +448,26 @@ server <- function(input, output, session) {
         ) %>% 
         mutate(GEVALIDEERD = TESTSTATUS == 300,
                UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0)
-      
       ratios <<-
         results %>%
-        #mutate(RESULTAAT = as.numeric(unlist)) %>%
+        #mutate(RESULTAAT = as.numeric(unnest)) %>%
         group_by(LABNUMMER, MONSTERPUNTCODE) %>%
         reframe(
-          NAAM = NAAM, 
+          NAAM = NAAM,
           SAMPLINGDATE = SAMPLINGDATE,
           CZV_BZV_RATIO = ifelse(
             any(ELEMENTCODE == "CZV") & any(ELEMENTCODE == "BZV5"),
             RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[ELEMENTCODE == "BZV5"],
             NA
           ),
-          
+
           CZV_NKA_RATIO = ifelse(
             any(ELEMENTCODE == "CZV") &
               any(TESTCODE == "nka"),
             RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[TESTCODE == "nka"],
             NA
           ),
-          
+
           BZV_ONOPA_RATIO = ifelse(
             any(ELEMENTCODE == "BZV5") &
               any(TESTCODE == "onopa"),
@@ -486,7 +486,7 @@ server <- function(input, output, session) {
             RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[TESTCODE == "tnb"],
             NA
           )
-          
+
         ) %>% pivot_longer(
           cols = c(CZV_BZV_RATIO, CZV_NKA_RATIO, BZV_ONOPA_RATIO,CZV_TOC_RATIO,CZV_TNB_RATIO),
           names_to = "RATIO",
