@@ -240,7 +240,7 @@ server <- function(input, output, session) {
             "parameter"
           )
         ), as.factor)
-      )
+      ) 
     return (excel_data)
   }
   
@@ -430,8 +430,6 @@ server <- function(input, output, session) {
       resultscolumn <- input$input_file_testresultaat_kolom
       labnrcolumn <- input$input_file_labnummer_kolom
       
-
-        
       samples <<- excel_results_reader(
         file_path,
         sheet = fiatteerblad
@@ -451,6 +449,7 @@ server <- function(input, output, session) {
         ) %>% 
         mutate(GEVALIDEERD = TESTSTATUS == 300,
                UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0)
+      
       ratios <<-
         results %>%
         #mutate(RESULTAAT = as.numeric(unnest)) %>%
@@ -463,14 +462,12 @@ server <- function(input, output, session) {
             RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[ELEMENTCODE == "BZV5"],
             NA
           ),
-
           CZV_NKA_RATIO = ifelse(
             any(ELEMENTCODE == "CZV") &
               any(TESTCODE == "nka"),
             RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[TESTCODE == "nka"],
             NA
           ),
-
           BZV_ONOPA_RATIO = ifelse(
             any(ELEMENTCODE == "BZV5") &
               any(TESTCODE == "onopa"),
@@ -489,7 +486,6 @@ server <- function(input, output, session) {
             RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[TESTCODE == "tnb"],
             NA
           )
-
         ) %>% pivot_longer(
           cols = c(CZV_BZV_RATIO, CZV_NKA_RATIO, BZV_ONOPA_RATIO,CZV_TOC_RATIO,CZV_TNB_RATIO),
           names_to = "RATIO",
@@ -614,8 +610,21 @@ server <- function(input, output, session) {
   # })
   
   output$tabel_fiatteerlijst <- DT::renderDataTable({
+    req(samples)
+    relevant_data <- samples %>% select(
+      OPMERKINGEN,
+      LABNUMMER,
+      MONSTERNAMEDATUM,
+      OMSCHRIJVING,
+      MONSTERPUNTCODE,
+      HOEDNHD,
+      SMPL_PRIO,
+      WORKDAY,
+      PRIOFINISHDATE
+    ) 
+    
     DT::datatable(
-      data = samples,
+      data = relevant_data,
       filter = "top",
       rownames = FALSE,
       extensions = c("Buttons"),
