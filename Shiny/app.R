@@ -631,9 +631,13 @@ server <- function(input, output, session) {
      
      if(input$instellingen_verberg_historie_tabel  == TRUE){
        results <- current_result()
-     }else{
+     } else {
        results <- historical_results()
      }
+     #merge numeric results and non-numeric results back together for presentation
+
+     #results <- results %>% unite("RESULTAAT", RESULTAAT, NIET_NUMBER, na.rm = TRUE)
+     #View(results)
     
       if(input$instellingen_roteer_tabel  == "labnr"){
         labnr_widened_results <- results %>% pivot_wider(
