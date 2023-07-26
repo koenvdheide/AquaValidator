@@ -323,24 +323,25 @@ server <- function(input, output, session) {
     #print(selected_labnummer)
     matching_result <- semi_join(results,
                                   selected_sample(),
-                                  by = c('LABNUMMER')) %>% select(
-                                    MONSTERPUNTCODE,
-                                    NAAM,
-                                    LABNUMMER,
-                                    TESTCODE,
-                                    ELEMENTCODE,
-                                    TESTSTATUS,
-                                    RESULTAAT,
-                                    #NON_NUMERICAL_VALUE,
-                                    RUNNR,
-                                    REFMESSAGE,
-                                    REFCONCLUSION,
-                                    GEVALIDEERD,
-                                    UITVALLEND,
-                                    SAMPLINGDATE,
-                                    MEASUREDATE,
-                                    SOORTWATER
-                                  )
+                                  by = c('LABNUMMER')) 
+                                  # %>% select(
+                                  #   MONSTERPUNTCODE,
+                                  #   NAAM,
+                                  #   LABNUMMER,
+                                  #   TESTCODE,
+                                  #   ELEMENTCODE,
+                                  #   TESTSTATUS,
+                                  #   RESULTAAT,
+                                  #   #NON_NUMERICAL_VALUE,
+                                  #   RUNNR,
+                                  #   REFMESSAGE,
+                                  #   REFCONCLUSION,
+                                  #   GEVALIDEERD,
+                                  #   UITVALLEND,
+                                  #   SAMPLINGDATE,
+                                  #   MEASUREDATE,
+                                  #   SOORTWATER
+                                  # )
   })
   
   historical_results <- reactive({
@@ -349,23 +350,24 @@ server <- function(input, output, session) {
     selected_meetpunt <- select(current_result(), MONSTERPUNTCODE)
     matching_results <- semi_join(results,
                                   current_result(),
-                                  by = c('MONSTERPUNTCODE')) %>% select(
-                                    MONSTERPUNTCODE,
-                                    NAAM,
-                                    LABNUMMER,
-                                    TESTCODE,
-                                    ELEMENTCODE,
-                                    TESTSTATUS,
-                                    RESULTAAT,
-                                    #NON_NUMERICAL_VALUE,
-                                    RUNNR,
-                                    REFMESSAGE,
-                                    REFCONCLUSION,
-                                    GEVALIDEERD,
-                                    UITVALLEND,
-                                    SAMPLINGDATE,
-                                    MEASUREDATE,
-                                    SOORTWATER
+                                  by = c('MONSTERPUNTCODE') 
+                                    # %>% select(
+                                    # MONSTERPUNTCODE,
+                                    # NAAM,
+                                    # LABNUMMER,
+                                    # TESTCODE,
+                                    # ELEMENTCODE,
+                                    # TESTSTATUS,
+                                    # RESULTAAT,
+                                    # #NON_NUMERICAL_VALUE,
+                                    # RUNNR,
+                                    # REFMESSAGE,
+                                    # REFCONCLUSION,
+                                    # GEVALIDEERD,
+                                    # UITVALLEND,
+                                    # SAMPLINGDATE,
+                                    # MEASUREDATE,
+                                    # SOORTWATER
                                   ) %>%
             arrange(desc(SAMPLINGDATE)) %>% #it SHOULD already put the most recent result first but this ensures it
             top_n_results(n = input$instellingen_hoeveelheid_resultaten)
