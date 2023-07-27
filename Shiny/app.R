@@ -616,9 +616,10 @@ server <- function(input, output, session) {
   output$tabel_fiatteerlijst <- DT::renderDataTable({
     req(samples)
     
-    rejected_testresults <- results_to_validate %>% filter(UITVALLEND == TRUE)
-  
-    relevant_data <- samples %>% select(
+    rejected_tests <-
+      results_to_validate %>% filter(UITVALLEND == TRUE) %>% select(LABNUMMER, TESTCODE)
+    
+    fiatteer_data <- samples %>% select(
       LABNUMMER,
       MONSTERNAMEDATUM,
       OMSCHRIJVING,
@@ -627,13 +628,13 @@ server <- function(input, output, session) {
       SMPL_PRIO,
       WORKDAY,
       PRIOFINISHDATE
-    ) %>%  nest_join(rejected_testresults %>% select("LABNUMMER", "TESTCODE"),
+    ) %>%  nest_join(rejected_tests,
       by = "LABNUMMER",
-      name = "UITVALLENDE TESTS"
-    )
+      name = "UITVALLENDE_TESTS_LIST"
+    ) %>% hoist(UITVALLENDE_TESTS_LIST,UITVALLERS= "TESTCODE")
     
     DT::datatable(
-      data = relevant_data,
+      data = fiatteer_data,
       filter = "top",
       rownames = FALSE,
       extensions = c("Buttons"),
