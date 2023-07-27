@@ -189,6 +189,7 @@ server <- function(input, output, session) {
   #data
   samples <- NULL
   results <- NULL
+  results_to_validate <- NULL
   ratios <- NULL
   
   #graph user input
@@ -450,6 +451,8 @@ server <- function(input, output, session) {
         ) %>% 
         mutate(GEVALIDEERD = TESTSTATUS == 300,
                UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0)
+      
+      results_to_validate <<- semi_join(results,samples, by = c("LABNUMMER"))
       
       ratios <<-
         results %>%
