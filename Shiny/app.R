@@ -615,6 +615,9 @@ server <- function(input, output, session) {
   
   output$tabel_fiatteerlijst <- DT::renderDataTable({
     req(samples)
+    
+    rejected_testresults <- results_to_validate %>% filter(UITVALLEND == TRUE)
+  
     relevant_data <- samples %>% select(
       LABNUMMER,
       MONSTERNAMEDATUM,
@@ -624,7 +627,10 @@ server <- function(input, output, session) {
       SMPL_PRIO,
       WORKDAY,
       PRIOFINISHDATE
-    ) 
+    ) %>%  nest_join(rejected_testresults %>% select("LABNUMMER", "TESTCODE"),
+      by = "LABNUMMER",
+      name = "UITVALLENDE TESTS"
+    )
     
     DT::datatable(
       data = relevant_data,
