@@ -318,7 +318,7 @@ server <- function(input, output, session) {
       return()
     }
   })
-  current_result <- reactive({
+  selected_sample_result <- reactive({
     req(selected_sample())
     selected_labnummer <- select(selected_sample(), LABNUMMER)
     #print(selected_labnummer)
@@ -345,12 +345,12 @@ server <- function(input, output, session) {
                                   # )
   })
   
-  historical_results <- reactive({
+  selected_sample_historical_results <- reactive({
     #includes current result for now
     req(results)
-    selected_meetpunt <- select(current_result(), MONSTERPUNTCODE)
+    selected_meetpunt <- select(selected_sample_result(), MONSTERPUNTCODE)
     matching_results <- semi_join(results,
-                                  current_result(),
+                                  selected_sample_result(),
                                   by = c('MONSTERPUNTCODE') 
                                     # %>% select(
                                     # MONSTERPUNTCODE,
@@ -379,20 +379,20 @@ server <- function(input, output, session) {
   })
   current_ratio <-  reactive({
     req(ratios)
-    selected_monsterpuntcode <- select(current_result(), LABNUMMER)
+    selected_monsterpuntcode <- select(selected_sample_result(), LABNUMMER)
     current_ratio <- ratios %>% filter(LABNUMMER %in% selected_monsterpuntcode$LABNUMMER)
     return(current_ratio)
   })
   
   historical_ratios <- reactive({
     req(ratios)
-    selected_monsterpuntcode <- select(historical_results(), LABNUMMER)
+    selected_monsterpuntcode <- select(selected_sample_historical_results(), LABNUMMER)
     current_ratios <- ratios %>% filter(LABNUMMER %in% selected_monsterpuntcode$LABNUMMER)
     return(current_ratios)
   })
 
   # selected_results_widened <- reactive ({
-  #   historical_results() %>% pivot_wider(
+  #   selected_sample_historical_results() %>% pivot_wider(
   #     id_cols = c(LABNUMMER, RUNNR),
   #     names_from = c(TESTCODE, ELEMENTCODE),
   #     values_from = RESULTAAT,
@@ -429,6 +429,7 @@ server <- function(input, output, session) {
       measurepointcolumn <- input$input_file_meetpunt_kolom
       resultscolumn <- input$input_file_testresultaat_kolom
       labnrcolumn <- input$input_file_labnummer_kolom
+      
       
       samples <<- excel_results_reader(
         file_path,
@@ -505,17 +506,17 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$fiatteer_grafiek_zweef,{
-    hover_selection(nearPoints(historical_results(),input$fiatteer_grafiek_zweef))
+    hover_selection(nearPoints(selected_sample_historical_results(),input$fiatteer_grafiek_zweef))
   })
   
   observeEvent(input$fiatteer_grafiek_klik, {
     #moved to double click because of a shiny issue with firing click events while making a brush selection
     
     # isolate({
-    #   selected_test <- nearPoints(historical_results(),
+    #   selected_test <- nearPoints(selected_sample_historical_results(),
     #                               input$fiatteer_grafiek_klik)
     #   selected_sample <-
-    #     semi_join(historical_results(), selected_test, by = 'LABNUMMER')
+    #     semi_join(selected_sample_historical_results(), selected_test, by = 'LABNUMMER')
     # 
     #   graph_selection(selected_sample)
     # })
@@ -525,9 +526,9 @@ server <- function(input, output, session) {
     #freezeReactiveValue(input, "ratios_grafiek_klik") #helpt niet
     isolate({
       selected_tests <-
-        brushedPoints(historical_results(), input$fiatteer_grafiek_gebied)
+        brushedPoints(selected_sample_historical_results(), input$fiatteer_grafiek_gebied)
       selected_samples <-
-        semi_join(historical_results(), selected_tests, by = 'LABNUMMER')
+        semi_join(selected_sample_historical_results(), selected_tests, by = 'LABNUMMER')
       
       graph_selection(selected_samples)
       
@@ -540,10 +541,10 @@ server <- function(input, output, session) {
   
   observeEvent(input$fiatteer_grafiek_dblklik, {
     isolate({
-      selected_test <- nearPoints(historical_results(),
+      selected_test <- nearPoints(selected_sample_historical_results(),
                                   input$fiatteer_grafiek_dblklik)
       selected_sample <-
-        semi_join(historical_results(), selected_test, by = 'LABNUMMER')
+        semi_join(selected_sample_historical_results(), selected_test, by = 'LABNUMMER')
       
       graph_selection(selected_sample)
       
@@ -564,7 +565,7 @@ server <- function(input, output, session) {
     #   ratio_selection(related_ratios)
     #   
     #   selected_samples <-
-    #     semi_join(historical_results(), selected_ratios, by = 'LABNUMMER')
+    #     semi_join(selected_sample_historical_results(), selected_ratios, by = 'LABNUMMER')
     #   graph_selection(selected_samples)
     # })
   })
@@ -576,7 +577,7 @@ server <- function(input, output, session) {
       related_ratios <- semi_join(historical_ratios(),selected_ratios, by = 'LABNUMMER')
       ratio_selection(related_ratios)
       
-      selected_samples <- semi_join(historical_results(), selected_ratios, by = 'LABNUMMER')
+      selected_samples <- semi_join(selected_sample_historical_results(), selected_ratios, by = 'LABNUMMER')
       graph_selection(selected_samples)
       #showModal(modalDialog(DT::dataTableOutput("fiatteer_grafiek_tabel")))
     })
@@ -590,7 +591,7 @@ server <- function(input, output, session) {
       ratio_selection(related_ratios)
       
       selected_samples <-
-        semi_join(historical_results(), selected_ratios, by = 'LABNUMMER')
+        semi_join(selected_sample_historical_results(), selected_ratios, by = 'LABNUMMER')
       graph_selection(selected_samples)
       #showModal(modalDialog(DT::dataTableOutput("fiatteer_grafiek_tabel")))
     })
@@ -601,8 +602,8 @@ server <- function(input, output, session) {
    # updateTabsetPanel(inputId = "fiatteer_beeld",selected = "tab_sample")
   
   # output$tab_sample_titel <- renderText({
-  #   if (!is.null(isolate(historical_results()))) {
-  #     paste("Samples", "(", length(unique(historical_results()$LABNUMMER)), ")")
+  #   if (!is.null(isolate(selected_sample_historical_results()))) {
+  #     paste("Samples", "(", length(unique(selected_sample_historical_results()$LABNUMMER)), ")")
   #   }
   #   else{
   #     paste("Samples")
@@ -639,9 +640,9 @@ server <- function(input, output, session) {
    output$tabel_sample <- DT::renderDataTable({
      
      if(input$instellingen_verberg_historie_tabel  == TRUE){
-       results <- current_result()
+       results <- selected_sample_result()
      } else {
-       results <- historical_results()
+       results <- selected_sample_historical_results()
      }
      #merge numeric results and non-numeric results back together for presentation
 
@@ -703,7 +704,7 @@ server <- function(input, output, session) {
          ) 
        )  %>% formatStyle(columns = 'LABNUMMER',
                           valueColumns = 'LABNUMMER',
-                          backgroundColor = styleEqual(current_result()$LABNUMMER, 'yellow',default = 'gray')
+                          backgroundColor = styleEqual(selected_sample_result()$LABNUMMER, 'yellow',default = 'gray')
        ) %>% formatStyle(columns = 'RESULTAAT',
                          valueColumns = 'UITVALLEND',
                          target = 'cell',
@@ -735,7 +736,7 @@ server <- function(input, output, session) {
        ) 
      )  %>% formatStyle(columns = 'LABNUMMER',
                         valueColumns = 'LABNUMMER',
-                        backgroundColor = styleEqual(current_result()$LABNUMMER, 'yellow',default = 'gray')
+                        backgroundColor = styleEqual(selected_sample_result()$LABNUMMER, 'yellow',default = 'gray')
                         ) %>% formatStyle(columns = 'RUNNR',
                                           valueColumns = 'UITVALLEND',
                                           target = 'cell',
@@ -748,8 +749,8 @@ server <- function(input, output, session) {
 
    
   output$fiatteer_grafiek <- renderPlot({
-    plot_data <- historical_results()
-    current_data <- current_result()
+    plot_data <- selected_sample_historical_results()
+    current_data <- selected_sample_result()
     #plot_user_choices <- fiatteer_plot_user_selection()
     
     results_plot <- ggplot(data = plot_data,
