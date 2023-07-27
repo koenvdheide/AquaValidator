@@ -318,7 +318,7 @@ server <- function(input, output, session) {
       return()
     }
   })
-  selected_sample_result <- reactive({
+  selected_sample_current_results <- reactive({
     req(selected_sample())
     selected_labnummer <- select(selected_sample(), LABNUMMER)
     #print(selected_labnummer)
@@ -348,9 +348,9 @@ server <- function(input, output, session) {
   selected_sample_historical_results <- reactive({
     #includes current result for now
     req(results)
-    selected_meetpunt <- select(selected_sample_result(), MONSTERPUNTCODE)
+    selected_meetpunt <- select(selected_sample_current_results(), MONSTERPUNTCODE)
     matching_results <- semi_join(results,
-                                  selected_sample_result(),
+                                  selected_sample_current_results(),
                                   by = c('MONSTERPUNTCODE') 
                                     # %>% select(
                                     # MONSTERPUNTCODE,
@@ -377,14 +377,14 @@ server <- function(input, output, session) {
     return(matching_results)
     
   })
-  current_ratio <-  reactive({
+  selected_sample_current_ratios <-  reactive({
     req(ratios)
-    selected_monsterpuntcode <- select(selected_sample_result(), LABNUMMER)
-    current_ratio <- ratios %>% filter(LABNUMMER %in% selected_monsterpuntcode$LABNUMMER)
-    return(current_ratio)
+    selected_monsterpuntcode <- select(selected_sample_current_results(), LABNUMMER)
+    selected_sample_current_ratios <- ratios %>% filter(LABNUMMER %in% selected_monsterpuntcode$LABNUMMER)
+    return(selected_sample_current_ratios)
   })
   
-  historical_ratios <- reactive({
+  selected_sample_historical_ratios <- reactive({
     req(ratios)
     selected_monsterpuntcode <- select(selected_sample_historical_results(), LABNUMMER)
     current_ratios <- ratios %>% filter(LABNUMMER %in% selected_monsterpuntcode$LABNUMMER)
@@ -532,7 +532,7 @@ server <- function(input, output, session) {
       
       graph_selection(selected_samples)
       
-      related_ratios <- semi_join(historical_ratios(),selected_tests, by = 'LABNUMMER')
+      related_ratios <- semi_join(selected_sample_historical_ratios(),selected_tests, by = 'LABNUMMER')
       ratio_selection(related_ratios)
       #showModal(modalDialog(DT::dataTableOutput("fiatteer_grafiek_tabel")))
     })
@@ -548,7 +548,7 @@ server <- function(input, output, session) {
       
       graph_selection(selected_sample)
       
-      related_ratios <- semi_join(historical_ratios(),selected_test, by = 'LABNUMMER')
+      related_ratios <- semi_join(selected_sample_historical_ratios(),selected_test, by = 'LABNUMMER')
       ratio_selection(related_ratios)
       #showModal(modalDialog(DT::dataTableOutput("fiatteer_grafiek_tabel")))
 
@@ -560,8 +560,8 @@ server <- function(input, output, session) {
     
     # isolate({
     #   selected_ratios <-
-    #     nearPoints(historical_ratios(), input$ratios_grafiek_klik)
-    #   related_ratios <- semi_join(historical_ratios(),selected_ratios, by = 'LABNUMMER')
+    #     nearPoints(selected_sample_historical_ratios(), input$ratios_grafiek_klik)
+    #   related_ratios <- semi_join(selected_sample_historical_ratios(),selected_ratios, by = 'LABNUMMER')
     #   ratio_selection(related_ratios)
     #   
     #   selected_samples <-
@@ -573,8 +573,8 @@ server <- function(input, output, session) {
   observeEvent(input$ratios_grafiek_gebied, {
     isolate({
       selected_ratios <-
-        brushedPoints(historical_ratios(), input$ratios_grafiek_gebied)
-      related_ratios <- semi_join(historical_ratios(),selected_ratios, by = 'LABNUMMER')
+        brushedPoints(selected_sample_historical_ratios(), input$ratios_grafiek_gebied)
+      related_ratios <- semi_join(selected_sample_historical_ratios(),selected_ratios, by = 'LABNUMMER')
       ratio_selection(related_ratios)
       
       selected_samples <- semi_join(selected_sample_historical_results(), selected_ratios, by = 'LABNUMMER')
@@ -586,8 +586,8 @@ server <- function(input, output, session) {
   observeEvent(input$ratios_grafiek_dblklik, {
     isolate({
       selected_ratios <-
-        nearPoints(historical_ratios(), input$ratios_grafiek_dblklik)
-      related_ratios <- semi_join(historical_ratios(),selected_ratios, by = 'LABNUMMER')
+        nearPoints(selected_sample_historical_ratios(), input$ratios_grafiek_dblklik)
+      related_ratios <- semi_join(selected_sample_historical_ratios(),selected_ratios, by = 'LABNUMMER')
       ratio_selection(related_ratios)
       
       selected_samples <-
@@ -640,7 +640,7 @@ server <- function(input, output, session) {
    output$tabel_sample <- DT::renderDataTable({
      
      if(input$instellingen_verberg_historie_tabel  == TRUE){
-       results <- selected_sample_result()
+       results <- selected_sample_current_results()
      } else {
        results <- selected_sample_historical_results()
      }
@@ -704,7 +704,7 @@ server <- function(input, output, session) {
          ) 
        )  %>% formatStyle(columns = 'LABNUMMER',
                           valueColumns = 'LABNUMMER',
-                          backgroundColor = styleEqual(selected_sample_result()$LABNUMMER, 'yellow',default = 'gray')
+                          backgroundColor = styleEqual(selected_sample_current_results()$LABNUMMER, 'yellow',default = 'gray')
        ) %>% formatStyle(columns = 'RESULTAAT',
                          valueColumns = 'UITVALLEND',
                          target = 'cell',
@@ -736,7 +736,7 @@ server <- function(input, output, session) {
        ) 
      )  %>% formatStyle(columns = 'LABNUMMER',
                         valueColumns = 'LABNUMMER',
-                        backgroundColor = styleEqual(selected_sample_result()$LABNUMMER, 'yellow',default = 'gray')
+                        backgroundColor = styleEqual(selected_sample_current_results()$LABNUMMER, 'yellow',default = 'gray')
                         ) %>% formatStyle(columns = 'RUNNR',
                                           valueColumns = 'UITVALLEND',
                                           target = 'cell',
@@ -750,7 +750,7 @@ server <- function(input, output, session) {
    
   output$fiatteer_grafiek <- renderPlot({
     plot_data <- selected_sample_historical_results()
-    current_data <- selected_sample_result()
+    current_data <- selected_sample_current_results()
     #plot_user_choices <- fiatteer_plot_user_selection()
     
     results_plot <- ggplot(data = plot_data,
@@ -787,8 +787,8 @@ server <- function(input, output, session) {
   })
   
   output$ratios_grafiek <- renderPlot({
-    plot_ratios <- historical_ratios()
-    current_ratios <- current_ratio()
+    plot_ratios <- selected_sample_historical_ratios()
+    current_ratios <- selected_sample_current_ratios()
     
     ratios_plot <-
       ggplot(data = plot_ratios,
