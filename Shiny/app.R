@@ -439,6 +439,7 @@ server <- function(input, output, session) {
         #labnummercolumn = labnrcolumn,
         #meetpuntcolumn = measurepointcolumn
         ) %>% 
+        add_column(FIATTEER_SAMPLE_COMMENT = "") %>%
         arrange(PRIOFINISHDATE)
       
       results <<-
@@ -450,7 +451,8 @@ server <- function(input, output, session) {
           #meetpuntcolumn = measurepointcolumn
         ) %>% 
         mutate(GEVALIDEERD = TESTSTATUS == 300,
-               UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0)
+               UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0,
+               FIATTEER_RESULT_COMMENT = "")
       
       results_to_validate <<- semi_join(results,samples, by = c("LABNUMMER"))
       
