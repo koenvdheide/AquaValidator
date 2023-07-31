@@ -439,7 +439,7 @@ server <- function(input, output, session) {
         #labnummercolumn = labnrcolumn,
         #meetpuntcolumn = measurepointcolumn
         ) %>% 
-        add_column(SAMPLE_OPMERKING = "") %>%
+        add_column(SAMPLE_OPMERKING = "",.before = 1) %>%
         arrange(PRIOFINISHDATE)
       
       results <<-
@@ -451,8 +451,9 @@ server <- function(input, output, session) {
           #meetpuntcolumn = measurepointcolumn
         ) %>% 
         mutate(GEVALIDEERD = TESTSTATUS == 300,
-               UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0,
-               RESULT_OPMERKING = "")
+               UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0)%>%
+        add_column(RESULT_OPMERKING = "", .before = 1)
+    
       
       results_to_validate <<- semi_join(results,samples, by = c("LABNUMMER"))
       
@@ -504,6 +505,11 @@ server <- function(input, output, session) {
     })
     on.exit(removeNotification(loadingtip), add = TRUE)
     on.exit(inputUpdater(uiComponent = "tp", inputId = "fiatteer_beeld",selected = "tab_fiatteerlijst"), add = TRUE)
+  })
+  
+  observeEvent(input$tabel_fiatteerlijst_cell_edit,{
+    samples <<- editData(samples,input$tabel_fiatteerlijst_cell_edit,rownames = FALSE)
+    #View(samples)
   })
   
   observeEvent(input$tabel_sample_rows_selected,{
