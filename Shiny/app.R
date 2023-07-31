@@ -439,7 +439,7 @@ server <- function(input, output, session) {
         #labnummercolumn = labnrcolumn,
         #meetpuntcolumn = measurepointcolumn
         ) %>% 
-        add_column(FIATTEER_SAMPLE_COMMENT = "") %>%
+        add_column(SAMPLE_OPMERKING = "") %>%
         arrange(PRIOFINISHDATE)
       
       results <<-
@@ -452,7 +452,7 @@ server <- function(input, output, session) {
         ) %>% 
         mutate(GEVALIDEERD = TESTSTATUS == 300,
                UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0,
-               FIATTEER_RESULT_COMMENT = "")
+               RESULT_OPMERKING = "")
       
       results_to_validate <<- semi_join(results,samples, by = c("LABNUMMER"))
       
@@ -622,6 +622,7 @@ server <- function(input, output, session) {
       results_to_validate %>% filter(UITVALLEND == TRUE) %>% select(LABNUMMER, TESTCODE)
     
     fiatteer_data <- samples %>% select(
+      SAMPLE_OPMERKING,
       LABNUMMER,
       MONSTERNAMEDATUM,
       OMSCHRIJVING,
@@ -640,6 +641,7 @@ server <- function(input, output, session) {
       filter = "top",
       rownames = FALSE,
       extensions = c("Buttons"),
+      editable = list(target = "cell", disable = list(columns = c(1:ncol(fiatteer_data)))),
       options = list(
         searchHighlight = TRUE,
         dom = 'Bltipr', #dom needed to remove search bar (redundant with column search) 
