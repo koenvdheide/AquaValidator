@@ -188,15 +188,19 @@ server <- function(input, output, session) {
   # )
   
   #data
-  samples <- NULL
-  results <- NULL
-  results_to_validate <- NULL
-  ratios <- NULL
+  samples <- tibble()
+  results <- tibble()
+  results_to_validate <- tibble()
+  ratios <- tibble()
   
   #graph user input
   graph_selection <- reactiveVal()
   hover_selection <- reactiveVal()
   ratio_selection <- reactiveVal()
+  
+  #output
+  finished_samples <- tibble()
+  finished_results <- tibble()
   
 ##################### common server functions #######################
   
@@ -512,7 +516,11 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$button_fiatteerlijst_klaar, {
-    
+    selected_rows <- selected_sample()
+    selected_rows_results <-selected_sample_current_results()
+      
+    finished_samples <<- finished_samples %>% rbind(selected_rows)
+    finished_results <<- finished_results %>% rbind(selected_rows_results)
   })
   
   observeEvent(input$tabel_sample_rows_selected,{
