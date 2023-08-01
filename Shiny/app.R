@@ -43,6 +43,7 @@ ui <- function(request) {
                tabPanel(
                  title = "Fiatteerlijst",
                  value = "tab_fiatteerlijst",
+                 actionButton("button_fiatteerlijst_klaar", label = "Valideer geselecteerde samples"),
                  DT::dataTableOutput("tabel_fiatteerlijst")
                ),
                # tabPanel(
@@ -508,6 +509,10 @@ server <- function(input, output, session) {
     #reminder that if "samples" columns change/rearrange this can overwrite the wrong columns!
     samples <<- editData(samples,input$tabel_fiatteerlijst_cell_edit,rownames = FALSE)
     #View(samples)
+  })
+  
+  observeEvent(input$button_fiatteerlijst_klaar, {
+    
   })
   
   observeEvent(input$tabel_sample_rows_selected,{
