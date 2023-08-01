@@ -188,7 +188,7 @@ server <- function(input, output, session) {
   # )
   
   #data
-  samples <- tibble()
+  samples <- reactiveVal(tibble())
   results <- tibble()
   results_to_validate <- tibble()
   ratios <- tibble()
@@ -311,8 +311,9 @@ server <- function(input, output, session) {
 ###########################reactive functions##################################
   
   selected_sample <- reactive({
+    data <- samples() #redundant but needed because subsetting reactiveval is buggy
     if (isTruthy(input$tabel_fiatteerlijst_rows_selected)) {
-      return(samples[input$tabel_fiatteerlijst_rows_selected,])
+      return(data[input$tabel_fiatteerlijst_rows_selected,])
     }
     else{
       showModal(modalDialog(
@@ -433,7 +434,7 @@ server <- function(input, output, session) {
       labnrcolumn <- input$input_file_labnummer_kolom
       
       
-      samples <<- excel_results_reader(
+      samples(excel_results_reader(
         file_path,
         sheet = fiatteerblad
         #resultcolumn = resultscolumn,
@@ -442,7 +443,7 @@ server <- function(input, output, session) {
         ) %>% 
         add_column(#KLAAR = '<input type="checkbox" id="klaar" class="styled">', 
                    SAMPLE_OPMERKING = "",.before = 1) %>% #don't move the comment column!
-        arrange(PRIOFINISHDATE)
+        arrange(PRIOFINISHDATE))
       
       results <<-
         excel_results_reader(
@@ -457,7 +458,7 @@ server <- function(input, output, session) {
         add_column(RESULT_OPMERKING = "", .before = 1) #don't move the comment column!
     
       
-      results_to_validate <<- semi_join(results,samples, by = c("LABNUMMER"))
+      results_to_validate <<- semi_join(results,samples(), by = c("LABNUMMER"))
       
       ratios <<-
         results %>%
@@ -511,8 +512,8 @@ server <- function(input, output, session) {
   
   observeEvent(input$tabel_fiatteerlijst_cell_edit,{
     #reminder that if "samples" columns change/rearrange this can overwrite the wrong columns!
-    samples <<- editData(samples,input$tabel_fiatteerlijst_cell_edit,rownames = FALSE)
-    #View(samples)
+    samples(editData(samples(),input$tabel_fiatteerlijst_cell_edit,rownames = FALSE))
+
   })
   
   observeEvent(input$button_fiatteerlijst_klaar, {
@@ -521,6 +522,9 @@ server <- function(input, output, session) {
       
     finished_samples <<- finished_samples %>% rbind(selected_rows)
     finished_results <<- finished_results %>% rbind(selected_rows_results)
+    
+    samples(anti_join(samples(),selected_rows, by = 'LABNUMMER'))
+    
   })
   
   observeEvent(input$tabel_sample_rows_selected,{
@@ -633,12 +637,12 @@ server <- function(input, output, session) {
   # })
   
   output$tabel_fiatteerlijst <- DT::renderDataTable({
-    req(samples)
+    req(samples())
     
     rejected_tests <-
       results_to_validate %>% filter(UITVALLEND == TRUE) %>% select(LABNUMMER, TESTCODE)
     
-    fiatteer_data <- samples %>% select(
+    fiatteer_data <- samples() %>% select(
     #  KLAAR,
       SAMPLE_OPMERKING,
       LABNUMMER,
