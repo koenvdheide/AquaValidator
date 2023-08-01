@@ -306,7 +306,6 @@ server <- function(input, output, session) {
 ###########################reactive functions##################################
   
   selected_sample <- reactive({
-    req(samples)
     if (isTruthy(input$tabel_fiatteerlijst_rows_selected)) {
       return(samples[input$tabel_fiatteerlijst_rows_selected,])
     }
@@ -348,7 +347,6 @@ server <- function(input, output, session) {
   
   selected_sample_historical_results <- reactive({
     #includes current result for now
-    req(results)
     selected_meetpunt <- select(selected_sample_current_results(), MONSTERPUNTCODE)
     matching_results <- semi_join(results,
                                   selected_sample_current_results(),
@@ -379,14 +377,12 @@ server <- function(input, output, session) {
     
   })
   selected_sample_current_ratios <-  reactive({
-    req(ratios)
     selected_monsterpuntcode <- select(selected_sample_current_results(), LABNUMMER)
     selected_sample_current_ratios <- ratios %>% filter(LABNUMMER %in% selected_monsterpuntcode$LABNUMMER)
     return(selected_sample_current_ratios)
   })
   
   selected_sample_historical_ratios <- reactive({
-    req(ratios)
     selected_monsterpuntcode <- select(selected_sample_historical_results(), LABNUMMER)
     current_ratios <- ratios %>% filter(LABNUMMER %in% selected_monsterpuntcode$LABNUMMER)
     return(current_ratios)
