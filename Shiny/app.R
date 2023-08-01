@@ -435,7 +435,8 @@ server <- function(input, output, session) {
         #labnummercolumn = labnrcolumn,
         #meetpuntcolumn = measurepointcolumn
         ) %>% 
-        add_column(SAMPLE_OPMERKING = "",.before = 1) %>%
+        add_column(#KLAAR = '<input type="checkbox" id="klaar" class="styled">', 
+                   SAMPLE_OPMERKING = "",.before = 1) %>% #don't move the comment column!
         arrange(PRIOFINISHDATE)
       
       results <<-
@@ -448,7 +449,7 @@ server <- function(input, output, session) {
         ) %>% 
         mutate(GEVALIDEERD = TESTSTATUS == 300,
                UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0)%>%
-        add_column(RESULT_OPMERKING = "", .before = 1)
+        add_column(RESULT_OPMERKING = "", .before = 1) #don't move the comment column!
     
       
       results_to_validate <<- semi_join(results,samples, by = c("LABNUMMER"))
@@ -504,6 +505,7 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$tabel_fiatteerlijst_cell_edit,{
+    #reminder that if "samples" columns change/rearrange this can overwrite the wrong columns!
     samples <<- editData(samples,input$tabel_fiatteerlijst_cell_edit,rownames = FALSE)
     #View(samples)
   })
@@ -624,6 +626,7 @@ server <- function(input, output, session) {
       results_to_validate %>% filter(UITVALLEND == TRUE) %>% select(LABNUMMER, TESTCODE)
     
     fiatteer_data <- samples %>% select(
+    #  KLAAR,
       SAMPLE_OPMERKING,
       LABNUMMER,
       MONSTERNAMEDATUM,
