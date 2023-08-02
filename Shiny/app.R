@@ -643,16 +643,7 @@ server <- function(input, output, session) {
       results_to_validate %>% filter(UITVALLEND == TRUE) %>% select(LABNUMMER, TESTCODE)
     
     fiatteer_data <- samples() %>% select(
-    #  KLAAR,
-      SAMPLE_OPMERKING,
-      LABNUMMER,
-      MONSTERNAMEDATUM,
-      OMSCHRIJVING,
-      MONSTERPUNTCODE,
-      HOEDNHD,
-      SMPL_PRIO,
-      WORKDAY,
-      PRIOFINISHDATE
+      !c(STATUS,FIATGROEP,NIET_NUMBER)
     ) %>%  nest_join(rejected_tests,
       by = "LABNUMMER",
       name = "UITVALLENDE_TESTS_LIST"
