@@ -426,12 +426,11 @@ server <- function(input, output, session) {
     loadingtip <- showNotification("Laden...", duration = NULL, closeButton = FALSE)
     tryCatch({
       file_path <- input$input_file$datapath
-      
-      fiatteerblad <- input$input_file_fiatteer_blad
-      resultatenblad <- input$input_file_resultaten_blad
-      measurepointcolumn <- input$input_file_meetpunt_kolom
-      resultscolumn <- input$input_file_testresultaat_kolom
-      labnrcolumn <- input$input_file_labnummer_kolom
+       fiatteerblad <- input$input_file_fiatteer_blad
+       resultatenblad <- input$input_file_resultaten_blad
+      # measurepointcolumn <- input$input_file_meetpunt_kolom
+      # resultscolumn <- input$input_file_testresultaat_kolom
+      # labnrcolumn <- input$input_file_labnummer_kolom
       
       
       samples(excel_results_reader(
