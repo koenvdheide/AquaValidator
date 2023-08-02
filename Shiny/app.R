@@ -637,8 +637,7 @@ server <- function(input, output, session) {
   # })
   
   output$tabel_fiatteerlijst <- DT::renderDataTable({
-    req(samples())
-    
+    req(input$input_file)
     rejected_tests <-
       results_to_validate %>% filter(UITVALLEND == TRUE) %>% select(LABNUMMER, TESTCODE)
     
