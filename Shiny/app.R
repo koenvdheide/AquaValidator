@@ -305,9 +305,39 @@ server <- function(input, output, session) {
     
     
   }
+  table_builder <- function(table_data,rownames = FALSE,
+                            dom = 'Bltipr',
+                              order = NULL, editable = FALSE, group = FALSE, group_cols = 0){
+
+    if (group == TRUE) {
+      extensions = c("Buttons", "RowGroup")
+    } else {
+      extensions = c("Buttons")
+    }
+    
+    
+    DT::datatable(
+      data = table_data,
+      rownames = rownames,
+      extensions = extensions,
+      filter = "top",
+      editable = editable,
+      escape = FALSE,
+      options = list(
+        dom = dom, #dom needed to remove search bar (redundant with column search)
+        buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+        order = order,
+        #ordering= 0, 
+        rowGroup = list(dataSrc = group_cols)
+        #columnDefs = list(list(visible=FALSE , targets = c("MONSTERPUNTCODE","NAAM","TESTSTATUS","REFCONCLUSION","UITVALLEND","SOORTWATER")))
+      ) 
+    )
+  }
+  
   plot_builder <- function(){
     #common code for building results & ratios plots
   }
+  
 ###########################reactive functions##################################
   
   selected_sample <- reactive({
@@ -451,11 +481,11 @@ server <- function(input, output, session) {
           #resultcolumn = resultscolumn,
           #labnummercolumn = labnrcolumn,
           #meetpuntcolumn = measurepointcolumn
-        ) %>% 
-        mutate(GEVALIDEERD = TESTSTATUS == 300,
-               UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0)%>%
+        ) %>% mutate(GEVALIDEERD = TESTSTATUS == 300,
+               UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0) %>%
         add_column(RESULT_OPMERKING = "", .before = 1) #don't move the comment column!
     
+      #results$RESULTAAT <- set_num_opts(results$RESULTAAT, sigfig = 3)
       
       results_to_validate <<- semi_join(results,samples(), by = c("LABNUMMER"))
       
@@ -501,7 +531,7 @@ server <- function(input, output, session) {
           values_to = "WAARDE",
           values_drop_na = TRUE #needed so that ggplot's geom_line doesn't stop when it encounters an NA value while plotting the ratios
         )
-
+      
     }, error = function(e){
       showModal(modalDialog(title = "Error",e)) #geef de error als een popup scherm zodat de gebruiker het ziet
     })
