@@ -722,6 +722,7 @@ server <- function(input, output, session) {
      #View(results)
     
       if(input$instellingen_roteer_tabel  == "labnr"){
+        
         labnr_widened_results <- results %>% pivot_wider(
           id_cols = c(TESTCODE,ELEMENTCODE),
           names_from = c(NAAM,LABNUMMER,RUNNR),
@@ -729,95 +730,74 @@ server <- function(input, output, session) {
           names_sep = "<br>",
          unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = list, UITVALLEND = list)
         ) 
+        return(table_builder(labnr_widened_results, sort_by = 0, group = FALSE))
         
-        DT::datatable(
-          data = labnr_widened_results,
-          rownames = FALSE,
-          extensions = c("Buttons", "RowGroup"),
-          filter = "top",
-          escape = FALSE,
-          options = list(
-            dom = 'Bltipr', #dom needed to remove search bar (redundant with column search)
-            buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
-            order = list(list(0, 'desc'))
-            #ordering= 0, 
-            #rowGroup = list(
-              #dataSrc = c(0)
-              # startRender = JS(
-              #   "function(rows, group) {",
-              #   "return 'Sampling Datum:' +' ('+rows.count()+' rows)';",
-              #   "}"
-              # )
-            ),
-           # columnDefs = list(list(visible=FALSE , targets = c("MONSTERPUNTCODE","NAAM","TESTSTATUS","REFCONCLUSION","UITVALLEND","SOORTWATER")))
-          #) 
-        )
+      } else if (input$instellingen_roteer_tabel == "sample") {
         
-      }else if(input$instellingen_roteer_tabel == "sample"){
-       DT::datatable(
-         data = results,
-         rownames = FALSE,
-         extensions = c("Buttons", "RowGroup"),
-         filter = "top",
-         escape = FALSE,
-         options = list(
-           dom = 'Bltipr', #dom needed to remove search bar (redundant with column search)
-           buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
-           order = list(list(2, 'desc')),
-           #ordering= 0, 
-           rowGroup = list(
-             dataSrc = c(1,2)
-             # startRender = JS(
-             #   "function(rows, group) {",
-             #   "return 'Sampling Datum:' +' ('+rows.count()+' rows)';",
-             #   "}"
-             # )
-           ),
-           columnDefs = list(list(visible=FALSE , targets = c("MONSTERPUNTCODE","NAAM","TESTSTATUS","REFCONCLUSION","UITVALLEND","SOORTWATER")))
-         ) 
-       )  %>% formatStyle(columns = 'LABNUMMER',
-                          valueColumns = 'LABNUMMER',
-                          backgroundColor = styleEqual(selected_sample_current_results()$LABNUMMER, 'yellow',default = 'gray')
-       ) %>% formatStyle(columns = 'RESULTAAT',
-                         valueColumns = 'UITVALLEND',
-                         target = 'cell',
-                         backgroundColor = styleEqual(TRUE,'salmon'))
-       
+        return(table_builder(
+          results,
+          sort_by = 2,
+          group = TRUE,
+          group_cols = c(0, 1), #change to 1,2 if comment column is back
+          columnDefs = list(list(
+            visible = FALSE ,
+            targets = c(
+              "MONSTERPUNTCODE",
+              "NAAM",
+              "TESTSTATUS",
+              "REFCONCLUSION",
+              "UITVALLEND",
+              "SOORTWATER"
+            )
+          ))
+        )  %>% formatStyle(
+            columns = 'LABNUMMER',
+            valueColumns = 'LABNUMMER',
+            backgroundColor = styleEqual(
+              selected_sample_current_results()$LABNUMMER,
+              'yellow',
+              default = 'gray'
+            )
+          ) %>% formatStyle(
+            columns = 'RESULTAAT',
+            valueColumns = 'UITVALLEND',
+            target = 'cell',
+            backgroundColor = styleEqual(TRUE, 'salmon')
+          ))
+        
        #%>% formatSignif(columns = c(-2,-3), digits = 3) #nog kijken hoe we datums uitzonderen
-     } else if (input$instellingen_roteer_tabel == "test"){ 
-     test_widened_results <- results_widened(results)
-     DT::datatable(
-       data = test_widened_results,
-       rownames = FALSE,
-       extensions = c("Buttons", "RowGroup"),
-       filter = "top",
-       escape = FALSE,
-       options = list(
-         dom = 'Bltipr', #dom needed to remove search bar (redundant with column search)
-         buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
-         order = list(list(1, 'desc')),
-         #ordering= 0, 
-         rowGroup = list(
-           dataSrc = c(0,1)
-           # startRender = JS(
-           #   "function(rows, group) {",
-           #   "return 'Sampling Datum:' +' ('+rows.count()+' rows)';",
-           #   "}"
-           # )
-         ),
-         columnDefs = list(list(visible=FALSE , targets = c(0)))
-       ) 
-     )  %>% formatStyle(columns = 'LABNUMMER',
-                        valueColumns = 'LABNUMMER',
-                        backgroundColor = styleEqual(selected_sample_current_results()$LABNUMMER, 'yellow',default = 'gray')
-                        ) %>% formatStyle(columns = 'RUNNR',
-                                          valueColumns = 'UITVALLEND',
-                                          target = 'cell',
-                                          backgroundColor = styleEqual(TRUE,'red'))
      
-     
-     #%>% formatSignif(columns = c(-2,-3), digits = 3) #nog kijken hoe we datums uitzonderen
-}
+      } else if (input$instellingen_roteer_tabel == "test") {
+        
+        test_widened_results <- results_widened(results)
+        return(
+          table_builder(
+            test_widened_results,
+            sort_by = 1,
+            group = TRUE,
+            group_cols = c(0, 1),
+            #change to 1,2 if comment column is back
+            columnDefs = list(list(
+              visible = FALSE , targets = c(0)
+            ))
+          )
+          %>% formatStyle(
+            columns = 'LABNUMMER',
+            valueColumns = 'LABNUMMER',
+            backgroundColor = styleEqual(
+              selected_sample_current_results()$LABNUMMER,
+              'yellow',
+              default = 'gray'
+            )
+          ) %>% formatStyle(
+            columns = 'RUNNR',
+            valueColumns = 'UITVALLEND',
+            target = 'cell',
+            backgroundColor = styleEqual(TRUE, 'red')
+          )
+          #%>% formatSignif(columns = c(-2,-3), digits = 3) #nog kijken hoe we datums uitzonderen
+        )
+      }
    })
 
    
