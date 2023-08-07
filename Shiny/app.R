@@ -323,10 +323,12 @@ server <- function(input, output, session) {
     
     if (group == TRUE) {
       extensions = c("Buttons", "RowGroup")
+      rowGroup = list(dataSrc = group_cols)
     } else {
       extensions = c("Buttons")
+      rowGroup = NULL
+      
     }
-    
     
     DT::datatable(
       data = table_data,
@@ -340,7 +342,7 @@ server <- function(input, output, session) {
         buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
         order = order,
         #ordering= 0, 
-        rowGroup = list(dataSrc = group_cols),
+        rowGroup = rowGroup,
         columnDefs = columnDefs
       ) 
     )
