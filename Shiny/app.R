@@ -305,10 +305,22 @@ server <- function(input, output, session) {
     
     
   }
-  table_builder <- function(table_data,rownames = FALSE,
+  table_builder <- function(table_data,
+                            rownames = FALSE,
                             dom = 'Bltipr',
-                              order = NULL, editable = FALSE, group = FALSE, group_cols = 0,columnDefs = NULL){
-
+                            sort_by = NA,
+                            sort_direction = 'desc',
+                            editable = FALSE,
+                            group = FALSE,
+                            group_cols = 0,
+                            columnDefs = NULL) {
+  
+    if (!is.na(sort_by)) {
+      order = list(list(sort_by, sort_direction))
+    } else {
+      order = list()
+    }
+    
     if (group == TRUE) {
       extensions = c("Buttons", "RowGroup")
     } else {
@@ -670,14 +682,15 @@ server <- function(input, output, session) {
     rejected_tests <-
       results_to_validate %>% filter(UITVALLEND == TRUE) %>% select(LABNUMMER, TESTCODE)
     
-    fiatteer_data <- samples() %>% select(
-      !c(STATUS,FIATGROEP,NIET_NUMBER)
-    ) %>%  nest_join(rejected_tests,
-      by = "LABNUMMER",
-      name = "UITVALLENDE_TESTS_LIST"
-    ) %>% hoist(UITVALLENDE_TESTS_LIST,UITVALLERS= "TESTCODE")
-
-    table_builder(fiatteer_data, editable = list(target = "cell", disable = list(columns = c(1:ncol(fiatteer_data)))))
+    fiatteer_data <- samples() %>% 
+      select(!c(STATUS, FIATGROEP, NIET_NUMBER)) %>%
+      nest_join(rejected_tests,
+                by = "LABNUMMER",
+                name = "UITVALLENDE_TESTS_LIST") %>%
+      hoist(UITVALLENDE_TESTS_LIST, UITVALLERS = "TESTCODE")
+    
+    table_builder(fiatteer_data, 
+                  editable = list(target = "cell", disable = list(columns = c(1:ncol(fiatteer_data)))))
     
     # DT::datatable(
     #   data = fiatteer_data,
