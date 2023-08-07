@@ -867,22 +867,15 @@ server <- function(input, output, session) {
         MEASUREDATE,
         UITVALLEND
       )
-    
-    DT::datatable(
-      data = selected_data,
-      rownames = FALSE,
-      extensions = ("RowGroup"),
-      filter = "top",
-      escape = FALSE,
-      options = list(
-        dom = 'ltipr',         #dom = 'tr',
-        # buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
-        order = list(list(1, 'desc')),
-        rowGroup = list(dataSrc = c(0, 1)),
-        columnDefs = list(list(
-          visible = FALSE , targets = c('NAAM','UITVALLEND')
-        ))
-      )
+    table_builder(
+      selected_data,
+      group = TRUE,
+      group_cols = c(0,1),
+      sort_by = 1,
+      #change to 1,2 if comment column is back
+      columnDefs = list(list(
+        visible = FALSE , targets = c('NAAM','UITVALLEND')
+      ))
     ) %>% formatStyle(columns = 'RESULTAAT',
                       valueColumns = 'UITVALLEND',
                       target = 'cell',
