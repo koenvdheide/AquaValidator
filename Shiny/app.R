@@ -676,19 +676,22 @@ server <- function(input, output, session) {
       by = "LABNUMMER",
       name = "UITVALLENDE_TESTS_LIST"
     ) %>% hoist(UITVALLENDE_TESTS_LIST,UITVALLERS= "TESTCODE")
+
+    table_builder(fiatteer_data, editable = list(target = "cell", disable = list(columns = c(1:ncol(fiatteer_data)))))
     
-    DT::datatable(
-      data = fiatteer_data,
-      filter = "top",
-      rownames = FALSE,
-      extensions = c("Buttons"),
-      editable = list(target = "cell", disable = list(columns = c(1:ncol(fiatteer_data)))),
-      options = list(
-        searchHighlight = TRUE,
-        dom = 'Bltipr', #dom needed to remove search bar (redundant with column search) 
-        buttons = c('copy', 'csv', 'excel', 'pdf', 'print')
-      )
-    )    
+    # DT::datatable(
+    #   data = fiatteer_data,
+    #   filter = "top",
+    #   rownames = FALSE,
+    #   extensions = c("Buttons"),
+    #   editable = list(target = "cell", disable = list(columns = c(1:ncol(fiatteer_data)))),
+    #   options = list(
+    #     searchHighlight = TRUE,
+    #     dom = 'Bltipr', #dom needed to remove search bar (redundant with column search)
+    #     buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+    #     
+    #   )
+    # )
     
   })
   
@@ -709,9 +712,9 @@ server <- function(input, output, session) {
           id_cols = c(TESTCODE,ELEMENTCODE),
           names_from = c(NAAM,LABNUMMER,RUNNR),
           values_from = RESULTAAT,
-          names_sep = "<br>"
-          # unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = list, UITVALLEND = list)
-        )
+          names_sep = "<br>",
+         unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = list, UITVALLEND = list)
+        ) 
         
         DT::datatable(
           data = labnr_widened_results,
@@ -735,6 +738,7 @@ server <- function(input, output, session) {
            # columnDefs = list(list(visible=FALSE , targets = c("MONSTERPUNTCODE","NAAM","TESTSTATUS","REFCONCLUSION","UITVALLEND","SOORTWATER")))
           #) 
         )
+        
       }else if(input$instellingen_roteer_tabel == "sample"){
        DT::datatable(
          data = results,
