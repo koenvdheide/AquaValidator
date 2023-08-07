@@ -307,7 +307,7 @@ server <- function(input, output, session) {
   }
   table_builder <- function(table_data,rownames = FALSE,
                             dom = 'Bltipr',
-                              order = NULL, editable = FALSE, group = FALSE, group_cols = 0){
+                              order = NULL, editable = FALSE, group = FALSE, group_cols = 0,columnDefs = NULL){
 
     if (group == TRUE) {
       extensions = c("Buttons", "RowGroup")
@@ -328,8 +328,8 @@ server <- function(input, output, session) {
         buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
         order = order,
         #ordering= 0, 
-        rowGroup = list(dataSrc = group_cols)
-        #columnDefs = list(list(visible=FALSE , targets = c("MONSTERPUNTCODE","NAAM","TESTSTATUS","REFCONCLUSION","UITVALLEND","SOORTWATER")))
+        rowGroup = list(dataSrc = group_cols),
+        columnDefs = columnDefs
       ) 
     )
   }
