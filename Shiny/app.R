@@ -685,16 +685,22 @@ server <- function(input, output, session) {
     rejected_tests <-
       results_to_validate %>% filter(UITVALLEND == TRUE) %>% select(LABNUMMER, TESTCODE)
     
-    fiatteer_data <- samples() %>% 
-      select(!c(STATUS, FIATGROEP, NIET_NUMBER)) %>%
+    fiatteer_data <- samples() %>%
       nest_join(rejected_tests,
                 by = "LABNUMMER",
                 name = "UITVALLENDE_TESTS_LIST") %>%
       hoist(UITVALLENDE_TESTS_LIST, UITVALLERS = "TESTCODE")
     
     table_builder(fiatteer_data, 
-                  editable = list(target = "cell", disable = list(columns = c(1:ncol(fiatteer_data)))))
-    
+                  editable = list(target = "cell", disable = list(columns = c(1:ncol(fiatteer_data)))),
+                  columnDefs = list(list(
+                    visible = FALSE ,
+                    targets = c(
+                      "STATUS",
+                      "FIATGROEP",
+                      "NIET_NUMBER"
+                    )
+                  )))
   })
   
    output$tabel_sample <- DT::renderDataTable({
