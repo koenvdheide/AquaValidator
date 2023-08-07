@@ -494,8 +494,9 @@ server <- function(input, output, session) {
           #labnummercolumn = labnrcolumn,
           #meetpuntcolumn = measurepointcolumn
         ) %>% mutate(GEVALIDEERD = TESTSTATUS == 300,
-               UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0) %>%
-        add_column(RESULT_OPMERKING = "", .before = 1) #don't move the comment column!
+               UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0) #%>%
+        #AAV-177 issue
+        #add_column(RESULT_OPMERKING = "", .before = 1) #don't move the comment column!
     
       #results$RESULTAAT <- set_num_opts(results$RESULTAAT, sigfig = 3)
       
