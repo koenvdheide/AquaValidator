@@ -300,7 +300,7 @@ server <- function(input, output, session) {
       }) %>% ungroup()
   }
   
-  ratios_calculator <- function(results){
+  ratios_calculator <- function(results, numerator, denominator){
     #dataframe with labnummer and ratios per labnummer
     
     #across(contains(c("result", "resultaat")), as.numeric),
