@@ -218,9 +218,9 @@ server <- function(input, output, session) {
       
       #kan netter?: https://stackoverflow.com/questions/64189561/using-case-when-with-dplyr-across
       mutate(
-        NIET_NUMBER = across(contains(c("result", "resultaat")), ~ if_else(is.na(as.numeric(.)), ., NA)),
+        #NIET_NUMBER = across(contains(c("result", "resultaat")), ~ if_else(is.na(as.numeric(.)), ., NA)),
         #across(contains(c("result", "resultaat")), as.list),
-        across(contains(c("result", "resultaat")), as.numeric),
+        #across(contains(c("result", "resultaat")), as.numeric),
         
         #"{resultcolumn}" := as.numeric,
         #"{labnummercolumn}" := as.numeric,
@@ -302,6 +302,8 @@ server <- function(input, output, session) {
   
   ratios_calculator <- function(results){
     #dataframe with labnummer and ratios per labnummer
+    
+    #across(contains(c("result", "resultaat")), as.numeric),
     
     
   }
@@ -513,31 +515,31 @@ server <- function(input, output, session) {
           SAMPLINGDATE = SAMPLINGDATE,
           CZV_BZV_RATIO = ifelse(
             any(ELEMENTCODE == "CZV") & any(ELEMENTCODE == "BZV5"),
-            RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[ELEMENTCODE == "BZV5"],
+            as.numeric(RESULTAAT[ELEMENTCODE == "CZV"]) / as.numeric(RESULTAAT[ELEMENTCODE == "BZV5"]),
             NA
           ),
           CZV_NKA_RATIO = ifelse(
             any(ELEMENTCODE == "CZV") &
               any(TESTCODE == "nka"),
-            RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[TESTCODE == "nka"],
+            as.numeric(RESULTAAT[ELEMENTCODE == "CZV"]) / as.numeric(RESULTAAT[TESTCODE == "nka"]),
             NA
           ),
           BZV_ONOPA_RATIO = ifelse(
             any(ELEMENTCODE == "BZV5") &
               any(TESTCODE == "onopa"),
-            RESULTAAT[ELEMENTCODE == "BZV5"] / RESULTAAT[TESTCODE == "onopa"],
+            as.numeric(RESULTAAT[ELEMENTCODE == "BZV5"]) / as.numeric(RESULTAAT[TESTCODE == "onopa"]),
             NA
           ),
           CZV_TOC_RATIO = ifelse(
             any(ELEMENTCODE == "CZV") &
               any(ELEMENTCODE == "TOC"),
-            RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[ELEMENTCODE == "TOC"],
+            as.numeric(RESULTAAT[ELEMENTCODE == "CZV"]) / as.numeric(RESULTAAT[ELEMENTCODE == "TOC"]),
             NA
           ),
           CZV_TNB_RATIO =ifelse(
             any(ELEMENTCODE == "CZV") &
               any(TESTCODE == "tnb"),
-            RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[TESTCODE == "tnb"],
+            as.numeric(RESULTAAT[ELEMENTCODE == "CZV"]) / as.numeric(RESULTAAT[TESTCODE == "tnb"]),
             NA
           )
         ) %>% pivot_longer(
@@ -697,10 +699,12 @@ server <- function(input, output, session) {
                     visible = FALSE ,
                     targets = c(
                       "STATUS",
-                      "FIATGROEP",
-                      "NIET_NUMBER"
+                      "FIATGROEP"
+                      #"NIET_NUMBER"
                     )
-                  )))
+                  )
+                  )
+                  )
   })
   
    output$tabel_sample <- DT::renderDataTable({
