@@ -329,7 +329,6 @@ server <- function(input, output, session) {
     } else {
       extensions = c("Buttons")
       rowGroup = NULL
-      
     }
     
     DT::datatable(
@@ -440,16 +439,6 @@ server <- function(input, output, session) {
     return(current_ratios)
   })
 
-  # selected_results_widened <- reactive ({
-  #   selected_sample_historical_results() %>% pivot_wider(
-  #     id_cols = c(LABNUMMER, RUNNR),
-  #     names_from = c(TESTCODE, ELEMENTCODE),
-  #     values_from = RESULTAAT,
-  #     names_sep = "<br>",
-  #     unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = min) #, CZV_BZV_Ratio = list, CZV_NKa_Ratio = list, BZV_onopa_Ratio = list)
-  #   )
-  # })
-  # 
   
   fiatteer_plot_user_selection <-
     reactive({
@@ -499,7 +488,7 @@ server <- function(input, output, session) {
           #meetpuntcolumn = measurepointcolumn
         ) %>% mutate(GEVALIDEERD = TESTSTATUS == 300,
                UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0) #%>%
-        #AAV-177 issue
+        #see AAV-177 issue
         #add_column(RESULT_OPMERKING = "", .before = 1) #don't move the comment column!
     
       #results$RESULTAAT <- set_num_opts(results$RESULTAAT, sigfig = 3)
@@ -508,7 +497,6 @@ server <- function(input, output, session) {
       
       ratios <<-
         results %>%
-        #mutate(RESULTAAT = as.numeric(unnest)) %>%
         group_by(LABNUMMER, MONSTERPUNTCODE) %>%
         reframe(
           NAAM = NAAM,
