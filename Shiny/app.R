@@ -159,9 +159,10 @@ ui <- function(request) {
            id = "hulp_tab",
            sidebarLayout(sidebarPanel(),
                          mainPanel())),
-  header = bookmarkButton(
+  header = div(bookmarkButton(
     label = "Sla fiatteer voortgang & opmerkingen op"
-  )
+  ),
+  actionButton("button_fiatteerlijst_klaar", label = "Valideer geselecteerde samples"))
 )
 )}
 server <- function(input, output, session) {
@@ -187,14 +188,19 @@ server <- function(input, output, session) {
   # )
   
   #data
-  samples <- NULL
-  results <- NULL
-  ratios <- NULL
+  samples <- reactiveVal(tibble())
+  results <- tibble()
+  results_to_validate <- tibble()
+  ratios <- tibble()
   
   #graph user input
   graph_selection <- reactiveVal()
   hover_selection <- reactiveVal()
   ratio_selection <- reactiveVal()
+  
+  #output
+  finished_samples <- tibble()
+  finished_results <- tibble()
   
 ##################### common server functions #######################
   
@@ -212,9 +218,9 @@ server <- function(input, output, session) {
       
       #kan netter?: https://stackoverflow.com/questions/64189561/using-case-when-with-dplyr-across
       mutate(
-        NIET_NUMBER = across(contains(c("result", "resultaat")), ~ if_else(is.na(as.numeric(.)), ., NA)),
+        #NIET_NUMBER = across(contains(c("result", "resultaat")), ~ if_else(is.na(as.numeric(.)), ., NA)),
         #across(contains(c("result", "resultaat")), as.list),
-        across(contains(c("result", "resultaat")), as.numeric),
+        #across(contains(c("result", "resultaat")), as.numeric),
         
         #"{resultcolumn}" := as.numeric,
         #"{labnummercolumn}" := as.numeric,
@@ -294,20 +300,65 @@ server <- function(input, output, session) {
       }) %>% ungroup()
   }
   
-  ratios_calculator <- function(results){
+  ratios_calculator <- function(results, numerator, denominator){
     #dataframe with labnummer and ratios per labnummer
+    
+    #across(contains(c("result", "resultaat")), as.numeric),
     
     
   }
+  table_builder <- function(table_data,
+                            rownames = FALSE,
+                            dom = 'Bltipr',
+                            sort_by = NA,
+                            sort_direction = 'desc',
+                            editable = FALSE,
+                            group = FALSE,
+                            group_cols = 0,
+                            columnDefs = NULL) {
+  
+    if (!is.na(sort_by)) {
+      order = list(list(sort_by, sort_direction))
+    } else {
+      order = list()
+    }
+    
+    if (group == TRUE) {
+      extensions = c("Buttons", "RowGroup")
+      rowGroup = list(dataSrc = group_cols)
+    } else {
+      extensions = c("Buttons")
+      rowGroup = NULL
+    }
+    
+    DT::datatable(
+      data = table_data,
+      rownames = rownames,
+      extensions = extensions,
+      filter = "top",
+      editable = editable,
+      escape = FALSE,
+      options = list(
+        dom = dom, #dom needed to remove search bar (redundant with column search)
+        buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+        order = order,
+        #ordering= 0, 
+        rowGroup = rowGroup,
+        columnDefs = columnDefs
+      ) 
+    )
+  }
+  
   plot_builder <- function(){
     #common code for building results & ratios plots
   }
+  
 ###########################reactive functions##################################
   
   selected_sample <- reactive({
-    req(samples)
+    data <- samples() #redundant but needed because subsetting reactiveval is buggy
     if (isTruthy(input$tabel_fiatteerlijst_rows_selected)) {
-      return(samples[input$tabel_fiatteerlijst_rows_selected,])
+      return(data[input$tabel_fiatteerlijst_rows_selected,])
     }
     else{
       showModal(modalDialog(
@@ -347,7 +398,6 @@ server <- function(input, output, session) {
   
   selected_sample_historical_results <- reactive({
     #includes current result for now
-    req(results)
     selected_meetpunt <- select(selected_sample_current_results(), MONSTERPUNTCODE)
     matching_results <- semi_join(results,
                                   selected_sample_current_results(),
@@ -378,29 +428,17 @@ server <- function(input, output, session) {
     
   })
   selected_sample_current_ratios <-  reactive({
-    req(ratios)
     selected_monsterpuntcode <- select(selected_sample_current_results(), LABNUMMER)
     selected_sample_current_ratios <- ratios %>% filter(LABNUMMER %in% selected_monsterpuntcode$LABNUMMER)
     return(selected_sample_current_ratios)
   })
   
   selected_sample_historical_ratios <- reactive({
-    req(ratios)
     selected_monsterpuntcode <- select(selected_sample_historical_results(), LABNUMMER)
     current_ratios <- ratios %>% filter(LABNUMMER %in% selected_monsterpuntcode$LABNUMMER)
     return(current_ratios)
   })
 
-  # selected_results_widened <- reactive ({
-  #   selected_sample_historical_results() %>% pivot_wider(
-  #     id_cols = c(LABNUMMER, RUNNR),
-  #     names_from = c(TESTCODE, ELEMENTCODE),
-  #     values_from = RESULTAAT,
-  #     names_sep = "<br>",
-  #     unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = min) #, CZV_BZV_Ratio = list, CZV_NKa_Ratio = list, BZV_onopa_Ratio = list)
-  #   )
-  # })
-  # 
   
   fiatteer_plot_user_selection <-
     reactive({
@@ -423,22 +461,23 @@ server <- function(input, output, session) {
     loadingtip <- showNotification("Laden...", duration = NULL, closeButton = FALSE)
     tryCatch({
       file_path <- input$input_file$datapath
+       fiatteerblad <- input$input_file_fiatteer_blad
+       resultatenblad <- input$input_file_resultaten_blad
+      # measurepointcolumn <- input$input_file_meetpunt_kolom
+      # resultscolumn <- input$input_file_testresultaat_kolom
+      # labnrcolumn <- input$input_file_labnummer_kolom
       
-      fiatteerblad <- input$input_file_fiatteer_blad
-      resultatenblad <- input$input_file_resultaten_blad
-      measurepointcolumn <- input$input_file_meetpunt_kolom
-      resultscolumn <- input$input_file_testresultaat_kolom
-      labnrcolumn <- input$input_file_labnummer_kolom
       
-      
-      samples <<- excel_results_reader(
+      samples(excel_results_reader(
         file_path,
         sheet = fiatteerblad
         #resultcolumn = resultscolumn,
         #labnummercolumn = labnrcolumn,
         #meetpuntcolumn = measurepointcolumn
         ) %>% 
-        arrange(PRIOFINISHDATE)
+        add_column(#KLAAR = '<input type="checkbox" id="klaar" class="styled">', 
+                   SAMPLE_OPMERKING = "",.before = 1) %>% #don't move the comment column!
+        arrange(PRIOFINISHDATE))
       
       results <<-
         excel_results_reader(
@@ -447,44 +486,48 @@ server <- function(input, output, session) {
           #resultcolumn = resultscolumn,
           #labnummercolumn = labnrcolumn,
           #meetpuntcolumn = measurepointcolumn
-        ) %>% 
-        mutate(GEVALIDEERD = TESTSTATUS == 300,
-               UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0)
+        ) %>% mutate(GEVALIDEERD = TESTSTATUS == 300,
+               UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0) #%>%
+        #see AAV-177 issue
+        #add_column(RESULT_OPMERKING = "", .before = 1) #don't move the comment column!
+    
+      #results$RESULTAAT <- set_num_opts(results$RESULTAAT, sigfig = 3)
+      
+      results_to_validate <<- semi_join(results,samples(), by = c("LABNUMMER"))
       
       ratios <<-
         results %>%
-        #mutate(RESULTAAT = as.numeric(unnest)) %>%
         group_by(LABNUMMER, MONSTERPUNTCODE) %>%
         reframe(
           NAAM = NAAM,
           SAMPLINGDATE = SAMPLINGDATE,
           CZV_BZV_RATIO = ifelse(
             any(ELEMENTCODE == "CZV") & any(ELEMENTCODE == "BZV5"),
-            RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[ELEMENTCODE == "BZV5"],
+            as.numeric(RESULTAAT[ELEMENTCODE == "CZV"]) / as.numeric(RESULTAAT[ELEMENTCODE == "BZV5"]),
             NA
           ),
           CZV_NKA_RATIO = ifelse(
             any(ELEMENTCODE == "CZV") &
               any(TESTCODE == "nka"),
-            RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[TESTCODE == "nka"],
+            as.numeric(RESULTAAT[ELEMENTCODE == "CZV"]) / as.numeric(RESULTAAT[TESTCODE == "nka"]),
             NA
           ),
           BZV_ONOPA_RATIO = ifelse(
             any(ELEMENTCODE == "BZV5") &
               any(TESTCODE == "onopa"),
-            RESULTAAT[ELEMENTCODE == "BZV5"] / RESULTAAT[TESTCODE == "onopa"],
+            as.numeric(RESULTAAT[ELEMENTCODE == "BZV5"]) / as.numeric(RESULTAAT[TESTCODE == "onopa"]),
             NA
           ),
           CZV_TOC_RATIO = ifelse(
             any(ELEMENTCODE == "CZV") &
               any(ELEMENTCODE == "TOC"),
-            RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[ELEMENTCODE == "TOC"],
+            as.numeric(RESULTAAT[ELEMENTCODE == "CZV"]) / as.numeric(RESULTAAT[ELEMENTCODE == "TOC"]),
             NA
           ),
           CZV_TNB_RATIO =ifelse(
             any(ELEMENTCODE == "CZV") &
               any(TESTCODE == "tnb"),
-            RESULTAAT[ELEMENTCODE == "CZV"] / RESULTAAT[TESTCODE == "tnb"],
+            as.numeric(RESULTAAT[ELEMENTCODE == "CZV"]) / as.numeric(RESULTAAT[TESTCODE == "tnb"]),
             NA
           )
         ) %>% pivot_longer(
@@ -493,12 +536,29 @@ server <- function(input, output, session) {
           values_to = "WAARDE",
           values_drop_na = TRUE #needed so that ggplot's geom_line doesn't stop when it encounters an NA value while plotting the ratios
         )
-
+      
     }, error = function(e){
       showModal(modalDialog(title = "Error",e)) #geef de error als een popup scherm zodat de gebruiker het ziet
     })
     on.exit(removeNotification(loadingtip), add = TRUE)
     on.exit(inputUpdater(uiComponent = "tp", inputId = "fiatteer_beeld",selected = "tab_fiatteerlijst"), add = TRUE)
+  })
+  
+  observeEvent(input$tabel_fiatteerlijst_cell_edit,{
+    #reminder that if "samples" columns change/rearrange this can overwrite the wrong columns!
+    samples(editData(samples(),input$tabel_fiatteerlijst_cell_edit,rownames = FALSE))
+
+  })
+  
+  observeEvent(input$button_fiatteerlijst_klaar, {
+    selected_rows <- selected_sample()
+    selected_rows_results <-selected_sample_current_results()
+      
+    finished_samples <<- finished_samples %>% rbind(selected_rows)
+    finished_results <<- finished_results %>% rbind(selected_rows_results)
+    
+    samples(anti_join(samples(),selected_rows, by = 'LABNUMMER'))
+    
   })
   
   observeEvent(input$tabel_sample_rows_selected,{
@@ -611,30 +671,28 @@ server <- function(input, output, session) {
   # })
   
   output$tabel_fiatteerlijst <- DT::renderDataTable({
-    req(samples)
-    relevant_data <- samples %>% select(
-      LABNUMMER,
-      MONSTERNAMEDATUM,
-      OMSCHRIJVING,
-      MONSTERPUNTCODE,
-      HOEDNHD,
-      SMPL_PRIO,
-      WORKDAY,
-      PRIOFINISHDATE
-    ) 
+    req(input$input_file)
+    rejected_tests <-
+      results_to_validate %>% filter(UITVALLEND == TRUE) %>% select(LABNUMMER, TESTCODE)
     
-    DT::datatable(
-      data = relevant_data,
-      filter = "top",
-      rownames = FALSE,
-      extensions = c("Buttons"),
-      options = list(
-        searchHighlight = TRUE,
-        dom = 'Bltipr', #dom needed to remove search bar (redundant with column search) 
-        buttons = c('copy', 'csv', 'excel', 'pdf', 'print')
-      )
-    )    
+    fiatteer_data <- samples() %>%
+      nest_join(rejected_tests,
+                by = "LABNUMMER",
+                name = "UITVALLENDE_TESTS_LIST") %>%
+      hoist(UITVALLENDE_TESTS_LIST, UITVALLERS = "TESTCODE")
     
+    table_builder(fiatteer_data, 
+                  editable = list(target = "cell", disable = list(columns = c(1:ncol(fiatteer_data)))),
+                  columnDefs = list(list(
+                    visible = FALSE ,
+                    targets = c(
+                      "STATUS",
+                      "FIATGROEP"
+                      #"NIET_NUMBER"
+                    )
+                  )
+                  )
+                  )
   })
   
    output$tabel_sample <- DT::renderDataTable({
@@ -654,97 +712,76 @@ server <- function(input, output, session) {
           id_cols = c(TESTCODE,ELEMENTCODE),
           names_from = c(NAAM,LABNUMMER,RUNNR),
           values_from = RESULTAAT,
-          names_sep = "<br>"
-          # unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = list, UITVALLEND = list)
-        )
+          names_sep = "<br>",
+         unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = list, UITVALLEND = list)
+        ) 
+        table_labnr <- table_builder(labnr_widened_results, sort_by = 0)
+        return(table_labnr)
         
-        DT::datatable(
-          data = labnr_widened_results,
-          rownames = FALSE,
-          extensions = c("Buttons", "RowGroup"),
-          filter = "top",
-          escape = FALSE,
-          options = list(
-            dom = 'Bltipr', #dom needed to remove search bar (redundant with column search)
-            buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
-            order = list(list(0, 'desc'))
-            #ordering= 0, 
-            #rowGroup = list(
-              #dataSrc = c(0)
-              # startRender = JS(
-              #   "function(rows, group) {",
-              #   "return 'Sampling Datum:' +' ('+rows.count()+' rows)';",
-              #   "}"
-              # )
-            ),
-           # columnDefs = list(list(visible=FALSE , targets = c("MONSTERPUNTCODE","NAAM","TESTSTATUS","REFCONCLUSION","UITVALLEND","SOORTWATER")))
-          #) 
+      } else if (input$instellingen_roteer_tabel == "sample") {
+        table_sample <- table_builder(
+          results,
+          sort_by = 2,
+          group = TRUE,
+          group_cols = c(0, 1), #change to 1,2 if comment column is back
+          columnDefs = list(list(
+            visible = FALSE ,
+            targets = c(
+              "MONSTERPUNTCODE",
+              "NAAM",
+              "TESTSTATUS",
+              "REFCONCLUSION",
+              "UITVALLEND",
+              "SOORTWATER"
+            )
+          ))
+        )  %>% formatStyle(
+          columns = 'LABNUMMER',
+          valueColumns = 'LABNUMMER',
+          backgroundColor = styleEqual(
+            selected_sample_current_results()$LABNUMMER,
+            'yellow',
+            default = 'gray'
+          )
+        ) %>% formatStyle(
+          columns = 'RESULTAAT',
+          valueColumns = 'UITVALLEND',
+          target = 'cell',
+          backgroundColor = styleEqual(TRUE, 'salmon')
         )
-      }else if(input$instellingen_roteer_tabel == "sample"){
-       DT::datatable(
-         data = results,
-         rownames = FALSE,
-         extensions = c("Buttons", "RowGroup"),
-         filter = "top",
-         escape = FALSE,
-         options = list(
-           dom = 'Bltipr', #dom needed to remove search bar (redundant with column search)
-           buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
-           order = list(list(2, 'desc')),
-           #ordering= 0, 
-           rowGroup = list(
-             dataSrc = c(1,2)
-             # startRender = JS(
-             #   "function(rows, group) {",
-             #   "return 'Sampling Datum:' +' ('+rows.count()+' rows)';",
-             #   "}"
-             # )
-           ),
-           columnDefs = list(list(visible=FALSE , targets = c("MONSTERPUNTCODE","NAAM","TESTSTATUS","REFCONCLUSION","UITVALLEND","SOORTWATER")))
-         ) 
-       )  %>% formatStyle(columns = 'LABNUMMER',
-                          valueColumns = 'LABNUMMER',
-                          backgroundColor = styleEqual(selected_sample_current_results()$LABNUMMER, 'yellow',default = 'gray')
-       ) %>% formatStyle(columns = 'RESULTAAT',
-                         valueColumns = 'UITVALLEND',
-                         target = 'cell',
-                         backgroundColor = styleEqual(TRUE,'salmon'))
-       
+        return(table_sample)
+        
        #%>% formatSignif(columns = c(-2,-3), digits = 3) #nog kijken hoe we datums uitzonderen
-     } else if (input$instellingen_roteer_tabel == "test"){ 
-     test_widened_results <- results_widened(results)
-     DT::datatable(
-       data = test_widened_results,
-       rownames = FALSE,
-       extensions = c("Buttons", "RowGroup"),
-       filter = "top",
-       escape = FALSE,
-       options = list(
-         dom = 'Bltipr', #dom needed to remove search bar (redundant with column search)
-         buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
-         order = list(list(1, 'desc')),
-         #ordering= 0, 
-         rowGroup = list(
-           dataSrc = c(0,1)
-           # startRender = JS(
-           #   "function(rows, group) {",
-           #   "return 'Sampling Datum:' +' ('+rows.count()+' rows)';",
-           #   "}"
-           # )
-         ),
-         columnDefs = list(list(visible=FALSE , targets = c(0)))
-       ) 
-     )  %>% formatStyle(columns = 'LABNUMMER',
-                        valueColumns = 'LABNUMMER',
-                        backgroundColor = styleEqual(selected_sample_current_results()$LABNUMMER, 'yellow',default = 'gray')
-                        ) %>% formatStyle(columns = 'RUNNR',
-                                          valueColumns = 'UITVALLEND',
-                                          target = 'cell',
-                                          backgroundColor = styleEqual(TRUE,'red'))
      
-     
-     #%>% formatSignif(columns = c(-2,-3), digits = 3) #nog kijken hoe we datums uitzonderen
-}
+      } else if (input$instellingen_roteer_tabel == "test") {
+        test_widened_results <- results_widened(results)
+        table_test <-
+          table_builder(
+            test_widened_results,
+            sort_by = 1,
+            group = TRUE,
+            group_cols = c(0, 1),
+            #change to 1,2 if comment column is back
+            columnDefs = list(list(
+              visible = FALSE , targets = c(0)
+            ))
+          ) %>% formatStyle(
+          columns = 'LABNUMMER',
+          valueColumns = 'LABNUMMER',
+          backgroundColor = styleEqual(
+            selected_sample_current_results()$LABNUMMER,
+            'yellow',
+            default = 'gray'
+          )
+        ) %>% formatStyle(
+          columns = 'RUNNR',
+          valueColumns = 'UITVALLEND',
+          target = 'cell',
+          backgroundColor = styleEqual(TRUE, 'red')
+        )
+        #%>% formatSignif(columns = c(-2,-3), digits = 3) #nog kijken hoe we datums uitzonderen
+        return(table_test)
+      }
    })
 
    
@@ -828,22 +865,15 @@ server <- function(input, output, session) {
         MEASUREDATE,
         UITVALLEND
       )
-    
-    DT::datatable(
-      data = selected_data,
-      rownames = FALSE,
-      extensions = ("RowGroup"),
-      filter = "top",
-      escape = FALSE,
-      options = list(
-        dom = 'ltipr',         #dom = 'tr',
-        # buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
-        order = list(list(1, 'desc')),
-        rowGroup = list(dataSrc = c(0, 1)),
-        columnDefs = list(list(
-          visible = FALSE , targets = c('NAAM','UITVALLEND')
-        ))
-      )
+    table_builder(
+      selected_data,
+      group = TRUE,
+      group_cols = c(0,1),
+      sort_by = 1,
+      #change to 1,2 if comment column is back
+      columnDefs = list(list(
+        visible = FALSE , targets = c('NAAM','UITVALLEND')
+      ))
     ) %>% formatStyle(columns = 'RESULTAAT',
                       valueColumns = 'UITVALLEND',
                       target = 'cell',
