@@ -535,7 +535,7 @@ server <- function(input, output, session) {
           names_to = "RATIO",
           values_to = "WAARDE",
           values_drop_na = TRUE #needed so that ggplot's geom_line doesn't stop when it encounters an NA value while plotting the ratios
-        )
+        ) %>% distinct()
       
     }, error = function(e){
       showModal(modalDialog(title = "Error",e)) #geef de error als een popup scherm zodat de gebruiker het ziet
