@@ -698,11 +698,29 @@ server <- function(input, output, session) {
         labnr_widened_results <- results %>% pivot_wider(
           id_cols = c(TESTCODE,ELEMENTCODE),
           names_from = c(NAAM,LABNUMMER,RUNNR),
-          values_from = RESULTAAT,
+          values_from = RESULTAAT, 
           names_sep = "<br>",
-         unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = list, UITVALLEND = list)
-        ) 
-        table_labnr <- table_builder(labnr_widened_results, sort_by = 0)
+          unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = list, UITVALLEND = list))
+        
+        #%>% mutate()
+          
+          # labnr_widened_uitvallend <- results %>% pivot_wider(
+          #   id_cols = c(TESTCODE,ELEMENTCODE),
+          #   names_from = c(NAAM,LABNUMMER,RUNNR),
+          #   values_from = UITVALLEND, 
+          #   names_sep = "<br>",
+          #   unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = list)
+          #   )
+         
+        table_labnr <- table_builder(labnr_widened_results, sort_by = 0) #%>%
+        #     formatStyle(
+        #      columns = 'RESULTAAT',
+        #      valueColumns = 'UITVALLEND',
+        #      target = 'cell',
+        #      backgroundColor = styleEqual(TRUE, 'salmon')
+        #      )
+        #   
+        
         return(table_labnr)
         
       } else if (input$instellingen_roteer_tabel == "sample") {
