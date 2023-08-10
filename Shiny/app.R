@@ -583,7 +583,6 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$fiatteer_grafiek_gebied, {
-    #freezeReactiveValue(input, "ratios_grafiek_klik") #helpt niet
     isolate({
       selected_tests <-
         brushedPoints(selected_sample_historical_results(), input$fiatteer_grafiek_gebied)
@@ -594,7 +593,6 @@ server <- function(input, output, session) {
       
       related_ratios <- semi_join(selected_sample_historical_ratios(),selected_tests, by = 'LABNUMMER')
       ratio_selection(related_ratios)
-      #showModal(modalDialog(DT::dataTableOutput("fiatteer_grafiek_tabel")))
     })
 
   })
@@ -618,16 +616,6 @@ server <- function(input, output, session) {
   observeEvent(input$ratios_grafiek_klik, {
     #moved to double click because of a shiny issue with firing click events while making a brush selection
     
-    # isolate({
-    #   selected_ratios <-
-    #     nearPoints(selected_sample_historical_ratios(), input$ratios_grafiek_klik)
-    #   related_ratios <- semi_join(selected_sample_historical_ratios(),selected_ratios, by = 'LABNUMMER')
-    #   ratio_selection(related_ratios)
-    #   
-    #   selected_samples <-
-    #     semi_join(selected_sample_historical_results(), selected_ratios, by = 'LABNUMMER')
-    #   graph_selection(selected_samples)
-    # })
   })
   
   observeEvent(input$ratios_grafiek_gebied, {
@@ -653,7 +641,6 @@ server <- function(input, output, session) {
       selected_samples <-
         semi_join(selected_sample_historical_results(), selected_ratios, by = 'LABNUMMER')
       graph_selection(selected_samples)
-      #showModal(modalDialog(DT::dataTableOutput("fiatteer_grafiek_tabel")))
     })
   })
   
