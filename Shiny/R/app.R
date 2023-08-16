@@ -12,6 +12,8 @@ library(dbplyr)
 library(odbc)
 
 #reactlog_enable()
+aquaApp <- function(){
+  
 options(shiny.maxRequestSize=30*1024^2)
 
 #UI input variables are intentionally in Dutch, makes it easier to keep them separate from output/internal variables on the server side
@@ -372,28 +374,9 @@ server <- function(input, output, session) {
   selected_sample_current_results <- reactive({
     req(selected_sample())
     selected_labnummer <- select(selected_sample(), LABNUMMER)
-    #print(selected_labnummer)
     matching_result <- semi_join(results,
                                   selected_sample(),
-                                  by = c('LABNUMMER')) 
-                                  # %>% select(
-                                  #   MONSTERPUNTCODE,
-                                  #   NAAM,
-                                  #   LABNUMMER,
-                                  #   TESTCODE,
-                                  #   ELEMENTCODE,
-                                  #   TESTSTATUS,
-                                  #   RESULTAAT,
-                                  #   #NON_NUMERICAL_VALUE,
-                                  #   RUNNR,
-                                  #   REFMESSAGE,
-                                  #   REFCONCLUSION,
-                                  #   GEVALIDEERD,
-                                  #   UITVALLEND,
-                                  #   SAMPLINGDATE,
-                                  #   MEASUREDATE,
-                                  #   SOORTWATER
-                                  # )
+                                  by = c('LABNUMMER'))
   })
   
   selected_sample_historical_results <- reactive({
@@ -401,25 +384,7 @@ server <- function(input, output, session) {
     selected_meetpunt <- select(selected_sample_current_results(), MONSTERPUNTCODE)
     matching_results <- semi_join(results,
                                   selected_sample_current_results(),
-                                  by = c('MONSTERPUNTCODE') 
-                                    # %>% select(
-                                    # MONSTERPUNTCODE,
-                                    # NAAM,
-                                    # LABNUMMER,
-                                    # TESTCODE,
-                                    # ELEMENTCODE,
-                                    # TESTSTATUS,
-                                    # RESULTAAT,
-                                    # #NON_NUMERICAL_VALUE,
-                                    # RUNNR,
-                                    # REFMESSAGE,
-                                    # REFCONCLUSION,
-                                    # GEVALIDEERD,
-                                    # UITVALLEND,
-                                    # SAMPLINGDATE,
-                                    # MEASUREDATE,
-                                    # SOORTWATER
-                                  ) %>%
+                                  by = c('MONSTERPUNTCODE')) %>%
             arrange(desc(SAMPLINGDATE)) %>% #it SHOULD already put the most recent result first but this ensures it
             top_n_results(n = input$instellingen_hoeveelheid_resultaten)
     
@@ -791,8 +756,8 @@ server <- function(input, output, session) {
 
    
   output$fiatteer_grafiek <- renderPlot({
-    plot_data <- selected_sample_historical_results()
-    current_data <- selected_sample_current_results()
+    plot_data <- selected_sample_historical_results() #%>% mutate(across(RESULTAAT,as.numeric))
+    current_data <- selected_sample_current_results() #%>% mutate(across(RESULTAAT,as.numeric))
     #plot_user_choices <- fiatteer_plot_user_selection()
     
     results_plot <- ggplot(data = plot_data,
@@ -889,4 +854,5 @@ server <- function(input, output, session) {
 shinyApp(ui = ui,
          server = server,
          enableBookmarking = "server",
-         options = list())  
+         options = list())
+}  
