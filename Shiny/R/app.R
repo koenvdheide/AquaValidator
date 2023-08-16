@@ -12,7 +12,7 @@ library(dbplyr)
 library(odbc)
 
 #reactlog_enable()
-aquaApp <- function(){
+aquaApp <- function(...){
   
 options(shiny.maxRequestSize=30*1024^2)
 
