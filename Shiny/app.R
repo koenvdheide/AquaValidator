@@ -159,7 +159,7 @@ ui <- function(request) {
            id = "hulp_tab",
            sidebarLayout(sidebarPanel(),
                          mainPanel())),
-  header = div(bookmarkButton(
+  footer = div(bookmarkButton(
     label = "Sla fiatteer voortgang & opmerkingen op"
   ),
   actionButton("button_fiatteerlijst_klaar", label = "Valideer geselecteerde samples"))
