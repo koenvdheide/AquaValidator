@@ -855,4 +855,6 @@ shinyApp(ui = ui,
          server = server,
          enableBookmarking = "server",
          options = list())
-}  
+}
+pkgload::load_all(".")
+aquaApp()
