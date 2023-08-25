@@ -764,6 +764,8 @@ server <- function(input, output, session) {
     #plot_user_choices <- fiatteer_plot_user_settings()
     
     #str_sort(RESULTAAT,numeric = TRUE)
+    results_lvls <- str_sort(unique(plot_data$RESULTAAT), numeric = TRUE)
+    plot_data$RESULTAAT <- factor(plot_data$RESULTAAT,levels = results_lvls)
     
     results_plot <- ggplot(data = plot_data,
                    mapping = aes(x = SAMPLINGDATE, y = RESULTAAT, colour = NAAM, group = MONSTERPUNTCODE)) +
