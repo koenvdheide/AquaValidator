@@ -195,6 +195,10 @@ server <- function(input, output, session) {
   results_to_validate <- tibble()
   ratios <- tibble()
   
+  #mirror of selected results but with resultscolumn casted to numeric (needed so that clickevents work)
+  selected_sample_historical_results_numeric <- reactiveVal()
+  selected_sample_current_results_numeric <- reactiveVal()
+  
   #graph user input
   plot_selected_samples <- reactiveVal()
   plot_hover_selected_samples <- reactiveVal()
@@ -377,6 +381,11 @@ server <- function(input, output, session) {
     matching_result <- semi_join(results,
                                   selected_sample(),
                                   by = c('LABNUMMER'))
+    matching_result_numeric <- matching_result
+    matching_result_numeric$RESULTAAT <- as.numeric(matching_result_numeric$RESULTAAT)
+    selected_sample_current_results_numeric(matching_result_numeric)
+    
+    return(matching_result)
   })
   
   selected_sample_historical_results <- reactive({
@@ -388,9 +397,12 @@ server <- function(input, output, session) {
             arrange(desc(SAMPLINGDATE)) %>% #it SHOULD already put the most recent result first but this ensures it
             top_n_results(n = input$instellingen_hoeveelheid_resultaten)
     
-    plot_selected_samples(rep(FALSE, nrow(matching_results))) #fill plot_selected_samples so it doesn't throw out of bounds errors later
-    return(matching_results)
+    matching_results_numeric <- matching_results
+    matching_results_numeric$RESULTAAT <- as.numeric(matching_results_numeric$RESULTAAT)
+    selected_sample_historical_results_numeric(matching_results_numeric)
+    plot_selected_samples(rep(FALSE, nrow(matching_results_numeric))) #fill plot_selected_samples so it doesn't throw out of bounds errors later
     
+    return(matching_results)
   })
   selected_sample_current_ratios <-  reactive({
     selected_monsterpuntcode <- select(selected_sample_current_results(), LABNUMMER)
@@ -534,7 +546,7 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$fiatteer_grafiek_zweef,{
-    plot_hover_selected_samples(nearPoints(selected_sample_historical_results(),input$fiatteer_grafiek_zweef))
+    plot_hover_selected_samples(nearPoints(selected_sample_historical_results_numeric(),input$fiatteer_grafiek_zweef))
   })
   
   observeEvent(input$fiatteer_grafiek_klik, {
@@ -553,10 +565,9 @@ server <- function(input, output, session) {
   observeEvent(input$fiatteer_grafiek_gebied, {
     isolate({
       selected_tests <-
-        brushedPoints(selected_sample_historical_results(), input$fiatteer_grafiek_gebied)
+        brushedPoints(selected_sample_historical_results_numeric(), input$fiatteer_grafiek_gebied)
       selected_samples <-
-        semi_join(selected_sample_historical_results(), selected_tests, by = 'LABNUMMER')
-      
+        semi_join(selected_sample_historical_results_numeric(), selected_tests, by = 'LABNUMMER')
       plot_selected_samples(selected_samples)
       
       matching_ratios <- semi_join(selected_sample_historical_ratios(),selected_tests, by = 'LABNUMMER')
@@ -567,10 +578,10 @@ server <- function(input, output, session) {
   
   observeEvent(input$fiatteer_grafiek_dblklik, {
     isolate({
-      selected_test <- nearPoints(selected_sample_historical_results(),
+      selected_test <- nearPoints(selected_sample_historical_results_numeric(),
                                   input$fiatteer_grafiek_dblklik)
       selected_sample <-
-        semi_join(selected_sample_historical_results(), selected_test, by = 'LABNUMMER')
+        semi_join(selected_sample_historical_results_numeric(), selected_test, by = 'LABNUMMER')
       
       plot_selected_samples(selected_sample)
       
@@ -593,7 +604,7 @@ server <- function(input, output, session) {
       matching_ratios <- semi_join(selected_sample_historical_ratios(),selected_ratios, by = 'LABNUMMER')
       plot_selected_ratios(matching_ratios)
       
-      selected_samples <- semi_join(selected_sample_historical_results(), selected_ratios, by = 'LABNUMMER')
+      selected_samples <- semi_join(selected_sample_historical_results_numeric(), selected_ratios, by = 'LABNUMMER')
       plot_selected_samples(selected_samples)
       #showModal(modalDialog(DT::dataTableOutput("fiatteer_grafiek_tabel")))
     })
@@ -607,7 +618,7 @@ server <- function(input, output, session) {
       plot_selected_ratios(matching_ratios)
       
       selected_samples <-
-        semi_join(selected_sample_historical_results(), selected_ratios, by = 'LABNUMMER')
+        semi_join(selected_sample_historical_results_numeric(), selected_ratios, by = 'LABNUMMER')
       plot_selected_samples(selected_samples)
     })
   })
@@ -759,12 +770,12 @@ server <- function(input, output, session) {
 
    
   output$fiatteer_grafiek <- renderPlot({
-    plot_data <- selected_sample_historical_results() #%>% mutate(across(RESULTAAT,as.numeric))
-    current_data <- selected_sample_current_results() #%>% mutate(across(RESULTAAT,as.numeric))
+    plot_data <- selected_sample_historical_results_numeric() 
+    current_data <- selected_sample_current_results_numeric()
     #plot_user_choices <- fiatteer_plot_user_settings()
     
-    results_lvls <- str_sort(unique(plot_data$RESULTAAT), numeric = TRUE)
-    plot_data$RESULTAAT <- factor(plot_data$RESULTAAT,levels = results_lvls)
+    #results_lvls <- str_sort(unique(plot_data$RESULTAAT), numeric = TRUE)
+    #plot_data$RESULTAAT <- factor(plot_data$RESULTAAT,levels = results_lvls)
     
     results_plot <- ggplot(data = plot_data,
                    mapping = aes(x = SAMPLINGDATE, y = RESULTAAT, colour = NAAM, group = MONSTERPUNTCODE)) +
@@ -782,6 +793,7 @@ server <- function(input, output, session) {
     {
       isolate({
         selected_data <- plot_selected_samples()
+        
         results_plot <-
           results_plot + geom_point(data = selected_data,
                                     size = 3.5,
