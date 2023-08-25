@@ -785,7 +785,7 @@ server <- function(input, output, session) {
       geom_point(size = 2.5, alpha = 0.5, aes(shape = UITVALLEND)) +
       geom_point(data = current_data, size = 3.5, aes(shape = UITVALLEND)) +
       labs(x = "Sampling Datum", y = "Resultaat") +
-      scale_x_date(date_labels = "%x") +
+      scale_x_date(date_labels = "%x", breaks = scales::breaks_pretty(n = 12)) +
       guides(size = "none", x = guide_axis(angle = 45)) +
       facet_wrap(vars(TESTCODE), scales = 'free_y')
     
