@@ -771,6 +771,7 @@ server <- function(input, output, session) {
 
    
   output$fiatteer_grafiek <- renderPlot({
+    req(selected_sample_historical_results_numeric())
     plot_data <- selected_sample_historical_results_numeric() 
     current_data <- selected_sample_current_results_numeric()
     #plot_user_choices <- fiatteer_plot_user_settings()
@@ -784,7 +785,6 @@ server <- function(input, output, session) {
       geom_point(size = 2.5, alpha = 0.5, aes(shape = UITVALLEND)) +
       geom_point(data = current_data, size = 3.5, aes(shape = UITVALLEND)) +
       labs(x = "Sampling Datum", y = "Resultaat") +
-      #scale_y_discrete(breaks = scales::breaks_width(20)) +
       scale_x_date(date_labels = "%x") +
       guides(size = "none", x = guide_axis(angle = 45)) +
       facet_wrap(vars(TESTCODE), scales = 'free_y')
