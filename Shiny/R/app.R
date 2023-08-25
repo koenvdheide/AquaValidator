@@ -763,7 +763,6 @@ server <- function(input, output, session) {
     current_data <- selected_sample_current_results() #%>% mutate(across(RESULTAAT,as.numeric))
     #plot_user_choices <- fiatteer_plot_user_settings()
     
-    #str_sort(RESULTAAT,numeric = TRUE)
     results_lvls <- str_sort(unique(plot_data$RESULTAAT), numeric = TRUE)
     plot_data$RESULTAAT <- factor(plot_data$RESULTAAT,levels = results_lvls)
     
@@ -772,8 +771,10 @@ server <- function(input, output, session) {
       geom_line(alpha = 0.7) +
       geom_point(size = 2.5, alpha = 0.5, aes(shape = UITVALLEND)) +
       geom_point(data = current_data, size = 3.5, aes(shape = UITVALLEND)) +
-      #scale_y_continuous(breaks = scales::breaks_extended(n = 20)) +
-      guides(size = "none") +
+      labs(x = "Sampling Datum", y = "Resultaat") +
+      #scale_y_discrete(breaks = scales::breaks_width(20)) +
+      scale_x_date(date_labels = "%x") +
+      guides(size = "none", x = guide_axis(angle = 45)) +
       facet_wrap(vars(TESTCODE), scales = 'free_y')
     
         #clicked data has to exist first
@@ -811,7 +812,9 @@ server <- function(input, output, session) {
       geom_line(alpha = 0.7) +
       geom_point(size = 2.5, alpha = 0.5) +
       geom_point(data = current_ratios, size = 3.5) +
-      guides(size = "none") +
+      labs(x = "Sampling datum", y = "Berekende waarde") +
+      scale_x_date(date_labels = "%x") +
+      guides(size = "none", x = guide_axis(angle = 45)) +
       facet_wrap(vars(RATIO), scales = 'free_y') #still need to check ratio's really exist
     
     #clicked data has to exist first
