@@ -249,7 +249,8 @@ server <- function(input, output, session) {
             "groep",
             "workday",
             "element",
-            "parameter"
+            "parameter",
+            "soortwater"
           )
         ), as.factor)
       ) 
