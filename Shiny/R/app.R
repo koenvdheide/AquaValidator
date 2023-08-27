@@ -464,8 +464,10 @@ server <- function(input, output, session) {
           #resultcolumn = resultscolumn,
           #labnummercolumn = labnrcolumn,
           #meetpuntcolumn = measurepointcolumn
-        ) %>% mutate(GEVALIDEERD = TESTSTATUS == 300,
-               UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0) #%>%
+        ) %>% mutate(
+                  RESULTAAT_ASNUMERIC = as.numeric(RESULTAAT),
+                  GEVALIDEERD = TESTSTATUS == 300,
+                  UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0) #%>%
         #see AAV-177 issue
         #add_column(RESULT_OPMERKING = "", .before = 1) #don't move the comment column!
     
@@ -484,31 +486,31 @@ server <- function(input, output, session) {
           SAMPLINGDATE = SAMPLINGDATE,
           CZV_BZV_RATIO = ifelse(
             any(ELEMENTCODE == "CZV") & any(ELEMENTCODE == "BZV5"),
-            as.numeric(RESULTAAT[ELEMENTCODE == "CZV"]) / as.numeric(RESULTAAT[ELEMENTCODE == "BZV5"]),
+            RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"] / RESULTAAT_ASNUMERIC[ELEMENTCODE == "BZV5"],
             NA
           ),
           CZV_NKA_RATIO = ifelse(
             any(ELEMENTCODE == "CZV") &
               any(TESTCODE == "nka"),
-            as.numeric(RESULTAAT[ELEMENTCODE == "CZV"]) / as.numeric(RESULTAAT[TESTCODE == "nka"]),
+            RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"] / RESULTAAT_ASNUMERIC[TESTCODE == "nka"],
             NA
           ),
           BZV_ONOPA_RATIO = ifelse(
             any(ELEMENTCODE == "BZV5") &
               any(TESTCODE == "onopa"),
-            as.numeric(RESULTAAT[ELEMENTCODE == "BZV5"]) / as.numeric(RESULTAAT[TESTCODE == "onopa"]),
+            RESULTAAT_ASNUMERIC[ELEMENTCODE == "BZV5"] / RESULTAAT_ASNUMERIC[TESTCODE == "onopa"],
             NA
           ),
           CZV_TOC_RATIO = ifelse(
             any(ELEMENTCODE == "CZV") &
               any(ELEMENTCODE == "TOC"),
-            as.numeric(RESULTAAT[ELEMENTCODE == "CZV"]) / as.numeric(RESULTAAT[ELEMENTCODE == "TOC"]),
+            RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"] / RESULTAAT_ASNUMERIC[ELEMENTCODE == "TOC"],
             NA
           ),
           CZV_TNB_RATIO =ifelse(
             any(ELEMENTCODE == "CZV") &
               any(TESTCODE == "tnb"),
-            as.numeric(RESULTAAT[ELEMENTCODE == "CZV"]) / as.numeric(RESULTAAT[TESTCODE == "tnb"]),
+            RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"] / RESULTAAT_ASNUMERIC[TESTCODE == "tnb"],
             NA
           )
         ) %>% pivot_longer(
