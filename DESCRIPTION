@@ -17,6 +17,7 @@ Imports:
     leaflet,
     magrittr,
     odbc,
+    pkgload,
     readxl,
     shiny,
     shinyjs,
