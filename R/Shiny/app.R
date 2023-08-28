@@ -447,7 +447,7 @@ server <- function(input, output, session) {
         #labnummercolumn = labnrcolumn,
         #meetpuntcolumn = measurepointcolumn
         ) %>% 
-        add_column(#KLAAR = '<input type="checkbox" id="klaar" class="styled">', 
+        tibble::add_column(#KLAAR = '<input type="checkbox" id="klaar" class="styled">', 
                    SAMPLE_OPMERKING = "",.before = 1) %>% #don't move the comment column!
         arrange(PRIOFINISHDATE))
       
@@ -463,7 +463,7 @@ server <- function(input, output, session) {
                   GEVALIDEERD = TESTSTATUS == 300,
                   UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0) #%>%
         #see AAV-177 issue
-        #add_column(RESULT_OPMERKING = "", .before = 1) #don't move the comment column!
+        #tibble::add_column(RESULT_OPMERKING = "", .before = 1) #don't move the comment column!
     
       #results$RESULTAAT <- set_num_opts(results$RESULTAAT, sigfig = 3)
       
@@ -643,7 +643,7 @@ server <- function(input, output, session) {
       nest_join(rejected_tests,
                 by = "LABNUMMER",
                 name = "UITVALLENDE_TESTS_LIST") %>%
-      hoist(UITVALLENDE_TESTS_LIST, UITVALLERS = "TESTCODE")
+      tidyr::hoist(UITVALLENDE_TESTS_LIST, UITVALLERS = "TESTCODE")
     
     table_builder(fiatteer_data, 
                   editable = list(target = "cell", disable = list(columns = c(1:ncol(fiatteer_data)))),
@@ -717,7 +717,7 @@ server <- function(input, output, session) {
               "SOORTWATER"
             )
           ))
-        )  %>% formatStyle(
+        )  %>% DT::formatStyle(
           columns = 'LABNUMMER',
           valueColumns = 'LABNUMMER',
           backgroundColor = styleEqual(
@@ -725,7 +725,7 @@ server <- function(input, output, session) {
             'yellow',
             default = 'gray'
           )
-        ) %>% formatStyle(
+        ) %>% DT::formatStyle(
           columns = 'RESULTAAT',
           valueColumns = 'UITVALLEND',
           target = 'cell',
@@ -747,7 +747,7 @@ server <- function(input, output, session) {
             columnDefs = list(list(
               visible = FALSE , targets = c(0)
             ))
-          ) %>% formatStyle(
+          ) %>% DT::formatStyle(
           columns = 'LABNUMMER',
           valueColumns = 'LABNUMMER',
           backgroundColor = styleEqual(
@@ -755,7 +755,7 @@ server <- function(input, output, session) {
             'yellow',
             default = 'gray'
           )
-        ) %>% formatStyle(
+        ) %>% DT::formatStyle(
           columns = 'RUNNR',
           valueColumns = 'UITVALLEND',
           target = 'cell',
@@ -862,7 +862,7 @@ server <- function(input, output, session) {
       columnDefs = list(list(
         visible = FALSE , targets = c('NAAM','UITVALLEND')
       ))
-    ) %>% formatStyle(columns = 'RESULTAAT',
+    ) %>% DT::formatStyle(columns = 'RESULTAAT',
                       valueColumns = 'UITVALLEND',
                       target = 'cell',
                       backgroundColor = styleEqual(TRUE,'salmon'))
