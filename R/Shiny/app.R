@@ -13,6 +13,8 @@
 # library(odbc)
 
 #reactlog_enable()
+
+#' @export
 aquaApp <- function(...){
   
 options(shiny.maxRequestSize=30*1024^2)
