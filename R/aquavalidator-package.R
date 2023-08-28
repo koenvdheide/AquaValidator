@@ -3,9 +3,8 @@
 
 #' @import shiny
 #' @import ggplot2
-#' 
+#' @import dplyr
 ## usethis namespace: start
 #' @importFrom magrittr %>%
-#' @importFrom readxl read_excel
 ## usethis namespace: end
 NULL
