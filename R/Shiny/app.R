@@ -1,15 +1,16 @@
-library(shiny)
-library(shinyjs)
-library(tidyverse)
-library(ggplot2)
-library(leaflet)
-library(readxl)
-#library(askpass)
-library(DT)
-#library(reactlog)
+# library(shiny)
 
-library(dbplyr)
-library(odbc)
+# library(shinyjs)
+# library(tidyverse)
+# library(ggplot2)
+# library(leaflet)
+# library(readxl)
+# #library(askpass)
+# library(DT)
+# #library(reactlog)
+# 
+# library(dbplyr)
+# library(odbc)
 
 #reactlog_enable()
 aquaApp <- function(...){
@@ -19,7 +20,7 @@ options(shiny.maxRequestSize=30*1024^2)
 #UI input variables are intentionally in Dutch, makes it easier to keep them separate from output/internal variables on the server side
 ui <- function(request) {
   tagList( 
-  useShinyjs(),
+  shinyjs::useShinyjs(),
   navbarPage(
     title= div(tags$img(src='Logo-Aqualysis-RGB-HR.png', align = 'left', width = "130px", height = "34px"),HTML('&nbsp;'),  "Validatie"),
   
@@ -216,7 +217,7 @@ server <- function(input, output, session) {
              ){
       
     excel_data <-
-      read_excel(filePath, progress = TRUE, sheet = sheet) %>%
+      readxl::read_excel(filePath, progress = TRUE, sheet = sheet) %>%
       #separate_wider_regex(RESULTAAT, NIET_NUMBER ="\\",  RESULTAAT = "\\D+") %>% 
       
       #kan netter?: https://stackoverflow.com/questions/64189561/using-case-when-with-dplyr-across
@@ -285,7 +286,7 @@ server <- function(input, output, session) {
     }
   
   results_widened <- function (original_results) {
-    original_results %>% pivot_wider(
+    original_results %>% tidyr::pivot_wider(
       id_cols = c(NAAM,LABNUMMER, RUNNR),
       names_from = c(TESTCODE, ELEMENTCODE),
       values_from = RESULTAAT,
@@ -506,7 +507,7 @@ server <- function(input, output, session) {
             RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"] / RESULTAAT_ASNUMERIC[TESTCODE == "tnb"],
             NA
           )
-        ) %>% pivot_longer(
+        ) %>% tidyr::pivot_longer(
           cols = c(CZV_BZV_RATIO, CZV_NKA_RATIO, BZV_ONOPA_RATIO,CZV_TOC_RATIO,CZV_TNB_RATIO),
           names_to = "RATIO",
           values_to = "WAARDE",
@@ -671,7 +672,7 @@ server <- function(input, output, session) {
      #View(results)
     
       if(input$instellingen_roteer_tabel  == "labnr"){
-        labnr_widened_results <- results %>% pivot_wider(
+        labnr_widened_results <- results %>% tidyr::pivot_wider(
           id_cols = c(TESTCODE,ELEMENTCODE),
           names_from = c(NAAM,LABNUMMER,RUNNR),
           values_from = RESULTAAT, 
@@ -680,7 +681,7 @@ server <- function(input, output, session) {
         
         #%>% mutate()
           
-          # labnr_widened_uitvallend <- results %>% pivot_wider(
+          # labnr_widened_uitvallend <- results %>% tidyr::pivot_wider(
           #   id_cols = c(TESTCODE,ELEMENTCODE),
           #   names_from = c(NAAM,LABNUMMER,RUNNR),
           #   values_from = UITVALLEND, 
