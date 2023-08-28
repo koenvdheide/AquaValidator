@@ -14,7 +14,7 @@
 
 #reactlog_enable()
 
-#' @export
+
 aquaApp <- function(...){
   
 options(shiny.maxRequestSize=30*1024^2)
@@ -696,7 +696,7 @@ server <- function(input, output, session) {
         #      columns = 'RESULTAAT',
         #      valueColumns = 'UITVALLEND',
         #      target = 'cell',
-        #      backgroundColor = styleEqual(TRUE, 'salmon')
+        #      backgroundColor = DT::styleEqual(TRUE, 'salmon')
         #      )
         #   
         
@@ -722,7 +722,7 @@ server <- function(input, output, session) {
         )  %>% DT::formatStyle(
           columns = 'LABNUMMER',
           valueColumns = 'LABNUMMER',
-          backgroundColor = styleEqual(
+          backgroundColor = DT::styleEqual(
             selected_sample_current_results()$LABNUMMER,
             'yellow',
             default = 'gray'
@@ -731,7 +731,7 @@ server <- function(input, output, session) {
           columns = 'RESULTAAT',
           valueColumns = 'UITVALLEND',
           target = 'cell',
-          backgroundColor = styleEqual(TRUE, 'salmon')
+          backgroundColor = DT::styleEqual(TRUE, 'salmon')
         )
         return(table_sample)
         
@@ -752,7 +752,7 @@ server <- function(input, output, session) {
           ) %>% DT::formatStyle(
           columns = 'LABNUMMER',
           valueColumns = 'LABNUMMER',
-          backgroundColor = styleEqual(
+          backgroundColor = DT::styleEqual(
             selected_sample_current_results()$LABNUMMER,
             'yellow',
             default = 'gray'
@@ -761,7 +761,7 @@ server <- function(input, output, session) {
           columns = 'RUNNR',
           valueColumns = 'UITVALLEND',
           target = 'cell',
-          backgroundColor = styleEqual(TRUE, 'red')
+          backgroundColor = DT::styleEqual(TRUE, 'red')
         )
         #%>% formatSignif(columns = c(-2,-3), digits = 3) #nog kijken hoe we datums uitzonderen
         return(table_test)
@@ -867,7 +867,7 @@ server <- function(input, output, session) {
     ) %>% DT::formatStyle(columns = 'RESULTAAT',
                       valueColumns = 'UITVALLEND',
                       target = 'cell',
-                      backgroundColor = styleEqual(TRUE,'salmon'))
+                      backgroundColor = DT::styleEqual(TRUE,'salmon'))
   })
 }
 
