@@ -14,6 +14,16 @@
 
 #reactlog_enable()
 
+#' Aqualysis Validator
+#'
+#' @param ... arguments to pass to shiny::runApp
+#'
+#' @export
+#'
+app <- function(...){
+  pkgload::load_all(".")
+  aquaApp()
+}
 
 aquaApp <- function(...){
   
