@@ -4,7 +4,7 @@
 \alias{startup}
 \title{Start Aqualysis Validator met extra opties}
 \usage{
-startup(...)
+startup(browser = TRUE, ...)
 }
 \arguments{
 \item{...}{arguments to pass to shiny::runApp}
