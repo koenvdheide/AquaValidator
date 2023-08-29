@@ -229,41 +229,35 @@ server <- function(input, output, session) {
       
     excel_data <-
       readxl::read_excel(filePath, progress = TRUE, sheet = sheet) %>%
-      #separate_wider_regex(RESULTAAT, NIET_NUMBER ="\\",  RESULTAAT = "\\D+") %>% 
-      
-      #kan netter?: https://stackoverflow.com/questions/64189561/using-case-when-with-dplyr-across
-      mutate(
-        #NIET_NUMBER = across(contains(c("result", "resultaat")), ~ if_else(is.na(as.numeric(.)), ., NA)),
-        #across(contains(c("result", "resultaat")), as.list),
-        #across(contains(c("result", "resultaat")), as.numeric),
-        
-        #"{resultcolumn}" := as.numeric,
-        #"{labnummercolumn}" := as.numeric,
-        #"{meetpuntcolumn}" := as.factor,
-        
-        
-        # this removes hour/minute/second from sampling&measurement dates for some reason even though %T should cover this, relying on readxl's inbuilt date recognition for now
-        # default date recognition doesn't see MONSTERNAMEDATUM column as valid dates for some reason
-        # try parse_date_time() instead?
-       across(contains(c("datum", "date")),~ as.Date(.x, tryFormats = c("%d-%m-%Y%t%t%T", "%Y-%m-%d%t%t%T", "%Y/%m/%d%t%t%T", "%d-%m-%Y", "%Y-%m-%d", "%Y/%m/%d"))),
-        across(contains(
-          c(
-            "hoednhd",
-            "klant",
-            "code",
-            "smpl",
-            "ID",
-            "labnummer",
-            "status",
-            "groep",
-            "workday",
-            "element",
-            "parameter",
-            "soortwater"
-          )
-        ), as.factor),
-
-      ) 
+        mutate(
+          # this removes hour/minute/second from sampling&measurement dates for some reason even though %T should cover this, relying on readxl's inbuilt date recognition for now
+          # default date recognition doesn't see MONSTERNAMEDATUM column as valid dates for some reason
+          # try parse_date_time() instead?
+          across(contains(c("datum", "date")), ~ as.Date(.x, tryFormats = c(
+                                                            "%d-%m-%Y%t%t%T", 
+                                                            "%Y-%m-%d%t%t%T", 
+                                                            "%Y/%m/%d%t%t%T", 
+                                                            "%d-%m-%Y", 
+                                                            "%Y-%m-%d", 
+                                                            "%Y/%m/%d"))
+                 ),
+          across(contains(
+            c(
+              "hoednhd",
+              "klant",
+              "code",
+              "smpl",
+              "ID",
+              "labnummer",
+              "status",
+              "groep",
+              "workday",
+              "element",
+              "parameter",
+              "soortwater"
+            )
+          ), as.factor)
+        ) 
     return (excel_data)
   }
   
@@ -276,7 +270,6 @@ server <- function(input, output, session) {
              selected = NULL,
              choiceNames = NULL,
              choiceValues = NULL) {
-      
       freezeReactiveValue(input, inputId)
       
       switch(
@@ -323,7 +316,7 @@ server <- function(input, output, session) {
       full_results %>% 
       group_by(MONSTERPUNTCODE)  %>% 
       group_modify(~ {.x %>% group_by(LABNUMMER) %>% 
-                              filter(cur_group_id() >= n_groups(.) - n)}) %>% 
+                      filter(cur_group_id() >= n_groups(.) - n)}) %>% 
       ungroup()
   }
   
