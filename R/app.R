@@ -72,7 +72,8 @@ ui <- function(request) {
                    inline = TRUE
                  ),
                   checkboxInput("instellingen_verberg_historie_tabel",
-                                "Toon alleen huidig geselecteerde sample(s)"),
+                                "Toon alleen huidig geselecteerde sample(s)",
+                                value = TRUE),
                  DT::dataTableOutput("tabel_sampleresults")
                ),
              
@@ -294,18 +295,6 @@ server <- function(input, output, session) {
       
     }
   
-  results_widened <- function (original_results) {
-    
-    original_results %>% tidyr::pivot_wider(
-      id_cols = c(NAAM,LABNUMMER, RUNNR),
-      names_from = c(TESTCODE, ELEMENTCODE),
-      values_from = RESULTAAT,
-      names_sep = "<br>",
-      unused_fn = list(MEASUREDATE = list, 
-                       SAMPLINGDATE = list, 
-                       UITVALLEND = list)
-    )
-  }
   
   results_selection <- function(){
     #historical results & current_result
@@ -320,13 +309,17 @@ server <- function(input, output, session) {
       ungroup()
   }
   
-  ratios_calculator <- function(results, numerator, denominator){
-    #dataframe with labnummer and ratios per labnummer
+  ratios_calculator <- function(results, numerator, numerator_type = 'ELEMENTCODE', denominator, denominator_type = 'ELEMENTCODE'){
     
-    #across(contains(c("result", "resultaat")), as.numeric),
-    
+    # CZV_BZV_RATIO = ifelse(
+    #   any(ELEMENTCODE == "CZV") & any(ELEMENTCODE == "BZV5"),
+    #   RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"] / RESULTAAT_ASNUMERIC[ELEMENTCODE == "BZV5"],
+    #   NA
+    # )
+
     
   }
+  
   table_builder <- function(table_data,
                             rownames = FALSE,
                             dom = 'Bltipr',
@@ -481,10 +474,7 @@ server <- function(input, output, session) {
       #results$RESULTAAT <- set_num_opts(results$RESULTAAT, sigfig = 3)
       
       results_to_validate <<- semi_join(results,samples(), by = c("LABNUMMER"))
-      
-      #results_lvls <- str_sort(unique(results$RESULTAAT), numeric = TRUE)
-      #results$RESULTAAT <- factor(results$RESULTAAT, levels = results_lvls)
-      
+    
       ratios <<-
         results %>%
         group_by(LABNUMMER, MONSTERPUNTCODE) %>%
@@ -773,7 +763,16 @@ server <- function(input, output, session) {
        #%>% formatSignif(columns = c(-2,-3), digits = 3) #nog kijken hoe we datums uitzonderen
      
       } else if (input$instellingen_roteer_tabel == "test") {
-        test_widened_results <- results_widened(results)
+        test_widened_results <- results %>% 
+          tidyr::pivot_wider(
+            id_cols = c(NAAM,LABNUMMER, RUNNR),
+            names_from = c(TESTCODE, ELEMENTCODE),
+            values_from = RESULTAAT,
+            names_sep = "<br>",
+            unused_fn = list(MEASUREDATE = list, 
+                             SAMPLINGDATE = list, 
+                             UITVALLEND = list))
+            
         table_test <-
           table_builder(
             test_widened_results,
