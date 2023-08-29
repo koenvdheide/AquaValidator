@@ -23,28 +23,26 @@ options(shiny.maxRequestSize=30*1024^2)
 
 #UI input variables are intentionally in Dutch, makes it easier to keep them separate from output/internal variables on the server side
 ui <- function(request) {
+  
   tagList( 
   shinyjs::useShinyjs(),
+  
   navbarPage(
     title= div(tags$img(src='Logo-Aqualysis-RGB-HR.png', align = 'left', width = "130px", height = "34px"),HTML('&nbsp;'),  "Validatie"),
-  
     tabPanel("Fiatteren",
            fluidPage(
              tabsetPanel(
                id = "fiatteer_beeld",
+               
                tabPanel(
                  title = "Bestand",
                  value = "tab_bestand",
                  br(),
                  fileInput(
                    "input_file",
-                   
-                   #ook (bijvoorbeeld) csv en tsv?
                    label = "Kies Excel samplelijst",
-                   accept = c(".xlsx", ".xls")
+                   accept = c(".xlsx", ".xls") #ook (bijvoorbeeld) csv en tsv?
                  )
-
-               
              ),
                
                tabPanel(
@@ -52,11 +50,13 @@ ui <- function(request) {
                  value = "tab_fiatteerlijst",
                  DT::dataTableOutput("tabel_fiatteerlijst")
                ),
+             
                # tabPanel(
                #   value = "tab_tabel_samenvatting",
                #   title = "Tabel Samenvatting",
                #   DT::dataTableOutput("tabel_samenvatting")
                # ),
+             
                tabPanel(
                  title = "Testresultaten",          #textOutput("tab_sample_titel") 
                  value = "tab_sample",
@@ -72,6 +72,7 @@ ui <- function(request) {
                                 "Toon alleen huidig geselecteerde sample(s)"),
                  DT::dataTableOutput("tabel_sampleresults")
                ),
+             
                tabPanel(
                  value = "tab_fiatteer_grafiek",
                  title = "Grafiek",
@@ -97,6 +98,7 @@ ui <- function(request) {
   
   tabPanel("Instellingen",
            id = "instellingen_tab",
+           
            sidebarLayout(sidebarPanel(
              checkboxInput("instellingen_extra_opties",
                            "Extra opties tonen?",
@@ -104,6 +106,7 @@ ui <- function(request) {
            ),
            mainPanel(
              tabsetPanel(
+               
                tabPanel(
                  "Algemeen",
                  textInput(
@@ -154,11 +157,13 @@ ui <- function(request) {
                  ),
                ),
                tabPanel("Fiatteerlijst"), 
+               
                tabPanel(
                  "Testresultaten",
                  # checkboxInput("instellingen_roteer_tabel",
                  #               "Toon resultaten als rijen i.p.v. kolommen")
                )
+               
              )
            ))),
   
@@ -166,10 +171,9 @@ ui <- function(request) {
            id = "hulp_tab",
            sidebarLayout(sidebarPanel(),
                          mainPanel())),
-  footer = div(bookmarkButton(
-    label = "Sla fiatteer voortgang op"
-  ),
-  actionButton("button_fiatteerlijst_klaar", label = "Valideer geselecteerde samples"))
+  
+  footer = div(bookmarkButton(label = "Sla fiatteer voortgang op"),
+               actionButton("button_fiatteerlijst_klaar", label = "Valideer geselecteerde samples"))
 )
 )}
 server <- function(input, output, session) {
@@ -269,7 +273,9 @@ server <- function(input, output, session) {
              selected = NULL,
              choiceNames = NULL,
              choiceValues = NULL) {
+      
       freezeReactiveValue(input, inputId)
+      
       switch(
         uiComponent,
         #add dumb trick to add "none"/"geen" as first choice for optional inputs?
@@ -278,24 +284,30 @@ server <- function(input, output, session) {
           choices = choices,
           selected = selected
         ),
+        
         vs = updateVarSelectInput(
           inputId = inputId,
           data = data,
           selected = selected
         ),
+        
         tp = updateTabsetPanel(inputId = inputId, selected = selected),
+        
         np = updateNavbarPage(inputId = inputId, selected = selected)
       )
       
     }
   
   results_widened <- function (original_results) {
+    
     original_results %>% tidyr::pivot_wider(
       id_cols = c(NAAM,LABNUMMER, RUNNR),
       names_from = c(TESTCODE, ELEMENTCODE),
       values_from = RESULTAAT,
       names_sep = "<br>",
-      unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = list, UITVALLEND = list)
+      unused_fn = list(MEASUREDATE = list, 
+                       SAMPLINGDATE = list, 
+                       UITVALLEND = list)
     )
   }
   
@@ -305,9 +317,11 @@ server <- function(input, output, session) {
   
   top_n_results <- function(n, full_results) {
     top_results <-
-      full_results %>% group_by(MONSTERPUNTCODE)  %>% group_modify(~ {
-        .x %>% group_by(LABNUMMER) %>% filter(cur_group_id() >= n_groups(.) - n)
-      }) %>% ungroup()
+      full_results %>% 
+      group_by(MONSTERPUNTCODE)  %>% 
+      group_modify(~ {.x %>% group_by(LABNUMMER) %>% 
+                              filter(cur_group_id() >= n_groups(.) - n)}) %>% 
+      ungroup()
   }
   
   ratios_calculator <- function(results, numerator, denominator){
@@ -381,6 +395,7 @@ server <- function(input, output, session) {
   })
   selected_sample_current_results <- reactive({
     req(selected_sample())
+    
     selected_labnummer <- select(selected_sample(), LABNUMMER)
     matching_result <- semi_join(results,
                                   selected_sample(),
@@ -392,13 +407,11 @@ server <- function(input, output, session) {
   selected_sample_historical_results <- reactive({
     #includes current result for now
     selected_meetpunt <- select(selected_sample_current_results(), MONSTERPUNTCODE)
-    matching_results <- semi_join(results,
-                                  selected_sample_current_results(),
+    matching_results <- semi_join(results, selected_sample_current_results(),
                                   by = c('MONSTERPUNTCODE')) %>%
-            arrange(desc(SAMPLINGDATE)) %>% #it SHOULD already put the most recent result first but this ensures it
-            top_n_results(n = input$instellingen_hoeveelheid_resultaten)
+                              arrange(desc(SAMPLINGDATE)) %>% #it SHOULD already put the most recent result first but this ensures it
+                              top_n_results(n = input$instellingen_hoeveelheid_resultaten)
     
-
     plot_selected_samples(rep(FALSE, nrow(matching_results))) #fill plot_selected_samples so it doesn't throw out of bounds errors later
     return(matching_results)
   })
@@ -568,12 +581,12 @@ server <- function(input, output, session) {
     isolate({
       selected_test_results <-
         brushedPoints(selected_sample_historical_results(), input$fiatteer_grafiek_gebied)
-      all_results_for_these_samples <-
+      associated_samples <-
         semi_join(selected_sample_historical_results(), selected_test_results, by = 'LABNUMMER')
-      plot_selected_samples(all_results_for_these_samples)
+      plot_selected_samples(associated_samples)
       
-      all_ratios_for_these_samples <- semi_join(selected_sample_historical_ratios(),selected_test_results, by = 'LABNUMMER')
-      plot_selected_ratios(all_ratios_for_these_samples)
+      associated_ratios <- semi_join(selected_sample_historical_ratios(),selected_test_results, by = 'LABNUMMER')
+      plot_selected_ratios(associated_ratios)
     })
 
   })
@@ -582,13 +595,13 @@ server <- function(input, output, session) {
     isolate({
       selected_test_result <- nearPoints(selected_sample_historical_results(),
                                   input$fiatteer_grafiek_dblklik)
-      all_results_for_this_sample <-
+      associated_sample <-
         semi_join(selected_sample_historical_results(), selected_test_result, by = 'LABNUMMER')
       
-      plot_selected_samples(all_results_for_this_sample)
+      plot_selected_samples(associated_sample)
       
-      all_ratios_for_this_sample <- semi_join(selected_sample_historical_ratios(),selected_test_result, by = 'LABNUMMER')
-      plot_selected_ratios(all_ratios_for_this_sample)
+      associated_ratios <- semi_join(selected_sample_historical_ratios(),selected_test_result, by = 'LABNUMMER')
+      plot_selected_ratios(associated_ratios)
       #showModal(modalDialog(DT::dataTableOutput("fiatteer_grafiek_tabel")))
 
     })
@@ -605,11 +618,11 @@ server <- function(input, output, session) {
       selected_ratios <-
         brushedPoints(selected_sample_historical_ratios(), input$ratios_grafiek_gebied)
       
-      all_ratios_for_these_samples <- semi_join(selected_sample_historical_ratios(),selected_ratios, by = 'LABNUMMER')
-      plot_selected_ratios(all_ratios_for_these_samples)
+      associated_ratios <- semi_join(selected_sample_historical_ratios(),selected_ratios, by = 'LABNUMMER')
+      plot_selected_ratios(associated_ratios)
       
-      all_results_for_these_samples <- semi_join(selected_sample_historical_results(), selected_ratios, by = 'LABNUMMER')
-      plot_selected_samples(all_results_for_these_samples)
+      associated_samples <- semi_join(selected_sample_historical_results(), selected_ratios, by = 'LABNUMMER')
+      plot_selected_samples(associated_samples)
       #showModal(modalDialog(DT::dataTableOutput("fiatteer_grafiek_tabel")))
     })
   })
@@ -620,12 +633,12 @@ server <- function(input, output, session) {
       selected_ratios <-
         nearPoints(selected_sample_historical_ratios(), input$ratios_grafiek_dblklik)
       
-      all_ratios_for_this_sample <- semi_join(selected_sample_historical_ratios(),selected_ratios, by = 'LABNUMMER')
-      plot_selected_ratios(all_ratios_for_this_sample)
+      associated_ratios <- semi_join(selected_sample_historical_ratios(),selected_ratios, by = 'LABNUMMER')
+      plot_selected_ratios(associated_ratios)
       
-      all_results_for_this_sample <-
+      associated_sample <-
         semi_join(selected_sample_historical_results(), selected_ratios, by = 'LABNUMMER')
-      plot_selected_samples(all_results_for_this_sample)
+      plot_selected_samples(associated_sample)
       
     })
   })
@@ -645,9 +658,9 @@ server <- function(input, output, session) {
   
   output$tabel_fiatteerlijst <- DT::renderDataTable({
     req(input$input_file)
+    
     rejected_tests <-
       results_to_validate %>% filter(UITVALLEND == TRUE) %>% select(LABNUMMER, TESTCODE)
-    
     fiatteer_data <- samples() %>%
       nest_join(rejected_tests,
                 by = "LABNUMMER",
