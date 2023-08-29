@@ -28,7 +28,10 @@ ui <- function(request) {
   shinyjs::useShinyjs(),
   
   navbarPage(
-    title= div(tags$img(src='Logo-Aqualysis-RGB-HR.png', align = 'left', width = "130px", height = "34px"),HTML('&nbsp;'),  "Validatie"),
+    title= div(tags$img(src='Logo-Aqualysis-RGB-HR.png', align = 'left', width = "130px", height = "34px"),
+               HTML('&nbsp;'),
+               "Validatie"),
+    
     tabPanel("Fiatteren",
            fluidPage(
              tabsetPanel(
@@ -579,28 +582,38 @@ server <- function(input, output, session) {
   
   observeEvent(input$fiatteer_grafiek_gebied, {
     isolate({
-      selected_test_results <-
-        brushedPoints(selected_sample_historical_results(), input$fiatteer_grafiek_gebied)
-      associated_samples <-
-        semi_join(selected_sample_historical_results(), selected_test_results, by = 'LABNUMMER')
+      
+      selected_test_results <- brushedPoints(selected_sample_historical_results(), 
+                                            input$fiatteer_grafiek_gebied)
+      
+      associated_samples <-semi_join(selected_sample_historical_results(), 
+                                     selected_test_results,
+                                     by = 'LABNUMMER')
       plot_selected_samples(associated_samples)
       
-      associated_ratios <- semi_join(selected_sample_historical_ratios(),selected_test_results, by = 'LABNUMMER')
+      associated_ratios <- semi_join(selected_sample_historical_ratios(),
+                                     selected_test_results, 
+                                     by = 'LABNUMMER')
       plot_selected_ratios(associated_ratios)
+      
     })
 
   })
   
   observeEvent(input$fiatteer_grafiek_dblklik, {
     isolate({
-      selected_test_result <- nearPoints(selected_sample_historical_results(),
-                                  input$fiatteer_grafiek_dblklik)
-      associated_sample <-
-        semi_join(selected_sample_historical_results(), selected_test_result, by = 'LABNUMMER')
       
+      selected_test_result <- nearPoints(selected_sample_historical_results(),
+                                         input$fiatteer_grafiek_dblklik)
+      
+      associated_sample <-semi_join(selected_sample_historical_results(), 
+                                    selected_test_result, 
+                                    by = 'LABNUMMER')
       plot_selected_samples(associated_sample)
       
-      associated_ratios <- semi_join(selected_sample_historical_ratios(),selected_test_result, by = 'LABNUMMER')
+      associated_ratios <- semi_join(selected_sample_historical_ratios(),
+                                     selected_test_result, 
+                                     by = 'LABNUMMER')
       plot_selected_ratios(associated_ratios)
       #showModal(modalDialog(DT::dataTableOutput("fiatteer_grafiek_tabel")))
 
@@ -615,13 +628,17 @@ server <- function(input, output, session) {
   observeEvent(input$ratios_grafiek_gebied, {
     isolate({
       
-      selected_ratios <-
-        brushedPoints(selected_sample_historical_ratios(), input$ratios_grafiek_gebied)
+      selected_ratios <- brushedPoints(selected_sample_historical_ratios(),
+                                       input$ratios_grafiek_gebied)
       
-      associated_ratios <- semi_join(selected_sample_historical_ratios(),selected_ratios, by = 'LABNUMMER')
+      associated_ratios <- semi_join(selected_sample_historical_ratios(),
+                                     selected_ratios, 
+                                     by = 'LABNUMMER')
       plot_selected_ratios(associated_ratios)
       
-      associated_samples <- semi_join(selected_sample_historical_results(), selected_ratios, by = 'LABNUMMER')
+      associated_samples <- semi_join(selected_sample_historical_results(),
+                                      selected_ratios,
+                                      by = 'LABNUMMER')
       plot_selected_samples(associated_samples)
       #showModal(modalDialog(DT::dataTableOutput("fiatteer_grafiek_tabel")))
     })
@@ -630,14 +647,17 @@ server <- function(input, output, session) {
   observeEvent(input$ratios_grafiek_dblklik, {
     isolate({
       
-      selected_ratios <-
-        nearPoints(selected_sample_historical_ratios(), input$ratios_grafiek_dblklik)
+      selected_ratios <- nearPoints(selected_sample_historical_ratios(),
+                                    input$ratios_grafiek_dblklik)
       
-      associated_ratios <- semi_join(selected_sample_historical_ratios(),selected_ratios, by = 'LABNUMMER')
+      associated_ratios <- semi_join(selected_sample_historical_ratios(),
+                                     selected_ratios,
+                                     by = 'LABNUMMER')
       plot_selected_ratios(associated_ratios)
       
-      associated_sample <-
-        semi_join(selected_sample_historical_results(), selected_ratios, by = 'LABNUMMER')
+      associated_sample <- semi_join(selected_sample_historical_results(),
+                                     selected_ratios,
+                                     by = 'LABNUMMER')
       plot_selected_samples(associated_sample)
       
     })
@@ -660,12 +680,16 @@ server <- function(input, output, session) {
     req(input$input_file)
     
     rejected_tests <-
-      results_to_validate %>% filter(UITVALLEND == TRUE) %>% select(LABNUMMER, TESTCODE)
+      results_to_validate %>% 
+      filter(UITVALLEND == TRUE) %>% 
+      select(LABNUMMER, TESTCODE)
+    
     fiatteer_data <- samples() %>%
       nest_join(rejected_tests,
                 by = "LABNUMMER",
                 name = "UITVALLENDE_TESTS_LIST") %>%
-      tidyr::hoist(UITVALLENDE_TESTS_LIST, UITVALLERS = "TESTCODE")
+      tidyr::hoist(UITVALLENDE_TESTS_LIST, 
+                   UITVALLERS = "TESTCODE")
     
     table_builder(fiatteer_data, 
                   editable = list(target = "cell", disable = list(columns = c(1:ncol(fiatteer_data)))),
@@ -740,18 +764,16 @@ server <- function(input, output, session) {
             )
           ))
         )  %>% DT::formatStyle(
-          columns = 'LABNUMMER',
-          valueColumns = 'LABNUMMER',
-          backgroundColor = DT::styleEqual(
-            selected_sample_current_results()$LABNUMMER,
-            'yellow',
-            default = 'gray'
+              columns = 'LABNUMMER',
+              valueColumns = 'LABNUMMER',
+              backgroundColor = DT::styleEqual(selected_sample_current_results()$LABNUMMER, 'yellow', 
+                                                                                    default = 'gray'
           )
         ) %>% DT::formatStyle(
-          columns = 'RESULTAAT',
-          valueColumns = 'UITVALLEND',
-          target = 'cell',
-          backgroundColor = DT::styleEqual(TRUE, 'salmon')
+              columns = 'RESULTAAT',
+              valueColumns = 'UITVALLEND',
+              target = 'cell',
+              backgroundColor = DT::styleEqual(TRUE, 'salmon')
         )
         return(table_sample)
         
@@ -791,30 +813,30 @@ server <- function(input, output, session) {
    
   output$fiatteer_grafiek <- renderPlot({
     req(selected_sample_historical_results())
-    plot_data <- selected_sample_historical_results() 
-    current_data <- selected_sample_current_results()
+    
+    historical_results <- selected_sample_historical_results() 
+    current_results <- selected_sample_current_results()
     #plot_user_choices <- fiatteer_plot_user_settings()
     
-    results_plot <- ggplot(data = plot_data,
-                   mapping = aes(x = SAMPLINGDATE, y = RESULTAAT_ASNUMERIC, colour = NAAM, group = MONSTERPUNTCODE)) +
+    results_plot <- ggplot(data = historical_results,
+                          mapping = aes(x = SAMPLINGDATE, y = RESULTAAT_ASNUMERIC, colour = NAAM, group = MONSTERPUNTCODE)) +
+      
       geom_line(alpha = 0.7) +
       geom_point(size = 2.5, alpha = 0.5, aes(shape = UITVALLEND)) +
-      geom_point(data = current_data, size = 3.5, aes(shape = UITVALLEND)) +
+      geom_point(data = current_results, size = 3.5, aes(shape = UITVALLEND)) +
+      
       labs(x = "Sampling Datum", y = "Resultaat") +
       scale_x_date(date_labels = "%x", breaks = scales::breaks_pretty(n = 12)) +
       guides(size = "none", x = guide_axis(angle = 45)) +
+      
       facet_wrap(vars(TESTCODE), scales = 'free_y')
     
-        #clicked data has to exist first
-    if (isTruthy(plot_selected_samples()))
+    if (isTruthy(plot_selected_samples())) #clicked data has to exist first
     {
       isolate({
-        selected_data <- plot_selected_samples()
-        
+        selected_results <- plot_selected_samples()
         results_plot <-
-          results_plot + geom_point(data = selected_data,
-                                    size = 3.5,
-                                    aes(shape = UITVALLEND))
+          results_plot + geom_point(data = selected_results, size = 3.5, aes(shape = UITVALLEND))
       })
     }
     
@@ -832,22 +854,23 @@ server <- function(input, output, session) {
   })
   
   output$ratios_grafiek <- renderPlot({
-    plot_ratios <- selected_sample_historical_ratios()
+    historical_ratios <- selected_sample_historical_ratios()
     current_ratios <- selected_sample_current_ratios()
     
-    ratios_plot <-
-      ggplot(data = plot_ratios,
-             mapping = aes(x = SAMPLINGDATE, y = WAARDE, colour = NAAM, group = MONSTERPUNTCODE)) +
+    ratios_plot <-ggplot(data = historical_ratios,
+                         mapping = aes(x = SAMPLINGDATE, y = WAARDE, colour = NAAM, group = MONSTERPUNTCODE)) +
+      
       geom_line(alpha = 0.7) +
       geom_point(size = 2.5, alpha = 0.5) +
       geom_point(data = current_ratios, size = 3.5) +
+      
       labs(x = "Sampling datum", y = "Berekende waarde") +
       scale_x_date(date_labels = "%x") +
       guides(size = "none", x = guide_axis(angle = 45)) +
-      facet_wrap(vars(RATIO), scales = 'free_y') #still need to check ratio's really exist
+      
+      facet_wrap(vars(RATIO), scales = 'free_y') #still need to check first that ratio's really exist
     
-    #clicked data has to exist first
-    if (isTruthy(plot_selected_ratios()))
+    if (isTruthy(plot_selected_ratios())) #clicked data has to exist first
     {
       isolate({
         selected_ratios <- plot_selected_ratios()
@@ -862,19 +885,20 @@ server <- function(input, output, session) {
   
   output$fiatteer_grafiek_tabel <- DT::renderDataTable({
     req(plot_selected_samples())
-    selected_data <-
-      plot_selected_samples() %>% select(
-        NAAM,
-        LABNUMMER,
-        RUNNR,
-        TESTCODE,
-        ELEMENTCODE,
-        RESULTAAT,
-        REFMESSAGE,
-        SAMPLINGDATE,
-        MEASUREDATE,
-        UITVALLEND
-      )
+    
+    selected_data <- plot_selected_samples() %>% 
+                      select(
+                            NAAM,
+                            LABNUMMER,
+                            RUNNR,
+                            TESTCODE,
+                            ELEMENTCODE,
+                            RESULTAAT,
+                            REFMESSAGE,
+                            SAMPLINGDATE,
+                            MEASUREDATE,
+                            UITVALLEND
+                            )
     table_builder(
       selected_data,
       group = TRUE,
