@@ -555,10 +555,10 @@ server <- function(input, output, session) {
     #moved to double click because of a shiny issue with firing click events while making a brush selection
     
     # isolate({
-    #   selected_test <- nearPoints(selected_sample_historical_results(),
+    #   selected_test_result <- nearPoints(selected_sample_historical_results(),
     #                               input$fiatteer_grafiek_klik)
     #   selected_sample <-
-    #     semi_join(selected_sample_historical_results(), selected_test, by = 'LABNUMMER')
+    #     semi_join(selected_sample_historical_results(), selected_test_result, by = 'LABNUMMER')
     # 
     #   plot_selected_samples(selected_sample)
     # })
@@ -566,29 +566,29 @@ server <- function(input, output, session) {
   
   observeEvent(input$fiatteer_grafiek_gebied, {
     isolate({
-      selected_tests <-
+      selected_test_results <-
         brushedPoints(selected_sample_historical_results(), input$fiatteer_grafiek_gebied)
-      selected_samples <-
-        semi_join(selected_sample_historical_results(), selected_tests, by = 'LABNUMMER')
-      plot_selected_samples(selected_samples)
+      all_results_for_these_samples <-
+        semi_join(selected_sample_historical_results(), selected_test_results, by = 'LABNUMMER')
+      plot_selected_samples(all_results_for_these_samples)
       
-      matching_ratios <- semi_join(selected_sample_historical_ratios(),selected_tests, by = 'LABNUMMER')
-      plot_selected_ratios(matching_ratios)
+      all_ratios_for_these_samples <- semi_join(selected_sample_historical_ratios(),selected_test_results, by = 'LABNUMMER')
+      plot_selected_ratios(all_ratios_for_these_samples)
     })
 
   })
   
   observeEvent(input$fiatteer_grafiek_dblklik, {
     isolate({
-      selected_test <- nearPoints(selected_sample_historical_results(),
+      selected_test_result <- nearPoints(selected_sample_historical_results(),
                                   input$fiatteer_grafiek_dblklik)
-      selected_sample <-
-        semi_join(selected_sample_historical_results(), selected_test, by = 'LABNUMMER')
+      all_results_for_this_sample <-
+        semi_join(selected_sample_historical_results(), selected_test_result, by = 'LABNUMMER')
       
-      plot_selected_samples(selected_sample)
+      plot_selected_samples(all_results_for_this_sample)
       
-      matching_ratios <- semi_join(selected_sample_historical_ratios(),selected_test, by = 'LABNUMMER')
-      plot_selected_ratios(matching_ratios)
+      all_ratios_for_this_sample <- semi_join(selected_sample_historical_ratios(),selected_test_result, by = 'LABNUMMER')
+      plot_selected_ratios(all_ratios_for_this_sample)
       #showModal(modalDialog(DT::dataTableOutput("fiatteer_grafiek_tabel")))
 
     })
@@ -601,27 +601,32 @@ server <- function(input, output, session) {
   
   observeEvent(input$ratios_grafiek_gebied, {
     isolate({
+      
       selected_ratios <-
         brushedPoints(selected_sample_historical_ratios(), input$ratios_grafiek_gebied)
-      matching_ratios <- semi_join(selected_sample_historical_ratios(),selected_ratios, by = 'LABNUMMER')
-      plot_selected_ratios(matching_ratios)
       
-      selected_samples <- semi_join(selected_sample_historical_results(), selected_ratios, by = 'LABNUMMER')
-      plot_selected_samples(selected_samples)
+      all_ratios_for_these_samples <- semi_join(selected_sample_historical_ratios(),selected_ratios, by = 'LABNUMMER')
+      plot_selected_ratios(all_ratios_for_these_samples)
+      
+      all_results_for_these_samples <- semi_join(selected_sample_historical_results(), selected_ratios, by = 'LABNUMMER')
+      plot_selected_samples(all_results_for_these_samples)
       #showModal(modalDialog(DT::dataTableOutput("fiatteer_grafiek_tabel")))
     })
   })
   
   observeEvent(input$ratios_grafiek_dblklik, {
     isolate({
+      
       selected_ratios <-
         nearPoints(selected_sample_historical_ratios(), input$ratios_grafiek_dblklik)
-      matching_ratios <- semi_join(selected_sample_historical_ratios(),selected_ratios, by = 'LABNUMMER')
-      plot_selected_ratios(matching_ratios)
       
-      selected_samples <-
+      all_ratios_for_this_sample <- semi_join(selected_sample_historical_ratios(),selected_ratios, by = 'LABNUMMER')
+      plot_selected_ratios(all_ratios_for_this_sample)
+      
+      all_results_for_this_sample <-
         semi_join(selected_sample_historical_results(), selected_ratios, by = 'LABNUMMER')
-      plot_selected_samples(selected_samples)
+      plot_selected_samples(all_results_for_this_sample)
+      
     })
   })
   
@@ -878,5 +883,5 @@ shinyApp(ui = ui,
          enableBookmarking = "server",
          options = list())
 }
-#pkgload::load_all(".")
+#pkgload::load_all(".") #this makes devtools::document() freak out for some reason
 aquaApp()
