@@ -4,7 +4,7 @@
 #'
 #' @export
 #'
-startup <- function(...){
+startup <- function(browser = TRUE,...){
   pkgload::load_all(".")
-  shiny::runApp("R", ...)
+  shiny::runApp("R", launch.browser = browser,...)
 }
