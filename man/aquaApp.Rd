@@ -2,10 +2,10 @@
 % Please edit documentation in R/app.R
 \name{aquaApp}
 \alias{aquaApp}
-\title{Start Aqualysis Validator met extra opties}
+\title{Start Aqualysis Validator}
 \usage{
 aquaApp(...)
 }
 \description{
-Start Aqualysis Validator met extra opties
+Start Aqualysis Validator
 }
