@@ -2,7 +2,7 @@
 % Please edit documentation in R/startup.R
 \name{startup}
 \alias{startup}
-\title{Start Aqualysis Validator}
+\title{Start Aqualysis Validator met extra opties}
 \usage{
 startup(...)
 }
@@ -10,5 +10,5 @@ startup(...)
 \item{...}{arguments to pass to shiny::runApp}
 }
 \description{
-Start Aqualysis Validator
+Start Aqualysis Validator met extra opties
 }

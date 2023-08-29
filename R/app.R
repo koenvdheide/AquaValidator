@@ -14,17 +14,9 @@
 
 #reactlog_enable()
 
-#' Aqualysis Validator
-#'
-#' @param ... arguments to pass to shiny::runApp
+#' Start Aqualysis Validator
 #'
 #' @export
-#'
-app <- function(...){
-  pkgload::load_all(".")
-  aquaApp()
-}
-
 aquaApp <- function(...){
   
 options(shiny.maxRequestSize=30*1024^2)
@@ -886,5 +878,5 @@ shinyApp(ui = ui,
          enableBookmarking = "server",
          options = list())
 }
-pkgload::load_all(".")
+#pkgload::load_all(".")
 aquaApp()
