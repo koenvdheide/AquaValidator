@@ -208,7 +208,6 @@ server <- function(input, output, session) {
   results_to_validate <- tibble()
   ratios <- tibble()
   
-  
   #graph user input
   plot_selected_samples <- reactiveVal()
   plot_hover_selected_samples <- reactiveVal()
@@ -276,21 +275,21 @@ server <- function(input, output, session) {
       switch(
         uiComponent,
         #add dumb trick to add "none"/"geen" as first choice for optional inputs?
-        cbg = updateCheckboxGroupInput(
+        CheckboxGroup = updateCheckboxGroupInput(
           inputId = inputId,
           choices = choices,
           selected = selected
         ),
         
-        vs = updateVarSelectInput(
+        VarSelect = updateVarSelectInput(
           inputId = inputId,
           data = data,
           selected = selected
         ),
         
-        tp = updateTabsetPanel(inputId = inputId, selected = selected),
+        TabsetPanel = updateTabsetPanel(inputId = inputId, selected = selected),
         
-        np = updateNavbarPage(inputId = inputId, selected = selected)
+        NavbarPage = updateNavbarPage(inputId = inputId, selected = selected)
       )
       
     }
@@ -309,13 +308,69 @@ server <- function(input, output, session) {
       ungroup()
   }
   
-  ratios_calculator <- function(results, numerator, numerator_type = 'ELEMENTCODE', denominator, denominator_type = 'ELEMENTCODE'){
+  standard_ratios <- list(
+    BZV_ONOPA = c("BZV5","onopa", "ELEMENT/TEST"),
+    CZV_BZV = c("CZV","BZV5", "ELEMENT/ELEMENT"),
+    CZV_NKA = c("CZV","nka","ELEMENT/TEST"),
+    CZV_TNB = c("CZV","tnb","ELEMENT/TEST"),
+    CZV_TOC = c("CZV","TOC","ELEMENT/ELEMENT"),
+    OFOS_TPA = c("ofos","tpa","TEST/TEST")
     
-    # CZV_BZV_RATIO = ifelse(
-    #   any(ELEMENTCODE == "CZV") & any(ELEMENTCODE == "BZV5"),
-    #   RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"] / RESULTAAT_ASNUMERIC[ELEMENTCODE == "BZV5"],
-    #   NA
-    # )
+  )
+  
+  ratios_calculator <- function(results){
+    
+    calculated_ratios <-
+      results %>%
+      group_by(LABNUMMER, MONSTERPUNTCODE) %>%
+      reframe(
+        NAAM = NAAM,
+        SAMPLINGDATE = SAMPLINGDATE,
+        CZV_BZV_RATIO = ifelse(
+          any(ELEMENTCODE == "CZV") & any(ELEMENTCODE == "BZV5"),
+          RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"] / RESULTAAT_ASNUMERIC[ELEMENTCODE == "BZV5"],
+          NA
+        ),
+        CZV_NKA_RATIO = ifelse(
+          any(ELEMENTCODE == "CZV") &
+            any(TESTCODE == "nka"),
+          RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"] / RESULTAAT_ASNUMERIC[TESTCODE == "nka"],
+          NA
+        ),
+        BZV_ONOPA_RATIO = ifelse(
+          any(ELEMENTCODE == "BZV5") &
+            any(TESTCODE == "onopa"),
+          RESULTAAT_ASNUMERIC[ELEMENTCODE == "BZV5"] / RESULTAAT_ASNUMERIC[TESTCODE == "onopa"],
+          NA
+        ),
+        CZV_TOC_RATIO = ifelse(
+          any(ELEMENTCODE == "CZV") &
+            any(ELEMENTCODE == "TOC"),
+          RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"] / RESULTAAT_ASNUMERIC[ELEMENTCODE == "TOC"],
+          NA
+        ),
+        CZV_TNB_RATIO =ifelse(
+          any(ELEMENTCODE == "CZV") &
+            any(TESTCODE == "tnb"),
+          RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"] / RESULTAAT_ASNUMERIC[TESTCODE == "tnb"],
+          NA
+        )
+      ) %>% tidyr::pivot_longer(
+        cols = c(CZV_BZV_RATIO, CZV_NKA_RATIO, BZV_ONOPA_RATIO,CZV_TOC_RATIO,CZV_TNB_RATIO),
+        names_to = "RATIO",
+        values_to = "WAARDE",
+        values_drop_na = TRUE #needed so that ggplot's geom_line doesn't stop when it encounters an NA value while plotting the ratios
+      ) %>% distinct()
+
+    # numerator <- NULL
+    # 
+    # denominator <- NULL
+    # 
+    #  ratio = ifelse(
+    #    any(ELEMENTCODE == numerator) & any(ELEMENTCODE == denominator),
+    #    RESULTAAT_ASNUMERIC[ELEMENTCODE == numerator] / RESULTAAT_ASNUMERIC[ELEMENTCODE == denominator],
+    #    NA
+    #  )
 
     
   }
@@ -475,53 +530,13 @@ server <- function(input, output, session) {
       
       results_to_validate <<- semi_join(results,samples(), by = c("LABNUMMER"))
     
-      ratios <<-
-        results %>%
-        group_by(LABNUMMER, MONSTERPUNTCODE) %>%
-        reframe(
-          NAAM = NAAM,
-          SAMPLINGDATE = SAMPLINGDATE,
-          CZV_BZV_RATIO = ifelse(
-            any(ELEMENTCODE == "CZV") & any(ELEMENTCODE == "BZV5"),
-            RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"] / RESULTAAT_ASNUMERIC[ELEMENTCODE == "BZV5"],
-            NA
-          ),
-          CZV_NKA_RATIO = ifelse(
-            any(ELEMENTCODE == "CZV") &
-              any(TESTCODE == "nka"),
-            RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"] / RESULTAAT_ASNUMERIC[TESTCODE == "nka"],
-            NA
-          ),
-          BZV_ONOPA_RATIO = ifelse(
-            any(ELEMENTCODE == "BZV5") &
-              any(TESTCODE == "onopa"),
-            RESULTAAT_ASNUMERIC[ELEMENTCODE == "BZV5"] / RESULTAAT_ASNUMERIC[TESTCODE == "onopa"],
-            NA
-          ),
-          CZV_TOC_RATIO = ifelse(
-            any(ELEMENTCODE == "CZV") &
-              any(ELEMENTCODE == "TOC"),
-            RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"] / RESULTAAT_ASNUMERIC[ELEMENTCODE == "TOC"],
-            NA
-          ),
-          CZV_TNB_RATIO =ifelse(
-            any(ELEMENTCODE == "CZV") &
-              any(TESTCODE == "tnb"),
-            RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"] / RESULTAAT_ASNUMERIC[TESTCODE == "tnb"],
-            NA
-          )
-        ) %>% tidyr::pivot_longer(
-          cols = c(CZV_BZV_RATIO, CZV_NKA_RATIO, BZV_ONOPA_RATIO,CZV_TOC_RATIO,CZV_TNB_RATIO),
-          names_to = "RATIO",
-          values_to = "WAARDE",
-          values_drop_na = TRUE #needed so that ggplot's geom_line doesn't stop when it encounters an NA value while plotting the ratios
-        ) %>% distinct()
+      ratios <<- ratios_calculator(results)
       
     }, error = function(e){
       showModal(modalDialog(title = "Error",e)) #geef de error als een popup scherm zodat de gebruiker het ziet
     })
     on.exit(removeNotification(loadingtip), add = TRUE)
-    on.exit(uiUpdater(uiComponent = "tp", inputId = "fiatteer_beeld",selected = "tab_fiatteerlijst"), add = TRUE)
+    on.exit(uiUpdater(uiComponent = "TabsetPanel", inputId = "fiatteer_beeld",selected = "tab_fiatteerlijst"), add = TRUE)
   })
   
   observeEvent(input$tabel_fiatteerlijst_cell_edit,{
@@ -682,9 +697,9 @@ server <- function(input, output, session) {
                       "STATUS",
                       "FIATGROEP"
                       #"NIET_NUMBER"
+                        )
+                      )
                     )
-                  )
-                  )
                   )
   })
   
@@ -695,10 +710,6 @@ server <- function(input, output, session) {
      } else {
        results <- selected_sample_historical_results()
      }
-     #merge numeric results and non-numeric results back together for presentation
-
-     #results <- results %>% unite("RESULTAAT", RESULTAAT, NIET_NUMBER, na.rm = TRUE)
-     #View(results)
     
       if(input$instellingen_roteer_tabel  == "labnr"){
         labnr_widened_results <- results %>% tidyr::pivot_wider(
@@ -726,7 +737,6 @@ server <- function(input, output, session) {
         #      backgroundColor = DT::styleEqual(TRUE, 'salmon')
         #      )
         #   
-        
         return(table_labnr)
         
       } else if (input$instellingen_roteer_tabel == "sample") {
@@ -912,5 +922,5 @@ shinyApp(ui = ui,
          enableBookmarking = "server",
          options = list())
 }
-#pkgload::load_all(".") #this makes devtools::document() freak out for some reason
+#pkgload::load_all() #this makes loading the project as a package freak out for some reason
 aquaApp()
