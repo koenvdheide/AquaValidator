@@ -1,4 +1,4 @@
-Package: AqualysisAutoValidatoR
+Package: aquavalidator
 Title: What the Package Does (One Line, Title Case)
 Version: 0.0.0.9000
 Authors@R: 
@@ -16,10 +16,11 @@ Imports:
     DT,
     ggplot2,
     leaflet,
+    magrittr,
     odbc,
     pkgload,
     readxl,
     shiny,
-    shinyjs
-Depends: 
-    tidyverse
+    shinyjs,
+    tibble,
+    tidyr
