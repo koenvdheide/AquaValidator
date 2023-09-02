@@ -509,7 +509,7 @@ server <- function(input, output, session) {
         #meetpuntcolumn = measurepointcolumn
         ) %>% 
         tibble::add_column(#KLAAR = '<input type="checkbox" id="klaar" class="styled">', 
-                   SAMPLE_OPMERKING = "",.before = 1) %>% #don't move the comment column!
+                   OPMERKING = "", .before = 1) %>% #don't move the comment column!
         arrange(PRIOFINISHDATE))
       
       results <<-
