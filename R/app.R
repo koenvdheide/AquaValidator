@@ -543,7 +543,7 @@ server <- function(input, output, session) {
   
   observeEvent(input$tabel_sampleresults_cell_edit,{
     #reminder that if "samples" columns change/rearrange this can overwrite the wrong columns!
-    results(editData(result,input$tabel_sampleresults_cell_edit,rownames = FALSE))
+    results <- editData(results,input$tabel_sampleresults_cell_edit,rownames = FALSE)
 
   })
   
