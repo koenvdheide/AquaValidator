@@ -14,9 +14,6 @@
 
 #reactlog_enable()
 
-#' Start Aqualysis Validator
-#'
-#' @export
 aquaApp <- function(...){
   
 options(shiny.maxRequestSize=30*1024^2)
