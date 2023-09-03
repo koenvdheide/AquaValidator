@@ -750,6 +750,7 @@ server <- function(input, output, session) {
         table_sample <- table_builder(
           results,
           sort_by = 2,
+          comment_col = TRUE,
           group = TRUE,
           group_cols = c(2,3), #change to 1,2 if comment column is removed
           columnDefs = list(list(
