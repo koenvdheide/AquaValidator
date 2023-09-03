@@ -746,15 +746,23 @@ server <- function(input, output, session) {
           results,
           sort_by = 2,
           group = TRUE,
-          group_cols = c(0, 1), #change to 1,2 if comment column is back
+          group_cols = c(2,3), #change to 1,2 if comment column is removed
           columnDefs = list(list(
             visible = FALSE ,
             targets = c(
               "MONSTERPUNTCODE",
+              "PROJECTCODE",
+              "RESULTAAT_ASNUMERIC",
+              "UITVALLEND",
               "NAAM",
               "TESTSTATUS",
               "REFCONCLUSION",
               "UITVALLEND",
+              "MEETPUNT_ID",
+              "SAMPLE_ID",
+              "SAMPLE_TEST_ID",
+              "SAMPLE_RESULT_ID",
+              "GEVALIDEERD",
               "SOORTWATER"
             )
           ))
