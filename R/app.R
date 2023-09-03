@@ -377,7 +377,7 @@ server <- function(input, output, session) {
                             dom = 'Bltipr',
                             sort_by = NA,
                             sort_direction = 'desc',
-                            editable = FALSE,
+                            comment_col = FALSE,
                             group = FALSE,
                             group_cols = 0,
                             columnDefs = NULL) {
@@ -394,6 +394,11 @@ server <- function(input, output, session) {
     } else {
       extensions = c("Buttons")
       rowGroup = NULL
+    }
+    if (comment_col == TRUE){
+      editable = list(target = "cell", disable = list(columns = c(1:ncol(table_data))))
+    } else {
+      editable = FALSE
     }
     
     DT::datatable(
@@ -691,7 +696,7 @@ server <- function(input, output, session) {
                    UITVALLERS = "TESTCODE")
     
     table_builder(fiatteer_data, 
-                  editable = list(target = "cell", disable = list(columns = c(1:ncol(fiatteer_data)))),
+                  comment_col = TRUE,
                   columnDefs = list(list(
                     visible = FALSE ,
                     targets = c(
