@@ -550,20 +550,19 @@ server <- function(input, output, session) {
     finished_samples <<- finished_samples %>% rbind(selected_rows)
     finished_results <<- finished_results %>% rbind(selected_rows_results)
     
-    finished_samples_export <- finished_samples %>% select(SAMPLE_ID,
-                                                           SAMPLE_OPMERKING
-                                                           )
-    finished_results_export <- finished_results %>% select(SAMPLE_ID,
-                                                           MEETPUNT_ID,
-                                                           SAMPLE_TEST_ID,
-                                                           SAMPLE_RESULT_ID
-                                                           )
+    # finished_samples_export <- finished_samples %>% select(SAMPLE_ID,
+    #                                                        SAMPLE_OPMERKING
+    #                                                        )
+    # finished_results_export <- finished_results %>% select(SAMPLE_ID,
+    #                                                        MEETPUNT_ID,
+    #                                                        SAMPLE_TEST_ID,
+    #                                                        SAMPLE_RESULT_ID
+    #                                                        )
+    # export_data <- full_join(finished_samples_export, 
+    #                          finished_results_export,
+    #                          by = 'SAMPLE_ID')
     
-    export_data <- full_join(finished_samples_export, 
-                             finished_results_export,
-                             by = 'SAMPLE_ID')
-    
-    readr::write_csv(finished_samples, "F:/2-Ano/Alg/13_Fiatteren/Validator/gefiatteerde_samples.csv",append = TRUE)
+    readr::write_csv2(finished_samples, "F:/2-Ano/Alg/13_Fiatteren/Validator/gefiatteerde_samples.csv",append = TRUE)
     
     
   })
