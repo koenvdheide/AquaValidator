@@ -696,7 +696,8 @@ server <- function(input, output, session) {
                     visible = FALSE ,
                     targets = c(
                       "STATUS",
-                      "FIATGROEP"
+                      "FIATGROEP",
+                      "SAMPLE_ID"
                       #"NIET_NUMBER"
                         )
                       )
