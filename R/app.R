@@ -506,7 +506,7 @@ server <- function(input, output, session) {
         #meetpuntcolumn = measurepointcolumn
         ) %>% 
         tibble::add_column(#KLAAR = '<input type="checkbox" id="klaar" class="styled">', 
-                   OPMERKING = "", .before = 1) %>% #don't move the comment column!
+                   SAMPLE_OPMERKING = "", .before = 1) %>% #don't move the comment column!
         arrange(PRIOFINISHDATE))
       
       results <<-
@@ -545,11 +545,25 @@ server <- function(input, output, session) {
   observeEvent(input$button_fiatteerlijst_klaar, {
     selected_rows <- selected_sample()
     selected_rows_results <-selected_sample_current_results()
+    samples(anti_join(samples(),selected_rows, by = 'LABNUMMER')) #remove finished samples from view
       
     finished_samples <<- finished_samples %>% rbind(selected_rows)
     finished_results <<- finished_results %>% rbind(selected_rows_results)
     
-    samples(anti_join(samples(),selected_rows, by = 'LABNUMMER'))
+    finished_samples_export <- finished_samples %>% select(SAMPLE_ID,
+                                                           SAMPLE_OPMERKING
+                                                           )
+    finished_results_export <- finished_results %>% select(SAMPLE_ID,
+                                                           MEETPUNT_ID,
+                                                           SAMPLE_TEST_ID,
+                                                           SAMPLE_RESULT_ID
+                                                           )
+    
+    export_data <- full_join(finished_samples_export, 
+                             finished_results_export,
+                             by = 'SAMPLE_ID')
+    
+    readr::write_csv(finished_samples, "F:/2-Ano/Alg/13_Fiatteren/Validator/gefiatteerde_samples.csv",append = TRUE)
     
     
   })
@@ -564,15 +578,6 @@ server <- function(input, output, session) {
   
   observeEvent(input$fiatteer_grafiek_klik, {
     #moved to double click because of a shiny issue with firing click events while making a brush selection
-    
-    # isolate({
-    #   selected_test_result <- nearPoints(selected_sample_historical_results(),
-    #                               input$fiatteer_grafiek_klik)
-    #   selected_sample <-
-    #     semi_join(selected_sample_historical_results(), selected_test_result, by = 'LABNUMMER')
-    # 
-    #   plot_selected_samples(selected_sample)
-    # })
   })
   
   observeEvent(input$fiatteer_grafiek_gebied, {
