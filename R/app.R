@@ -564,7 +564,8 @@ server <- function(input, output, session) {
     finished_samples_export <- finished_samples %>% select(SAMPLE_OPMERKING,
                                                            SAMPLE_ID
                                                            )
-    finished_results_export <- finished_results %>% select(SAMPLE_ID,
+    finished_results_export <- finished_results %>% select(RESULT_OPMERKING,
+                                                           SAMPLE_ID,
                                                            MEETPUNT_ID,
                                                            SAMPLE_TEST_ID,
                                                            SAMPLE_RESULT_ID
