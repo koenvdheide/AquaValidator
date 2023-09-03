@@ -541,10 +541,16 @@ server <- function(input, output, session) {
     on.exit(uiUpdater(uiComponent = "TabsetPanel", inputId = "fiatteer_beeld",selected = "tab_fiatteerlijst"), add = TRUE)
   })
   
+  observeEvent(input$tabel_sampleresults_cell_edit,{
+    #reminder that if "samples" columns change/rearrange this can overwrite the wrong columns!
+    results(editData(result,input$tabel_sampleresults_cell_edit,rownames = FALSE))
+
+  })
+  
   observeEvent(input$tabel_fiatteerlijst_cell_edit,{
     #reminder that if "samples" columns change/rearrange this can overwrite the wrong columns!
     samples(editData(samples(),input$tabel_fiatteerlijst_cell_edit,rownames = FALSE))
-
+    
   })
   
   observeEvent(input$button_fiatteerlijst_klaar, {
