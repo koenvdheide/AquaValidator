@@ -519,9 +519,9 @@ server <- function(input, output, session) {
         ) %>% mutate(
                   RESULTAAT_ASNUMERIC = as.numeric(RESULTAAT),
                   GEVALIDEERD = TESTSTATUS == 300,
-                  UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0) #%>%
+                  UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0) %>%
         #see AAV-177 issue
-        #tibble::add_column(RESULT_OPMERKING = "", .before = 1) #don't move the comment column!
+        tibble::add_column(RESULT_OPMERKING = "", .before = 1) #don't move the comment column!
     
       #results$RESULTAAT <- set_num_opts(results$RESULTAAT, sigfig = 3)
       
