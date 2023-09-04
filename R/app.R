@@ -590,8 +590,12 @@ server <- function(input, output, session) {
     export_data <- full_join(validated_samples_export,
                              validated_results_export,
                              by = 'SAMPLE_ID')
+    try({
+      readr::write_csv2(export_data, "F:/2-Ano/Alg/13_Fiatteren/Validator/gefiatteerde_samples.csv",append = TRUE)
+      validated_samples <<- tibble()
+      validated_results <<- tibble()
+    })
     
-    readr::write_csv2(export_data, "F:/2-Ano/Alg/13_Fiatteren/Validator/gefiatteerde_samples.csv",append = TRUE)
     
     
   })
@@ -599,7 +603,7 @@ server <- function(input, output, session) {
   observeEvent(input$button_duplo, {
     selected_rows <- selected_sample()
     selected_result_rows <- selected_results()
-    View(selected_result_rows)
+
   })
   
   observeEvent(input$tabel_sampleresults_rows_selected,{
