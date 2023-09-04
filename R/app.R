@@ -173,8 +173,8 @@ ui <- function(request) {
            sidebarLayout(sidebarPanel(),
                          mainPanel())),
   
-  footer = div(bookmarkButton(label = "Sla fiatteer voortgang op"),
-               actionButton("button_fiatteerlijst_klaar", label = "Valideer geselecteerde samples"))
+  footer = div(#bookmarkButton(label = "Sla fiatteer voortgang op"),
+               actionButton("button_valideer", label = "Valideer geselecteerde samples"))
 )
 )}
 server <- function(input, output, session) {
@@ -553,7 +553,7 @@ server <- function(input, output, session) {
     
   })
   
-  observeEvent(input$button_fiatteerlijst_klaar, {
+  observeEvent(input$button_valideer, {
     selected_rows <- selected_sample()
     selected_rows_results <-selected_sample_current_results()
     samples(anti_join(samples(),selected_rows, by = 'LABNUMMER')) #remove finished samples from view
