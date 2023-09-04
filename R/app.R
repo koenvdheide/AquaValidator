@@ -212,8 +212,8 @@ server <- function(input, output, session) {
   plot_selected_ratios <- reactiveVal()
   
   #output
-  finished_samples <- tibble()
-  finished_results <- tibble()
+  validated_samples <- tibble()
+  validated_results <- tibble()
   
 ##################### common server functions #######################
   
@@ -443,7 +443,7 @@ server <- function(input, output, session) {
     }
     else{
       showModal(modalDialog(
-        title = "Geen Selectie",
+        title = "Geen Resultaten",
         "Geen resultaten geselecteerd!",
         easyClose = TRUE
       ))
@@ -566,30 +566,40 @@ server <- function(input, output, session) {
     
   })
   
+  validation_exporter <- function(){
+    #move duplicate exporting code here
+  }
+  
   observeEvent(input$button_valideer, {
     selected_rows <- selected_sample()
     selected_rows_results <-selected_sample_current_results()
     samples(anti_join(samples(),selected_rows, by = 'LABNUMMER')) #remove finished samples from view
       
-    finished_samples <<- finished_samples %>% rbind(selected_rows)
-    finished_results <<- finished_results %>% rbind(selected_rows_results)
+    validated_samples <<- validated_samples %>% rbind(selected_rows)
+    validated_results <<- validated_results %>% rbind(selected_rows_results)
     
-    finished_samples_export <- finished_samples %>% select(SAMPLE_OPMERKING,
+    validated_samples_export <- validated_samples %>% select(SAMPLE_OPMERKING,
                                                            SAMPLE_ID
                                                            )
-    finished_results_export <- finished_results %>% select(RESULT_OPMERKING,
+    validated_results_export <- validated_results %>% select(RESULT_OPMERKING,
                                                            SAMPLE_ID,
                                                            MEETPUNT_ID,
                                                            SAMPLE_TEST_ID,
                                                            SAMPLE_RESULT_ID
                                                            )
-    export_data <- full_join(finished_samples_export,
-                             finished_results_export,
+    export_data <- full_join(validated_samples_export,
+                             validated_results_export,
                              by = 'SAMPLE_ID')
     
     readr::write_csv2(export_data, "F:/2-Ano/Alg/13_Fiatteren/Validator/gefiatteerde_samples.csv",append = TRUE)
     
     
+  })
+  
+  observeEvent(input$button_duplo, {
+    selected_rows <- selected_sample()
+    selected_result_rows <- selected_results()
+    View(selected_result_rows)
   })
   
   observeEvent(input$tabel_sampleresults_rows_selected,{
