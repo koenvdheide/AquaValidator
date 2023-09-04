@@ -174,7 +174,7 @@ ui <- function(request) {
                          mainPanel())),
   
   footer = div(#bookmarkButton(label = "Sla fiatteer voortgang op"),
-                actionButton("button_duplo", label = "Vraag duplo aan voor geselecteerde resultaten"),
+                actionButton("button_duplo_aanvraag", label = "Vraag duplo aan voor geselecteerde resultaten"),
                 actionButton("button_valideer", label = "Valideer geselecteerde samples"))
 )
 )}
@@ -576,6 +576,8 @@ server <- function(input, output, session) {
   observeEvent(input$button_valideer, {
     selected_rows <- selected_sample()
     selected_rows_results <-selected_sample_current_results()
+    req(selected_sample())
+    
     samples(anti_join(samples(),selected_rows, by = 'LABNUMMER')) #remove finished samples from view
       
     validated_samples <<- validated_samples %>% rbind(selected_rows)
@@ -594,7 +596,7 @@ server <- function(input, output, session) {
                              validated_results_export,
                              by = 'SAMPLE_ID')
     tryCatch({
-      readr::write_csv2(export_data, "F:/2-Ano/Alg/13_Fiatteren/Validator/gefiatteerde_samples.csv",append = TRUE)
+      readr::write_csv2(export_data, "F:/2-Ano/Alg/13_Fiatteren/Validator/gevalideerde_samples.csv",append = TRUE)
       validated_samples <<- tibble()
       validated_results <<- tibble()
     }, error = function(e){
@@ -603,23 +605,38 @@ server <- function(input, output, session) {
     
   })
   
-  observeEvent(input$button_duplo, {
+  observeEvent(input$button_duplo_aanvraag, {
     selected_rows <- selected_sample()
     selected_result_rows <- selected_results()
+    req(selected_results())
+    
+    #samples(anti_join(samples(),selected_rows, by = 'LABNUMMER')) #do we want to remove REJECTED samples from view?
+    
+    rejected_samples <<- rejected_samples %>% rbind(selected_rows)
+    rejected_results <<- rejected_results %>% rbind(selected_result_rows)
+    
+    rejected_samples_export <- rejected_samples %>% select(SAMPLE_OPMERKING,
+                                                             SAMPLE_ID
+    )
+    rejected_results_export <- rejected_results %>% select(RESULT_OPMERKING,
+                                                             SAMPLE_ID,
+                                                             MEETPUNT_ID,
+                                                             SAMPLE_TEST_ID,
+                                                             SAMPLE_RESULT_ID
+    )
+    export_data <- full_join(rejected_samples_export,
+                             rejected_results_export,
+                             by = 'SAMPLE_ID')
     
     tryCatch({
-      readr::write_csv2(export_data, "F:/2-Ano/Alg/13_Fiatteren/Validator/gefiatteerde_samples.csv",append = TRUE)
-      validated_samples <<- tibble()
-      validated_results <<- tibble()
+      readr::write_csv2(export_data, "F:/2-Ano/Alg/13_Fiatteren/Validator/afgewezen_sample_resultaten.csv",append = TRUE)
+      rejected_samples <<- tibble()
+      rejected_results <<- tibble()
     }, error = function(e){
       showModal(modalDialog(title = "Error bij wegschrijven",e)) #geef de error als een popup scherm zodat de gebruiker het ziet
     })
     
 
-  })
-  
-  observeEvent(input$tabel_sampleresults_rows_selected,{
-   #look at selected_sample() but keep in mind this table has widened results!
   })
   
   observeEvent(input$fiatteer_grafiek_zweef,{
