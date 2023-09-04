@@ -200,7 +200,7 @@ server <- function(input, output, session) {
   #   Port = 1521
   # )
   
-  #data
+  #input 
   samples <- reactiveVal(tibble())
   results <- tibble()
   results_to_validate <- tibble()
@@ -214,6 +214,9 @@ server <- function(input, output, session) {
   #output
   validated_samples <- tibble()
   validated_results <- tibble()
+  
+  rejected_samples <- tibble()
+  rejected_results <- tibble()
   
 ##################### common server functions #######################
   
