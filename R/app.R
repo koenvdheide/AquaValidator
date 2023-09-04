@@ -174,7 +174,8 @@ ui <- function(request) {
                          mainPanel())),
   
   footer = div(#bookmarkButton(label = "Sla fiatteer voortgang op"),
-               actionButton("button_valideer", label = "Valideer geselecteerde samples"))
+                actionButton("button_duplo", label = "Vraag duplo aan voor geselecteerde resultaten"),
+                actionButton("button_valideer", label = "Valideer geselecteerde samples"))
 )
 )}
 server <- function(input, output, session) {
