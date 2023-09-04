@@ -593,19 +593,28 @@ server <- function(input, output, session) {
     export_data <- full_join(validated_samples_export,
                              validated_results_export,
                              by = 'SAMPLE_ID')
-    try({
+    tryCatch({
       readr::write_csv2(export_data, "F:/2-Ano/Alg/13_Fiatteren/Validator/gefiatteerde_samples.csv",append = TRUE)
       validated_samples <<- tibble()
       validated_results <<- tibble()
+    }, error = function(e){
+      showModal(modalDialog(title = "Error bij wegschrijven",e)) #geef de error als een popup scherm zodat de gebruiker het ziet
     })
-    
-    
     
   })
   
   observeEvent(input$button_duplo, {
     selected_rows <- selected_sample()
     selected_result_rows <- selected_results()
+    
+    tryCatch({
+      readr::write_csv2(export_data, "F:/2-Ano/Alg/13_Fiatteren/Validator/gefiatteerde_samples.csv",append = TRUE)
+      validated_samples <<- tibble()
+      validated_results <<- tibble()
+    }, error = function(e){
+      showModal(modalDialog(title = "Error bij wegschrijven",e)) #geef de error als een popup scherm zodat de gebruiker het ziet
+    })
+    
 
   })
   
