@@ -717,13 +717,18 @@ server <- function(input, output, session) {
                   )
   })
   
+  historical_or_current_results <- reactive({
+    if(input$instellingen_verberg_historie_tabel  == TRUE){
+      results <- selected_sample_current_results()
+    } else {
+      results <- selected_sample_historical_results()
+    }
+    return(results)
+  })
+  
    output$tabel_sampleresults <- DT::renderDataTable({
      
-     if(input$instellingen_verberg_historie_tabel  == TRUE){
-       results <- selected_sample_current_results()
-     } else {
-       results <- selected_sample_historical_results()
-     }
+      results <- historical_or_current_results()
     
       if(input$instellingen_roteer_tabel  == "labnr"){
         labnr_widened_results <- results %>% tidyr::pivot_wider(
