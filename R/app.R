@@ -292,11 +292,6 @@ server <- function(input, output, session) {
       
     }
   
-  
-  results_selection <- function(){
-    #historical results & current_result
-  }
-  
   top_n_results <- function(n, full_results) {
     top_results <-
       full_results %>% 
@@ -427,7 +422,7 @@ server <- function(input, output, session) {
 ###########################reactive functions##################################
   
   selected_sample <- reactive({
-    data <- samples() #redundant but needed because subsetting reactiveval is buggy
+    data <- samples() #redundant but needed because subsetting a reactiveval is buggy
     if (isTruthy(input$tabel_fiatteerlijst_rows_selected)) {
       return(data[input$tabel_fiatteerlijst_rows_selected,])
     }
@@ -440,6 +435,23 @@ server <- function(input, output, session) {
       return()
     }
   })
+  
+  selected_results <- reactive({
+    data <- historical_or_current_results() #redundant but needed because subsetting a reactiveval is buggy
+    if (isTruthy(input$tabel_sampleresults_rows_selected)) {
+      return(data[input$tabel_sampleresults_rows_selected,])
+    }
+    else{
+      showModal(modalDialog(
+        title = "Geen Selectie",
+        "Geen resultaten geselecteerd!",
+        easyClose = TRUE
+      ))
+      return()
+    }
+  })
+
+  
   selected_sample_current_results <- reactive({
     req(selected_sample())
     
