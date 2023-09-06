@@ -842,7 +842,7 @@ server <- function(input, output, session) {
     validated_samples_export <- validated_samples %>% select(SAMPLE_OPMERKING,
                                                              SAMPLE_ID
     )
-    validated_results_export <- validated_results %>% select(RESULT_OPMERKING,
+    validated_results_export <- validated_results %>% select(#RESULT_OPMERKING,
                                                              SAMPLE_ID,
                                                              MEETPUNT_ID,
                                                              SAMPLE_TEST_ID,
@@ -875,7 +875,7 @@ server <- function(input, output, session) {
     rejected_samples_export <- rejected_samples %>% select(SAMPLE_OPMERKING,
                                                            SAMPLE_ID
     )
-    rejected_results_export <- rejected_results %>% select(RESULT_OPMERKING,
+    rejected_results_export <- rejected_results %>% select(#RESULT_OPMERKING,
                                                            SAMPLE_ID,
                                                            MEETPUNT_ID,
                                                            SAMPLE_TEST_ID,
