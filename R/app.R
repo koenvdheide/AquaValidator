@@ -686,7 +686,6 @@ server <- function(input, output, session) {
   
   observeEvent(input$ratios_grafiek_klik, {
     #moved to double click because of a shiny issue with firing click events while making a brush selection
-    
   })
   
   observeEvent(input$ratios_grafiek_gebied, {
