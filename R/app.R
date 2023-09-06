@@ -252,8 +252,8 @@ server <- function(input, output, session) {
           RESULTAAT_ASNUMERIC = as.numeric(RESULTAAT),
           GEVALIDEERD = TESTSTATUS == 300,
           UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0) %>%
-        #see AAV-177 issue
-        tibble::add_column(RESULT_OPMERKING = "", .before = 1) #don't move the comment column!
+          #see AAV-177 issue
+          tibble::add_column(RESULT_OPMERKING = "", .before = 1) #don't move the comment column!
       
       #results$RESULTAAT <- set_num_opts(results$RESULTAAT, sigfig = 3)
       
@@ -310,6 +310,15 @@ server <- function(input, output, session) {
     return (excel_data)
     }
   
+  standard_ratios <- list(
+    BZV_ONOPA = c("BZV5","onopa", "ELEMENT/TEST"),
+    CZV_BZV = c("CZV","BZV5", "ELEMENT/ELEMENT"),
+    CZV_NKA = c("CZV","nka","ELEMENT/TEST"),
+    CZV_TNB = c("CZV","tnb","ELEMENT/TEST"),
+    CZV_TOC = c("CZV","TOC","ELEMENT/ELEMENT"),
+    OFOS_TPA = c("ofos","tpa","TEST/TEST")
+    
+  )
   ratios_calculator <- function(results){
     
     calculated_ratios <-
@@ -363,115 +372,44 @@ server <- function(input, output, session) {
     #    RESULTAAT_ASNUMERIC[ELEMENTCODE == numerator] / RESULTAAT_ASNUMERIC[ELEMENTCODE == denominator],
     #    NA
     #  )
-    
   }
-  
-  uiUpdater <-
-    function(uiComponent,
-             inputId,
-             label = NULL,
-             choices = NULL,
-             data = NULL,
-             selected = NULL,
-             choiceNames = NULL,
-             choiceValues = NULL) {
-      freezeReactiveValue(input, inputId)
-      
-      switch(
-        uiComponent,
-        #add dumb trick to add "none"/"geen" as first choice for optional inputs?
-        CheckboxGroup = updateCheckboxGroupInput(
-          inputId = inputId,
-          choices = choices,
-          selected = selected
-        ),
-        
-        VarSelect = updateVarSelectInput(
-          inputId = inputId,
-          data = data,
-          selected = selected
-        ),
-        
-        TabsetPanel = updateTabsetPanel(inputId = inputId, selected = selected),
-        
-        NavbarPage = updateNavbarPage(inputId = inputId, selected = selected)
-      )
-      
-    }
-  
-  top_n_results <- function(n, full_results) {
-    top_results <-
-      full_results %>% 
-      group_by(MONSTERPUNTCODE)  %>% 
-      group_modify(~ {.x %>% group_by(LABNUMMER) %>% 
-                      filter(cur_group_id() >= n_groups(.) - n)}) %>% 
-      ungroup()
-  }
-  
-  standard_ratios <- list(
-    BZV_ONOPA = c("BZV5","onopa", "ELEMENT/TEST"),
-    CZV_BZV = c("CZV","BZV5", "ELEMENT/ELEMENT"),
-    CZV_NKA = c("CZV","nka","ELEMENT/TEST"),
-    CZV_TNB = c("CZV","tnb","ELEMENT/TEST"),
-    CZV_TOC = c("CZV","TOC","ELEMENT/ELEMENT"),
-    OFOS_TPA = c("ofos","tpa","TEST/TEST")
-    
-  )
-  
 
   
-  table_builder <- function(table_data,
-                            rownames = FALSE,
-                            dom = 'Bltipr',
-                            sort_by = NA,
-                            sort_direction = 'desc',
-                            comment_col = FALSE,
-                            group = FALSE,
-                            group_cols = 0,
-                            columnDefs = NULL) {
-  
-    if (!is.na(sort_by)) {
-      order = list(list(sort_by, sort_direction))
-    } else {
-      order = list()
-    }
+  output$tabel_fiatteerlijst <- DT::renderDataTable({
+    req(input$input_file)
     
-    if (group == TRUE) {
-      extensions = c("Buttons", "RowGroup")
-      rowGroup = list(dataSrc = group_cols)
-    } else {
-      extensions = c("Buttons")
-      rowGroup = NULL
-    }
-    if (comment_col == TRUE){
-      editable = list(target = "cell", disable = list(columns = c(1:ncol(table_data))))
-    } else {
-      editable = FALSE
-    }
+    rejected_tests <-
+      results_to_validate %>% 
+      filter(UITVALLEND == TRUE) %>% 
+      select(LABNUMMER, TESTCODE)
     
-    DT::datatable(
-      data = table_data,
-      rownames = rownames,
-      extensions = extensions,
-      filter = "top",
-      editable = editable,
-      escape = FALSE,
-      options = list(
-        dom = dom, #dom needed to remove search bar (redundant with column search)
-        buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
-        order = order,
-        #ordering= 0, 
-        rowGroup = rowGroup,
-        columnDefs = columnDefs
-      ) 
+    fiatteer_data <- samples() %>%
+      nest_join(rejected_tests,
+                by = "LABNUMMER",
+                name = "UITVALLENDE_TESTS_LIST") %>%
+      tidyr::hoist(UITVALLENDE_TESTS_LIST, 
+                   UITVALLERS = "TESTCODE")
+    
+    table_builder(fiatteer_data, 
+                  comment_col = TRUE,
+                  columnDefs = list(list(
+                    visible = FALSE ,
+                    targets = c(
+                      "STATUS",
+                      "FIATGROEP",
+                      "SAMPLE_ID"
+                      #"NIET_NUMBER"
+                    )
+                  )
+                  )
     )
-  }
+  })
   
-  plot_builder <- function(){
-    #common code for building results & ratios plots
-  }
-  
-###########################reactive functions##################################
+  observeEvent(input$tabel_fiatteerlijst_cell_edit,{
+    #reminder that if "samples" columns change/rearrange this can overwrite the wrong columns!
+    samples(editData(samples(),input$tabel_fiatteerlijst_cell_edit,rownames = FALSE))
+    
+  })
   
   selected_sample <- reactive({
     data <- samples() #redundant but needed because subsetting a reactiveval is buggy
@@ -487,6 +425,29 @@ server <- function(input, output, session) {
       return()
     }
   })
+
+  
+  top_n_results <- function(n, full_results) {
+    top_results <-
+      full_results %>% 
+      group_by(MONSTERPUNTCODE)  %>% 
+      group_modify(~ {.x %>% group_by(LABNUMMER) %>% 
+                      filter(cur_group_id() >= n_groups(.) - n)}) %>% 
+      ungroup()
+  }
+  
+
+  
+
+  
+
+  
+  plot_builder <- function(){
+    #common code for building results & ratios plots
+  }
+  
+  
+
   
   selected_results <- reactive({
     data <- historical_or_current_results() #redundant but needed because subsetting a reactiveval is buggy
@@ -562,11 +523,7 @@ server <- function(input, output, session) {
 
   })
   
-  observeEvent(input$tabel_fiatteerlijst_cell_edit,{
-    #reminder that if "samples" columns change/rearrange this can overwrite the wrong columns!
-    samples(editData(samples(),input$tabel_fiatteerlijst_cell_edit,rownames = FALSE))
-    
-  })
+
   
   validation_exporter <- function(){
     #move duplicate exporting code here
@@ -727,7 +684,6 @@ server <- function(input, output, session) {
     })
   })
   
-#######################output functions############################  
 
    # updateTabsetPanel(inputId = "fiatteer_beeld",selected = "tab_sample")
   
@@ -740,35 +696,7 @@ server <- function(input, output, session) {
   #   }
   # })
   
-  output$tabel_fiatteerlijst <- DT::renderDataTable({
-    req(input$input_file)
-    
-    rejected_tests <-
-      results_to_validate %>% 
-      filter(UITVALLEND == TRUE) %>% 
-      select(LABNUMMER, TESTCODE)
-    
-    fiatteer_data <- samples() %>%
-      nest_join(rejected_tests,
-                by = "LABNUMMER",
-                name = "UITVALLENDE_TESTS_LIST") %>%
-      tidyr::hoist(UITVALLENDE_TESTS_LIST, 
-                   UITVALLERS = "TESTCODE")
-    
-    table_builder(fiatteer_data, 
-                  comment_col = TRUE,
-                  columnDefs = list(list(
-                    visible = FALSE ,
-                    targets = c(
-                      "STATUS",
-                      "FIATGROEP",
-                      "SAMPLE_ID"
-                      #"NIET_NUMBER"
-                        )
-                      )
-                    )
-                  )
-  })
+
   
   historical_or_current_results <- reactive({
     if(input$instellingen_verberg_historie_tabel  == TRUE){
@@ -996,6 +924,86 @@ server <- function(input, output, session) {
                       target = 'cell',
                       backgroundColor = DT::styleEqual(TRUE,'salmon'))
   })
+  
+  uiUpdater <-
+    function(uiComponent,
+             inputId,
+             label = NULL,
+             choices = NULL,
+             data = NULL,
+             selected = NULL,
+             choiceNames = NULL,
+             choiceValues = NULL) {
+      freezeReactiveValue(input, inputId)
+      
+      switch(
+        uiComponent,
+        #add dumb trick to add "none"/"geen" as first choice for optional inputs?
+        CheckboxGroup = updateCheckboxGroupInput(
+          inputId = inputId,
+          choices = choices,
+          selected = selected
+        ),
+        
+        VarSelect = updateVarSelectInput(
+          inputId = inputId,
+          data = data,
+          selected = selected
+        ),
+        
+        TabsetPanel = updateTabsetPanel(inputId = inputId, selected = selected),
+        
+        NavbarPage = updateNavbarPage(inputId = inputId, selected = selected)
+      )
+      
+    }
+  
+  table_builder <- function(table_data,
+                            rownames = FALSE,
+                            dom = 'Bltipr',
+                            sort_by = NA,
+                            sort_direction = 'desc',
+                            comment_col = FALSE,
+                            group = FALSE,
+                            group_cols = 0,
+                            columnDefs = NULL) {
+    
+    if (!is.na(sort_by)) {
+      order = list(list(sort_by, sort_direction))
+    } else {
+      order = list()
+    }
+    
+    if (group == TRUE) {
+      extensions = c("Buttons", "RowGroup")
+      rowGroup = list(dataSrc = group_cols)
+    } else {
+      extensions = c("Buttons")
+      rowGroup = NULL
+    }
+    if (comment_col == TRUE){
+      editable = list(target = "cell", disable = list(columns = c(1:ncol(table_data))))
+    } else {
+      editable = FALSE
+    }
+    
+    DT::datatable(
+      data = table_data,
+      rownames = rownames,
+      extensions = extensions,
+      filter = "top",
+      editable = editable,
+      escape = FALSE,
+      options = list(
+        dom = dom, #dom needed to remove search bar (redundant with column search)
+        buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+        order = order,
+        #ordering= 0, 
+        rowGroup = rowGroup,
+        columnDefs = columnDefs
+      ) 
+    )
+  }
 }
 
 shinyApp(ui = ui,
