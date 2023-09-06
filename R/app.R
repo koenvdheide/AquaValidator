@@ -308,6 +308,62 @@ server <- function(input, output, session) {
           ), as.factor)
         ) 
     return (excel_data)
+    }
+  
+  ratios_calculator <- function(results){
+    
+    calculated_ratios <-
+      results %>%
+      group_by(LABNUMMER, MONSTERPUNTCODE) %>%
+      reframe(
+        NAAM = NAAM,
+        SAMPLINGDATE = SAMPLINGDATE,
+        CZV_BZV_RATIO = ifelse(
+          any(ELEMENTCODE == "CZV") & any(ELEMENTCODE == "BZV5"),
+          RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"] / RESULTAAT_ASNUMERIC[ELEMENTCODE == "BZV5"],
+          NA
+        ),
+        CZV_NKA_RATIO = ifelse(
+          any(ELEMENTCODE == "CZV") &
+            any(TESTCODE == "nka"),
+          RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"] / RESULTAAT_ASNUMERIC[TESTCODE == "nka"],
+          NA
+        ),
+        BZV_ONOPA_RATIO = ifelse(
+          any(ELEMENTCODE == "BZV5") &
+            any(TESTCODE == "onopa"),
+          RESULTAAT_ASNUMERIC[ELEMENTCODE == "BZV5"] / RESULTAAT_ASNUMERIC[TESTCODE == "onopa"],
+          NA
+        ),
+        CZV_TOC_RATIO = ifelse(
+          any(ELEMENTCODE == "CZV") &
+            any(ELEMENTCODE == "TOC"),
+          RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"] / RESULTAAT_ASNUMERIC[ELEMENTCODE == "TOC"],
+          NA
+        ),
+        CZV_TNB_RATIO =ifelse(
+          any(ELEMENTCODE == "CZV") &
+            any(TESTCODE == "tnb"),
+          RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"] / RESULTAAT_ASNUMERIC[TESTCODE == "tnb"],
+          NA
+        )
+      ) %>% tidyr::pivot_longer(
+        cols = c(CZV_BZV_RATIO, CZV_NKA_RATIO, BZV_ONOPA_RATIO,CZV_TOC_RATIO,CZV_TNB_RATIO),
+        names_to = "RATIO",
+        values_to = "WAARDE",
+        values_drop_na = TRUE #needed so that ggplot's geom_line doesn't stop when it encounters an NA value while plotting the ratios
+      ) %>% distinct()
+    
+    # numerator <- NULL
+    # 
+    # denominator <- NULL
+    # 
+    #  ratio = ifelse(
+    #    any(ELEMENTCODE == numerator) & any(ELEMENTCODE == denominator),
+    #    RESULTAAT_ASNUMERIC[ELEMENTCODE == numerator] / RESULTAAT_ASNUMERIC[ELEMENTCODE == denominator],
+    #    NA
+    #  )
+    
   }
   
   uiUpdater <-
@@ -362,62 +418,7 @@ server <- function(input, output, session) {
     
   )
   
-  ratios_calculator <- function(results){
-    
-    calculated_ratios <-
-      results %>%
-      group_by(LABNUMMER, MONSTERPUNTCODE) %>%
-      reframe(
-        NAAM = NAAM,
-        SAMPLINGDATE = SAMPLINGDATE,
-        CZV_BZV_RATIO = ifelse(
-          any(ELEMENTCODE == "CZV") & any(ELEMENTCODE == "BZV5"),
-          RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"] / RESULTAAT_ASNUMERIC[ELEMENTCODE == "BZV5"],
-          NA
-        ),
-        CZV_NKA_RATIO = ifelse(
-          any(ELEMENTCODE == "CZV") &
-            any(TESTCODE == "nka"),
-          RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"] / RESULTAAT_ASNUMERIC[TESTCODE == "nka"],
-          NA
-        ),
-        BZV_ONOPA_RATIO = ifelse(
-          any(ELEMENTCODE == "BZV5") &
-            any(TESTCODE == "onopa"),
-          RESULTAAT_ASNUMERIC[ELEMENTCODE == "BZV5"] / RESULTAAT_ASNUMERIC[TESTCODE == "onopa"],
-          NA
-        ),
-        CZV_TOC_RATIO = ifelse(
-          any(ELEMENTCODE == "CZV") &
-            any(ELEMENTCODE == "TOC"),
-          RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"] / RESULTAAT_ASNUMERIC[ELEMENTCODE == "TOC"],
-          NA
-        ),
-        CZV_TNB_RATIO =ifelse(
-          any(ELEMENTCODE == "CZV") &
-            any(TESTCODE == "tnb"),
-          RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"] / RESULTAAT_ASNUMERIC[TESTCODE == "tnb"],
-          NA
-        )
-      ) %>% tidyr::pivot_longer(
-        cols = c(CZV_BZV_RATIO, CZV_NKA_RATIO, BZV_ONOPA_RATIO,CZV_TOC_RATIO,CZV_TNB_RATIO),
-        names_to = "RATIO",
-        values_to = "WAARDE",
-        values_drop_na = TRUE #needed so that ggplot's geom_line doesn't stop when it encounters an NA value while plotting the ratios
-      ) %>% distinct()
 
-    # numerator <- NULL
-    # 
-    # denominator <- NULL
-    # 
-    #  ratio = ifelse(
-    #    any(ELEMENTCODE == numerator) & any(ELEMENTCODE == denominator),
-    #    RESULTAAT_ASNUMERIC[ELEMENTCODE == numerator] / RESULTAAT_ASNUMERIC[ELEMENTCODE == denominator],
-    #    NA
-    #  )
-
-    
-  }
   
   table_builder <- function(table_data,
                             rownames = FALSE,
