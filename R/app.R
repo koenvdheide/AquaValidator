@@ -218,7 +218,55 @@ server <- function(input, output, session) {
   rejected_samples <- tibble()
   rejected_results <- tibble()
   
-##################### common server functions #######################
+
+  observeEvent(input$input_file, {
+    loadingtip <- showNotification("Laden...", duration = NULL, closeButton = FALSE)
+    tryCatch({
+      file_path <- input$input_file$datapath
+      fiatteerblad <- input$input_file_fiatteer_blad
+      resultatenblad <- input$input_file_resultaten_blad
+      # measurepointcolumn <- input$input_file_meetpunt_kolom
+      # resultscolumn <- input$input_file_testresultaat_kolom
+      # labnrcolumn <- input$input_file_labnummer_kolom
+      
+      
+      samples(excel_reader(
+        file_path,
+        sheet = fiatteerblad
+        #resultcolumn = resultscolumn,
+        #labnummercolumn = labnrcolumn,
+        #meetpuntcolumn = measurepointcolumn
+      ) %>% 
+        tibble::add_column(#KLAAR = '<input type="checkbox" id="klaar" class="styled">', 
+          SAMPLE_OPMERKING = "", .before = 1) %>% #don't move the comment column!
+        arrange(PRIOFINISHDATE))
+      
+      results <<-
+        excel_reader(
+          file_path,
+          sheet = resultatenblad
+          #resultcolumn = resultscolumn,
+          #labnummercolumn = labnrcolumn,
+          #meetpuntcolumn = measurepointcolumn
+        ) %>% mutate(
+          RESULTAAT_ASNUMERIC = as.numeric(RESULTAAT),
+          GEVALIDEERD = TESTSTATUS == 300,
+          UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0) %>%
+        #see AAV-177 issue
+        tibble::add_column(RESULT_OPMERKING = "", .before = 1) #don't move the comment column!
+      
+      #results$RESULTAAT <- set_num_opts(results$RESULTAAT, sigfig = 3)
+      
+      results_to_validate <<- semi_join(results,samples(), by = c("LABNUMMER"))
+      
+      ratios <<- ratios_calculator(results)
+      
+    }, error = function(e){
+      showModal(modalDialog(title = "Error",e)) #geef de error als een popup scherm zodat de gebruiker het ziet
+    })
+    on.exit(removeNotification(loadingtip), add = TRUE)
+    on.exit(uiUpdater(uiComponent = "TabsetPanel", inputId = "fiatteer_beeld",selected = "tab_fiatteerlijst"), add = TRUE)
+  })
   
   excel_reader <-
     function(filePath,
@@ -506,55 +554,7 @@ server <- function(input, output, session) {
   
 ###########################observers###################################
   
-  observeEvent(input$input_file, {
-    loadingtip <- showNotification("Laden...", duration = NULL, closeButton = FALSE)
-    tryCatch({
-      file_path <- input$input_file$datapath
-       fiatteerblad <- input$input_file_fiatteer_blad
-       resultatenblad <- input$input_file_resultaten_blad
-      # measurepointcolumn <- input$input_file_meetpunt_kolom
-      # resultscolumn <- input$input_file_testresultaat_kolom
-      # labnrcolumn <- input$input_file_labnummer_kolom
-      
-      
-      samples(excel_reader(
-        file_path,
-        sheet = fiatteerblad
-        #resultcolumn = resultscolumn,
-        #labnummercolumn = labnrcolumn,
-        #meetpuntcolumn = measurepointcolumn
-        ) %>% 
-        tibble::add_column(#KLAAR = '<input type="checkbox" id="klaar" class="styled">', 
-                   SAMPLE_OPMERKING = "", .before = 1) %>% #don't move the comment column!
-        arrange(PRIOFINISHDATE))
-      
-      results <<-
-        excel_reader(
-          file_path,
-          sheet = resultatenblad
-          #resultcolumn = resultscolumn,
-          #labnummercolumn = labnrcolumn,
-          #meetpuntcolumn = measurepointcolumn
-        ) %>% mutate(
-                  RESULTAAT_ASNUMERIC = as.numeric(RESULTAAT),
-                  GEVALIDEERD = TESTSTATUS == 300,
-                  UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0) %>%
-        #see AAV-177 issue
-        tibble::add_column(RESULT_OPMERKING = "", .before = 1) #don't move the comment column!
-    
-      #results$RESULTAAT <- set_num_opts(results$RESULTAAT, sigfig = 3)
-      
-      results_to_validate <<- semi_join(results,samples(), by = c("LABNUMMER"))
-    
-      ratios <<- ratios_calculator(results)
-      
-    }, error = function(e){
-      showModal(modalDialog(title = "Error",e)) #geef de error als een popup scherm zodat de gebruiker het ziet
-    })
-    on.exit(removeNotification(loadingtip), add = TRUE)
-    on.exit(uiUpdater(uiComponent = "TabsetPanel", inputId = "fiatteer_beeld",selected = "tab_fiatteerlijst"), add = TRUE)
-  })
-  
+
   observeEvent(input$tabel_sampleresults_cell_edit,{
     #reminder that if "samples" columns change/rearrange this can overwrite the wrong columns!
     results <- editData(results,input$tabel_sampleresults_cell_edit,rownames = FALSE)
