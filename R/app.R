@@ -405,7 +405,11 @@ server <- function(input, output, session) {
   
   observeEvent(input$tabel_fiatteerlijst_cell_edit,{
     #reminder that if "samples" columns change/rearrange this can overwrite the wrong columns!
-    samples(editData(samples(),input$tabel_fiatteerlijst_cell_edit,rownames = FALSE))
+    isolate({
+    samples(DT::editData(samples(),
+                         input$tabel_fiatteerlijst_cell_edit,
+                         rownames = FALSE))
+    })
     
   })
   
@@ -577,9 +581,13 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$tabel_sampleresults_cell_edit,{
-    #reminder that if "samples" columns change/rearrange this can overwrite the wrong columns!
-    results(editData(results(),input$tabel_sampleresults_cell_edit,rownames = FALSE))
-    
+    isolate({
+      #doesn't work with results because that is not actually the dataframe used in sampleresults!
+      #doesn't work with historical_or_current_results because that is a function (technically) so editData tries to edit a FUNCTION
+      #results(DT::editData(results(),
+      #                     input$tabel_sampleresults_cell_edit,
+      #                     rownames = FALSE))
+    })
   })
   
   selected_results <- reactive({
