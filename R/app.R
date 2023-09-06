@@ -202,7 +202,7 @@ server <- function(input, output, session) {
   
   #input 
   samples <- reactiveVal(tibble())
-  results <- tibble()
+  results <- reactiveVal(tibble())
   results_to_validate <- tibble()
   ratios <- tibble()
   
@@ -241,7 +241,7 @@ server <- function(input, output, session) {
           SAMPLE_OPMERKING = "", .before = 1) %>% #don't move the comment column!
         arrange(PRIOFINISHDATE))
       
-      results <<-
+      results(
         excel_reader(
           file_path,
           sheet = resultatenblad
@@ -253,13 +253,11 @@ server <- function(input, output, session) {
           GEVALIDEERD = TESTSTATUS == 300,
           UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0) %>%
           #see AAV-177 issue
-          tibble::add_column(RESULT_OPMERKING = "", .before = 1) #don't move the comment column!
+          tibble::add_column(RESULT_OPMERKING = "", .before = 1)) #don't move the comment column!
       
-      #results$RESULTAAT <- set_num_opts(results$RESULTAAT, sigfig = 3)
+      results_to_validate <<- semi_join(results(),samples(), by = c("LABNUMMER"))
       
-      results_to_validate <<- semi_join(results,samples(), by = c("LABNUMMER"))
-      
-      ratios <<- ratios_calculator(results)
+      ratios <<- ratios_calculator(results())
       
     }, error = function(e){
       showModal(modalDialog(title = "Error",e)) #geef de error als een popup scherm zodat de gebruiker het ziet
@@ -429,7 +427,7 @@ server <- function(input, output, session) {
   selected_sample_current_results <- reactive({
     req(selected_sample())
     selected_labnummer <- select(selected_sample(), LABNUMMER)
-    matching_result <- semi_join(results,
+    matching_result <- semi_join(results(),
                                  selected_sample(),
                                  by = c('LABNUMMER'))
     return(matching_result)
@@ -438,7 +436,7 @@ server <- function(input, output, session) {
   selected_sample_historical_results <- reactive({
     #includes current result for now
     selected_meetpunt <- select(selected_sample_current_results(), MONSTERPUNTCODE)
-    matching_results <- semi_join(results, selected_sample_current_results(),
+    matching_results <- semi_join(results(), selected_sample_current_results(),
                                   by = c('MONSTERPUNTCODE')) %>%
       arrange(desc(SAMPLINGDATE)) %>% #it SHOULD already put the most recent result first but this ensures it
       top_n_results(n = input$instellingen_hoeveelheid_resultaten)
@@ -572,16 +570,15 @@ server <- function(input, output, session) {
   
   historical_or_current_results <- reactive({
     if(input$instellingen_verberg_historie_tabel  == TRUE){
-      results <- selected_sample_current_results()
+      return(selected_sample_current_results())
     } else {
-      results <- selected_sample_historical_results()
+      return(selected_sample_historical_results())
     }
-    return(results)
   })
   
   observeEvent(input$tabel_sampleresults_cell_edit,{
     #reminder that if "samples" columns change/rearrange this can overwrite the wrong columns!
-    results <- editData(results,input$tabel_sampleresults_cell_edit,rownames = FALSE)
+    results(editData(results(),input$tabel_sampleresults_cell_edit,rownames = FALSE))
     
   })
   
