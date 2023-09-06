@@ -454,7 +454,6 @@ server <- function(input, output, session) {
     }
   })
 
-  
   selected_sample_current_results <- reactive({
     req(selected_sample())
     
@@ -490,7 +489,6 @@ server <- function(input, output, session) {
     return(current_ratios)
   })
 
-  
   fiatteer_plot_user_settings <-
     reactive({
       user_selection <- list(
@@ -577,8 +575,6 @@ server <- function(input, output, session) {
     selected_rows <- selected_sample()
     selected_rows_results <-selected_sample_current_results()
     req(selected_sample())
-    
-    samples(anti_join(samples(),selected_rows, by = 'LABNUMMER')) #remove finished samples from view
       
     validated_samples <<- validated_samples %>% rbind(selected_rows)
     validated_results <<- validated_results %>% rbind(selected_rows_results)
@@ -599,6 +595,7 @@ server <- function(input, output, session) {
       readr::write_csv2(export_data, "F:/2-Ano/Alg/13_Fiatteren/Validator/gevalideerde_samples.csv",append = TRUE)
       validated_samples <<- tibble()
       validated_results <<- tibble()
+      samples(anti_join(samples(),selected_rows, by = 'LABNUMMER')) #remove finished samples from view
     }, error = function(e){
       showModal(modalDialog(title = "Error bij wegschrijven",e)) #geef de error als een popup scherm zodat de gebruiker het ziet
     })
