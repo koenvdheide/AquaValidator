@@ -599,6 +599,7 @@ server <- function(input, output, session) {
       readr::write_csv2(export_data, "F:/2-Ano/Alg/13_Fiatteren/Validator/gevalideerde_samples.csv",append = TRUE)
       validated_samples <<- tibble()
       validated_results <<- tibble()
+      samples(anti_join(samples(),selected_rows, by = 'LABNUMMER')) #remove finished samples from view
     }, error = function(e){
       showModal(modalDialog(title = "Error bij wegschrijven",e)) #geef de error als een popup scherm zodat de gebruiker het ziet
     })
