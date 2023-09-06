@@ -218,7 +218,7 @@ server <- function(input, output, session) {
   rejected_samples <- tibble()
   rejected_results <- tibble()
   
-
+#####################################loading file###############################
   observeEvent(input$input_file, {
     loadingtip <- showNotification("Laden...", duration = NULL, closeButton = FALSE)
     tryCatch({
@@ -374,7 +374,7 @@ server <- function(input, output, session) {
     #  )
   }
 
-  
+############################fiatteer tab######################################## 
   output$tabel_fiatteerlijst <- DT::renderDataTable({
     req(input$input_file)
     
@@ -425,7 +425,27 @@ server <- function(input, output, session) {
       return()
     }
   })
-
+  
+  selected_sample_current_results <- reactive({
+    req(selected_sample())
+    selected_labnummer <- select(selected_sample(), LABNUMMER)
+    matching_result <- semi_join(results,
+                                 selected_sample(),
+                                 by = c('LABNUMMER'))
+    return(matching_result)
+  })
+  
+  selected_sample_historical_results <- reactive({
+    #includes current result for now
+    selected_meetpunt <- select(selected_sample_current_results(), MONSTERPUNTCODE)
+    matching_results <- semi_join(results, selected_sample_current_results(),
+                                  by = c('MONSTERPUNTCODE')) %>%
+      arrange(desc(SAMPLINGDATE)) %>% #it SHOULD already put the most recent result first but this ensures it
+      top_n_results(n = input$instellingen_hoeveelheid_resultaten)
+    
+    plot_selected_samples(rep(FALSE, nrow(matching_results))) #fill plot_selected_samples so it doesn't throw out of bounds errors later
+    return(matching_results)
+  })
   
   top_n_results <- function(n, full_results) {
     top_results <-
@@ -436,18 +456,119 @@ server <- function(input, output, session) {
       ungroup()
   }
   
-
-  
-
-  
-
-  
-  plot_builder <- function(){
-    #common code for building results & ratios plots
-  }
-  
-  
-
+#############################results tab########################################
+  output$tabel_sampleresults <- DT::renderDataTable({
+    results <- historical_or_current_results()
+    
+    if(input$instellingen_roteer_tabel  == "labnr"){
+      labnr_widened_results <- results %>% tidyr::pivot_wider(
+        id_cols = c(TESTCODE,ELEMENTCODE),
+        names_from = c(NAAM,LABNUMMER,RUNNR),
+        values_from = RESULTAAT, 
+        names_sep = "<br>",
+        unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = list, UITVALLEND = list))
+      
+      #%>% mutate()
+      
+      # labnr_widened_uitvallend <- results %>% tidyr::pivot_wider(
+      #   id_cols = c(TESTCODE,ELEMENTCODE),
+      #   names_from = c(NAAM,LABNUMMER,RUNNR),
+      #   values_from = UITVALLEND, 
+      #   names_sep = "<br>",
+      #   unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = list)
+      #   )
+      
+      table_labnr <- table_builder(labnr_widened_results, sort_by = 0) #%>%
+      #     formatStyle(
+      #      columns = 'RESULTAAT',
+      #      valueColumns = 'UITVALLEND',
+      #      target = 'cell',
+      #      backgroundColor = DT::styleEqual(TRUE, 'salmon')
+      #      )
+      #   
+      return(table_labnr)
+      
+    } else if (input$instellingen_roteer_tabel == "sample") {
+      table_sample <- table_builder(
+        results,
+        sort_by = 2,
+        comment_col = TRUE,
+        group = TRUE,
+        group_cols = c(2,3), #change to 1,2 if comment column is removed
+        columnDefs = list(list(
+          visible = FALSE ,
+          targets = c(
+            "MONSTERPUNTCODE",
+            "PROJECTCODE",
+            "RESULTAAT_ASNUMERIC",
+            "UITVALLEND",
+            "NAAM",
+            "TESTSTATUS",
+            "REFCONCLUSION",
+            "UITVALLEND",
+            "MEETPUNT_ID",
+            "SAMPLE_ID",
+            "SAMPLE_TEST_ID",
+            "SAMPLE_RESULT_ID",
+            "GEVALIDEERD",
+            "SOORTWATER"
+          )
+        ))
+      )  %>% DT::formatStyle(
+        columns = 'LABNUMMER',
+        valueColumns = 'LABNUMMER',
+        backgroundColor = DT::styleEqual(selected_sample_current_results()$LABNUMMER, 'yellow', 
+                                         default = 'gray'
+        )
+      ) %>% DT::formatStyle(
+        columns = 'RESULTAAT',
+        valueColumns = 'UITVALLEND',
+        target = 'cell',
+        backgroundColor = DT::styleEqual(TRUE, 'salmon')
+      )
+      return(table_sample)
+      
+      #%>% formatSignif(columns = c(-2,-3), digits = 3) #nog kijken hoe we datums uitzonderen
+      
+    } else if (input$instellingen_roteer_tabel == "test") {
+      test_widened_results <- results %>% 
+        tidyr::pivot_wider(
+          id_cols = c(NAAM,LABNUMMER, RUNNR),
+          names_from = c(TESTCODE, ELEMENTCODE),
+          values_from = RESULTAAT,
+          names_sep = "<br>",
+          unused_fn = list(MEASUREDATE = list, 
+                           SAMPLINGDATE = list, 
+                           UITVALLEND = list))
+      
+      table_test <-
+        table_builder(
+          test_widened_results,
+          sort_by = 1,
+          group = TRUE,
+          group_cols = c(0, 1),
+          #change to 1,2 if comment column is back
+          columnDefs = list(list(
+            visible = FALSE , targets = c(0)
+          ))
+        ) %>% DT::formatStyle(
+          columns = 'LABNUMMER',
+          valueColumns = 'LABNUMMER',
+          backgroundColor = DT::styleEqual(
+            selected_sample_current_results()$LABNUMMER,
+            'yellow',
+            default = 'gray'
+          )
+        ) %>% DT::formatStyle(
+          columns = 'RUNNR',
+          valueColumns = 'UITVALLEND',
+          target = 'cell',
+          backgroundColor = DT::styleEqual(TRUE, 'red')
+        )
+      #%>% formatSignif(columns = c(-2,-3), digits = 3) #nog kijken hoe we datums uitzonderen
+      return(table_test)
+    }
+  })
   
   selected_results <- reactive({
     data <- historical_or_current_results() #redundant but needed because subsetting a reactiveval is buggy
@@ -463,29 +584,20 @@ server <- function(input, output, session) {
       return()
     }
   })
-
-  selected_sample_current_results <- reactive({
-    req(selected_sample())
-    
-    selected_labnummer <- select(selected_sample(), LABNUMMER)
-    matching_result <- semi_join(results,
-                                  selected_sample(),
-                                  by = c('LABNUMMER'))
-    
-    return(matching_result)
-  })
   
-  selected_sample_historical_results <- reactive({
-    #includes current result for now
-    selected_meetpunt <- select(selected_sample_current_results(), MONSTERPUNTCODE)
-    matching_results <- semi_join(results, selected_sample_current_results(),
-                                  by = c('MONSTERPUNTCODE')) %>%
-                              arrange(desc(SAMPLINGDATE)) %>% #it SHOULD already put the most recent result first but this ensures it
-                              top_n_results(n = input$instellingen_hoeveelheid_resultaten)
-    
-    plot_selected_samples(rep(FALSE, nrow(matching_results))) #fill plot_selected_samples so it doesn't throw out of bounds errors later
-    return(matching_results)
-  })
+  
+
+  
+  plot_builder <- function(){
+    #common code for building results & ratios plots
+  }
+  
+  
+
+  
+
+
+
   
   selected_sample_current_ratios <-  reactive({
     selected_monsterpuntcode <- select(selected_sample_current_results(), LABNUMMER)
@@ -513,8 +625,6 @@ server <- function(input, output, session) {
       
       return(user_selection)
     })
-  
-###########################observers###################################
   
 
   observeEvent(input$tabel_sampleresults_cell_edit,{
@@ -707,119 +817,6 @@ server <- function(input, output, session) {
     return(results)
   })
   
-   output$tabel_sampleresults <- DT::renderDataTable({
-     
-      results <- historical_or_current_results()
-    
-      if(input$instellingen_roteer_tabel  == "labnr"){
-        labnr_widened_results <- results %>% tidyr::pivot_wider(
-          id_cols = c(TESTCODE,ELEMENTCODE),
-          names_from = c(NAAM,LABNUMMER,RUNNR),
-          values_from = RESULTAAT, 
-          names_sep = "<br>",
-          unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = list, UITVALLEND = list))
-        
-        #%>% mutate()
-          
-          # labnr_widened_uitvallend <- results %>% tidyr::pivot_wider(
-          #   id_cols = c(TESTCODE,ELEMENTCODE),
-          #   names_from = c(NAAM,LABNUMMER,RUNNR),
-          #   values_from = UITVALLEND, 
-          #   names_sep = "<br>",
-          #   unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = list)
-          #   )
-         
-        table_labnr <- table_builder(labnr_widened_results, sort_by = 0) #%>%
-        #     formatStyle(
-        #      columns = 'RESULTAAT',
-        #      valueColumns = 'UITVALLEND',
-        #      target = 'cell',
-        #      backgroundColor = DT::styleEqual(TRUE, 'salmon')
-        #      )
-        #   
-        return(table_labnr)
-        
-      } else if (input$instellingen_roteer_tabel == "sample") {
-        table_sample <- table_builder(
-          results,
-          sort_by = 2,
-          comment_col = TRUE,
-          group = TRUE,
-          group_cols = c(2,3), #change to 1,2 if comment column is removed
-          columnDefs = list(list(
-            visible = FALSE ,
-            targets = c(
-              "MONSTERPUNTCODE",
-              "PROJECTCODE",
-              "RESULTAAT_ASNUMERIC",
-              "UITVALLEND",
-              "NAAM",
-              "TESTSTATUS",
-              "REFCONCLUSION",
-              "UITVALLEND",
-              "MEETPUNT_ID",
-              "SAMPLE_ID",
-              "SAMPLE_TEST_ID",
-              "SAMPLE_RESULT_ID",
-              "GEVALIDEERD",
-              "SOORTWATER"
-            )
-          ))
-        )  %>% DT::formatStyle(
-              columns = 'LABNUMMER',
-              valueColumns = 'LABNUMMER',
-              backgroundColor = DT::styleEqual(selected_sample_current_results()$LABNUMMER, 'yellow', 
-                                                                                    default = 'gray'
-          )
-        ) %>% DT::formatStyle(
-              columns = 'RESULTAAT',
-              valueColumns = 'UITVALLEND',
-              target = 'cell',
-              backgroundColor = DT::styleEqual(TRUE, 'salmon')
-        )
-        return(table_sample)
-        
-       #%>% formatSignif(columns = c(-2,-3), digits = 3) #nog kijken hoe we datums uitzonderen
-     
-      } else if (input$instellingen_roteer_tabel == "test") {
-        test_widened_results <- results %>% 
-          tidyr::pivot_wider(
-            id_cols = c(NAAM,LABNUMMER, RUNNR),
-            names_from = c(TESTCODE, ELEMENTCODE),
-            values_from = RESULTAAT,
-            names_sep = "<br>",
-            unused_fn = list(MEASUREDATE = list, 
-                             SAMPLINGDATE = list, 
-                             UITVALLEND = list))
-            
-        table_test <-
-          table_builder(
-            test_widened_results,
-            sort_by = 1,
-            group = TRUE,
-            group_cols = c(0, 1),
-            #change to 1,2 if comment column is back
-            columnDefs = list(list(
-              visible = FALSE , targets = c(0)
-            ))
-          ) %>% DT::formatStyle(
-          columns = 'LABNUMMER',
-          valueColumns = 'LABNUMMER',
-          backgroundColor = DT::styleEqual(
-            selected_sample_current_results()$LABNUMMER,
-            'yellow',
-            default = 'gray'
-          )
-        ) %>% DT::formatStyle(
-          columns = 'RUNNR',
-          valueColumns = 'UITVALLEND',
-          target = 'cell',
-          backgroundColor = DT::styleEqual(TRUE, 'red')
-        )
-        #%>% formatSignif(columns = c(-2,-3), digits = 3) #nog kijken hoe we datums uitzonderen
-        return(table_test)
-      }
-   })
 
    
   output$fiatteer_grafiek <- renderPlot({
@@ -981,6 +978,7 @@ server <- function(input, output, session) {
       extensions = c("Buttons")
       rowGroup = NULL
     }
+    
     if (comment_col == TRUE){
       editable = list(target = "cell", disable = list(columns = c(1:ncol(table_data))))
     } else {
