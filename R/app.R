@@ -570,6 +570,21 @@ server <- function(input, output, session) {
     }
   })
   
+  historical_or_current_results <- reactive({
+    if(input$instellingen_verberg_historie_tabel  == TRUE){
+      results <- selected_sample_current_results()
+    } else {
+      results <- selected_sample_historical_results()
+    }
+    return(results)
+  })
+  
+  observeEvent(input$tabel_sampleresults_cell_edit,{
+    #reminder that if "samples" columns change/rearrange this can overwrite the wrong columns!
+    results <- editData(results,input$tabel_sampleresults_cell_edit,rownames = FALSE)
+    
+  })
+  
   selected_results <- reactive({
     data <- historical_or_current_results() #redundant but needed because subsetting a reactiveval is buggy
     if (isTruthy(input$tabel_sampleresults_rows_selected)) {
@@ -585,60 +600,11 @@ server <- function(input, output, session) {
     }
   })
   
-  
 
-  
-  plot_builder <- function(){
-    #common code for building results & ratios plots
-  }
-  
-  
-
-  
-
-
-
-  
-  selected_sample_current_ratios <-  reactive({
-    selected_monsterpuntcode <- select(selected_sample_current_results(), LABNUMMER)
-    selected_sample_current_ratios <- ratios %>% filter(LABNUMMER %in% selected_monsterpuntcode$LABNUMMER)
-    return(selected_sample_current_ratios)
-  })
-  
-  selected_sample_historical_ratios <- reactive({
-    selected_monsterpuntcode <- select(selected_sample_historical_results(), LABNUMMER)
-    current_ratios <- ratios %>% filter(LABNUMMER %in% selected_monsterpuntcode$LABNUMMER)
-    return(current_ratios)
-  })
-
-  fiatteer_plot_user_settings <-
-    reactive({
-      user_selection <- list(
-        colour = input$grafiek_kleur_selectie,
-        plot_choice = input$grafiek_keuze,
-        wrap_choice = input$grafiek_wrap_keuze,
-        wrap_category = input$grafiek_wrap_categorie_selectie
-      )
-      # toon alle factor levels bij de wrap categorie (nog niet werkzaam)
-      #freezeReactiveValue(input, "grafiek_wrap_selectie")
-      #updateCheckboxGroupInput(inputId = "grafiek_wrap_selectie",inline = TRUE,choices = input$grafiek_wrap_categorie_selectie,selected = input$grafiek_wrap_categorie_selectie)
-      
-      return(user_selection)
-    })
-  
-
-  observeEvent(input$tabel_sampleresults_cell_edit,{
-    #reminder that if "samples" columns change/rearrange this can overwrite the wrong columns!
-    results <- editData(results,input$tabel_sampleresults_cell_edit,rownames = FALSE)
-
-  })
-  
-
-  
+###############################validation#######################################
   validation_exporter <- function(){
     #move duplicate exporting code here
   }
-  
   observeEvent(input$button_valideer, {
     selected_rows <- selected_sample()
     selected_rows_results <-selected_sample_current_results()
@@ -703,6 +669,64 @@ server <- function(input, output, session) {
     
 
   })
+
+####################################fiatteer plot###############################
+  output$fiatteer_grafiek <- renderPlot({
+    req(selected_sample_historical_results())
+    
+    historical_results <- selected_sample_historical_results() 
+    current_results <- selected_sample_current_results()
+    #plot_user_choices <- fiatteer_plot_user_settings()
+    
+    results_plot <- ggplot(data = historical_results,
+                           mapping = aes(x = SAMPLINGDATE, y = RESULTAAT_ASNUMERIC, colour = NAAM, group = MONSTERPUNTCODE)) +
+      
+      geom_line(alpha = 0.7) +
+      geom_point(size = 2.5, alpha = 0.5, aes(shape = UITVALLEND)) +
+      geom_point(data = current_results, size = 3.5, aes(shape = UITVALLEND)) +
+      
+      labs(x = "Sampling Datum", y = "Resultaat") +
+      scale_x_date(date_labels = "%x", breaks = scales::breaks_pretty(n = 12)) +
+      guides(size = "none", x = guide_axis(angle = 45)) +
+      
+      facet_wrap(vars(TESTCODE), scales = 'free_y')
+    
+    if (isTruthy(plot_selected_samples())) #clicked data has to exist first
+    {
+      isolate({
+        selected_results <- plot_selected_samples()
+        results_plot <-
+          results_plot + geom_point(data = selected_results, size = 3.5, aes(shape = UITVALLEND))
+      })
+    }
+    
+    
+    #move hover_data to something that doesn't call the WHOLE PLOT AGAIN
+    #plot <- plot + geom_text(data = hover_data(), aes(label=LABNUMMER))
+    
+    # if (plot_user_choices$fiatteer_wrap_choice == TRUE)
+    # {
+    #   plot <-
+    #     plot + facet_wrap(plot_user_choices$wrap_category, scales = 'free_y')
+    # }
+    #
+    return(results_plot)
+  })
+
+  fiatteer_plot_user_settings <-
+    reactive({
+      user_selection <- list(
+        colour = input$grafiek_kleur_selectie,
+        plot_choice = input$grafiek_keuze,
+        wrap_choice = input$grafiek_wrap_keuze,
+        wrap_category = input$grafiek_wrap_categorie_selectie
+      )
+      # toon alle factor levels bij de wrap categorie (nog niet werkzaam)
+      #freezeReactiveValue(input, "grafiek_wrap_selectie")
+      #updateCheckboxGroupInput(inputId = "grafiek_wrap_selectie",inline = TRUE,choices = input$grafiek_wrap_categorie_selectie,selected = input$grafiek_wrap_categorie_selectie)
+      
+      return(user_selection)
+    })
   
   observeEvent(input$fiatteer_grafiek_zweef,{
     plot_hover_selected_samples(nearPoints(selected_sample_historical_results(),input$fiatteer_grafiek_zweef))
@@ -751,6 +775,48 @@ server <- function(input, output, session) {
 
     })
   })
+
+################################ratios plot#####################################
+  selected_sample_current_ratios <-  reactive({
+    selected_monsterpuntcode <- select(selected_sample_current_results(), LABNUMMER)
+    selected_sample_current_ratios <- ratios %>% filter(LABNUMMER %in% selected_monsterpuntcode$LABNUMMER)
+    return(selected_sample_current_ratios)
+  })
+  
+  selected_sample_historical_ratios <- reactive({
+    selected_monsterpuntcode <- select(selected_sample_historical_results(), LABNUMMER)
+    current_ratios <- ratios %>% filter(LABNUMMER %in% selected_monsterpuntcode$LABNUMMER)
+    return(current_ratios)
+  })
+  
+  output$ratios_grafiek <- renderPlot({
+    historical_ratios <- selected_sample_historical_ratios()
+    current_ratios <- selected_sample_current_ratios()
+    
+    ratios_plot <-ggplot(data = historical_ratios,
+                         mapping = aes(x = SAMPLINGDATE, y = WAARDE, colour = NAAM, group = MONSTERPUNTCODE)) +
+      
+      geom_line(alpha = 0.7) +
+      geom_point(size = 2.5, alpha = 0.5) +
+      geom_point(data = current_ratios, size = 3.5) +
+      
+      labs(x = "Sampling datum", y = "Berekende waarde") +
+      scale_x_date(date_labels = "%x") +
+      guides(size = "none", x = guide_axis(angle = 45)) +
+      
+      facet_wrap(vars(RATIO), scales = 'free_y') #still need to check first that ratio's really exist
+    
+    if (isTruthy(plot_selected_ratios())) #clicked data has to exist first
+    {
+      isolate({
+        selected_ratios <- plot_selected_ratios()
+        ratios_plot <-
+          ratios_plot + geom_point(data = selected_ratios,
+                                   size = 3.5)
+      })
+    }
+    return(ratios_plot)
+  })
   
   observeEvent(input$ratios_grafiek_klik, {
     #moved to double click because of a shiny issue with firing click events while making a brush selection
@@ -794,119 +860,23 @@ server <- function(input, output, session) {
     })
   })
   
-
-   # updateTabsetPanel(inputId = "fiatteer_beeld",selected = "tab_sample")
-  
-  # output$tab_sample_titel <- renderText({
-  #   if (!is.null(isolate(selected_sample_historical_results()))) {
-  #     paste("Samples", "(", length(unique(selected_sample_historical_results()$LABNUMMER)), ")")
-  #   }
-  #   else{
-  #     paste("Samples")
-  #   }
-  # })
-  
-
-  
-  historical_or_current_results <- reactive({
-    if(input$instellingen_verberg_historie_tabel  == TRUE){
-      results <- selected_sample_current_results()
-    } else {
-      results <- selected_sample_historical_results()
-    }
-    return(results)
-  })
-  
-
-   
-  output$fiatteer_grafiek <- renderPlot({
-    req(selected_sample_historical_results())
-    
-    historical_results <- selected_sample_historical_results() 
-    current_results <- selected_sample_current_results()
-    #plot_user_choices <- fiatteer_plot_user_settings()
-    
-    results_plot <- ggplot(data = historical_results,
-                          mapping = aes(x = SAMPLINGDATE, y = RESULTAAT_ASNUMERIC, colour = NAAM, group = MONSTERPUNTCODE)) +
-      
-      geom_line(alpha = 0.7) +
-      geom_point(size = 2.5, alpha = 0.5, aes(shape = UITVALLEND)) +
-      geom_point(data = current_results, size = 3.5, aes(shape = UITVALLEND)) +
-      
-      labs(x = "Sampling Datum", y = "Resultaat") +
-      scale_x_date(date_labels = "%x", breaks = scales::breaks_pretty(n = 12)) +
-      guides(size = "none", x = guide_axis(angle = 45)) +
-      
-      facet_wrap(vars(TESTCODE), scales = 'free_y')
-    
-    if (isTruthy(plot_selected_samples())) #clicked data has to exist first
-    {
-      isolate({
-        selected_results <- plot_selected_samples()
-        results_plot <-
-          results_plot + geom_point(data = selected_results, size = 3.5, aes(shape = UITVALLEND))
-      })
-    }
-    
-
-    #move hover_data to something that doesn't call the WHOLE PLOT AGAIN
-    #plot <- plot + geom_text(data = hover_data(), aes(label=LABNUMMER))
-    
-    # if (plot_user_choices$fiatteer_wrap_choice == TRUE)
-    # {
-    #   plot <-
-    #     plot + facet_wrap(plot_user_choices$wrap_category, scales = 'free_y')
-    # }
-    #
-    return(results_plot)
-  })
-  
-  output$ratios_grafiek <- renderPlot({
-    historical_ratios <- selected_sample_historical_ratios()
-    current_ratios <- selected_sample_current_ratios()
-    
-    ratios_plot <-ggplot(data = historical_ratios,
-                         mapping = aes(x = SAMPLINGDATE, y = WAARDE, colour = NAAM, group = MONSTERPUNTCODE)) +
-      
-      geom_line(alpha = 0.7) +
-      geom_point(size = 2.5, alpha = 0.5) +
-      geom_point(data = current_ratios, size = 3.5) +
-      
-      labs(x = "Sampling datum", y = "Berekende waarde") +
-      scale_x_date(date_labels = "%x") +
-      guides(size = "none", x = guide_axis(angle = 45)) +
-      
-      facet_wrap(vars(RATIO), scales = 'free_y') #still need to check first that ratio's really exist
-    
-    if (isTruthy(plot_selected_ratios())) #clicked data has to exist first
-    {
-      isolate({
-        selected_ratios <- plot_selected_ratios()
-        ratios_plot <-
-          ratios_plot + geom_point(data = selected_ratios,
-                                   size = 3.5)
-      })
-    }
-    return(ratios_plot)
-  })
-  
-  
+#############################plot table#########################################
   output$fiatteer_grafiek_tabel <- DT::renderDataTable({
     req(plot_selected_samples())
     
     selected_data <- plot_selected_samples() %>% 
-                      select(
-                            NAAM,
-                            LABNUMMER,
-                            RUNNR,
-                            TESTCODE,
-                            ELEMENTCODE,
-                            RESULTAAT,
-                            REFMESSAGE,
-                            SAMPLINGDATE,
-                            MEASUREDATE,
-                            UITVALLEND
-                            )
+      select(
+        NAAM,
+        LABNUMMER,
+        RUNNR,
+        TESTCODE,
+        ELEMENTCODE,
+        RESULTAAT,
+        REFMESSAGE,
+        SAMPLINGDATE,
+        MEASUREDATE,
+        UITVALLEND
+      )
     table_builder(
       selected_data,
       group = TRUE,
@@ -917,11 +887,12 @@ server <- function(input, output, session) {
         visible = FALSE , targets = c('NAAM','UITVALLEND')
       ))
     ) %>% DT::formatStyle(columns = 'RESULTAAT',
-                      valueColumns = 'UITVALLEND',
-                      target = 'cell',
-                      backgroundColor = DT::styleEqual(TRUE,'salmon'))
+                          valueColumns = 'UITVALLEND',
+                          target = 'cell',
+                          backgroundColor = DT::styleEqual(TRUE,'salmon'))
   })
   
+############################common functions####################################  
   uiUpdater <-
     function(uiComponent,
              inputId,
@@ -1002,6 +973,11 @@ server <- function(input, output, session) {
       ) 
     )
   }
+  
+  plot_builder <- function(){
+    #common code for building results & ratios plots
+  }
+  
 }
 
 shinyApp(ui = ui,
