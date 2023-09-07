@@ -838,7 +838,7 @@ server <- function(input, output, session) {
     
     export_data <- full_join(selected_samples_export_columns,
                              selected_results_export_columns,
-                             by = 'SAMPLE_ID')
+                             by = 'SAMPLE_ID') #is full_join excessive? seems to lead to duplicates?
     tryCatch({
       readr::write_csv2(export_data, export_path, append = TRUE)
       return(TRUE)
@@ -847,9 +847,8 @@ server <- function(input, output, session) {
       showModal(modalDialog(title = "Error bij wegschrijven",e)) #geef de error als een popup scherm zodat de gebruiker het ziet
       return(FALSE)
       })
-    
-   
   }
+  
   observeEvent(input$button_valideer, {
     selected_rows <- selected_sample()
     selected_rows_results <-selected_sample_current_results()
@@ -858,9 +857,9 @@ server <- function(input, output, session) {
     validated_samples <<- validated_samples %>% rbind(selected_rows)
     validated_results <<- validated_results %>% rbind(selected_rows_results)
     
-    validation_exporter(validated_samples, validated_results , "F:/2-Ano/Alg/13_Fiatteren/Validator/gevalideerde_samples.csv")
+    export_succeeded <- validation_exporter(validated_samples, validated_results, "F:/2-Ano/Alg/13_Fiatteren/Validator/gevalideerde_samples.csv")
     
-    if(isTRUE(validation_exporter)){ #only do this if exporting was successful 
+    if(isTRUE(export_succeeded)){ #only do this if exporting was successful 
       validated_samples <<- tibble()
       validated_results <<- tibble()
       samples(anti_join(samples(),selected_rows, by = 'LABNUMMER')) #remove finished samples from view
