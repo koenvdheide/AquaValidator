@@ -249,12 +249,11 @@ server <- function(input, output, session) {
           #labnummercolumn = labnrcolumn,
           #meetpuntcolumn = measurepointcolumn
         ) %>% mutate(
-          RESULTAAT_ASNUMERIC = as.numeric(RESULTAAT),
+          RESULTAAT_ASNUMERIC = if_else(TESTSTATUS != 1000, as.numeric(RESULTAAT), NA),
           GEVALIDEERD = TESTSTATUS == 300,
           UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0) %>%
           #see AAV-177 issue
           tibble::add_column(RESULT_OPMERKING = "", .before = 1)) #don't move the comment column!
-      
       results_to_validate <<- semi_join(results(),samples(), by = c("LABNUMMER"))
       
       ratios <<- ratios_calculator(results())
