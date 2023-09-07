@@ -612,30 +612,38 @@ server <- function(input, output, session) {
     
     historical_results <- selected_sample_historical_results() 
     current_results <- selected_sample_current_results()
+    selected_results <- plot_selected_samples()
     #plot_user_choices <- fiatteer_plot_user_settings()
     
-    results_plot <- ggplot(data = historical_results,
-                           mapping = aes(x = SAMPLINGDATE, y = RESULTAAT_ASNUMERIC, colour = NAAM, group = MONSTERPUNTCODE)) +
-      
-      geom_line(alpha = 0.7) +
-      geom_point(size = 2.5, alpha = 0.5, aes(shape = UITVALLEND)) +
-      geom_point(data = current_results, size = 3.5, aes(shape = UITVALLEND)) +
-      
-      labs(x = "Sampling Datum", y = "Resultaat") +
-      scale_x_date(date_labels = "%x", breaks = scales::breaks_pretty(n = 12)) +
-      guides(size = "none", x = guide_axis(angle = 45)) +
-      
-      facet_wrap(vars(TESTCODE), scales = 'free_y')
-    
-    if (isTruthy(plot_selected_samples())) #clicked data has to exist first
-    {
-      isolate({
-        selected_results <- plot_selected_samples()
-        results_plot <-
-          results_plot + geom_point(data = selected_results, size = 3.5, aes(shape = UITVALLEND))
-      })
-    }
-    
+    results_plot <- historical_results %>% plot_builder(
+                                 SAMPLINGDATE,
+                                 RESULTAAT_ASNUMERIC,
+                                 current_results, 
+                                 selected_results, 
+                                 TESTCODE)
+    #   
+    # results_plot <- ggplot(data = historical_results,
+    #                        mapping = aes(x = SAMPLINGDATE, y = RESULTAAT_ASNUMERIC, colour = NAAM, group = MONSTERPUNTCODE)) +
+    # 
+    #   geom_line(alpha = 0.7) +
+    #   geom_point(size = 2.5, alpha = 0.5, aes(shape = UITVALLEND)) +
+    #   geom_point(data = current_results, size = 3.5, aes(shape = UITVALLEND)) +
+    # 
+    #   labs(x = "Sampling Datum", y = "Resultaat") +
+    #   scale_x_date(date_labels = "%x", breaks = scales::breaks_pretty(n = 12)) +
+    #   guides(size = "none", x = guide_axis(angle = 45)) +
+    # 
+    #   facet_wrap(vars(TESTCODE), scales = 'free_y')
+    # 
+    # if (isTruthy(plot_selected_samples())) #clicked data has to exist first
+    # {
+    #   isolate({
+    #     selected_results <- plot_selected_samples()
+    #     results_plot <-
+    #       results_plot + geom_point(data = selected_results, size = 3.5, aes(shape = UITVALLEND))
+    #   })
+    # }
+    # 
     
     #move hover_data to something that doesn't call the WHOLE PLOT AGAIN
     #plot <- plot + geom_text(data = hover_data(), aes(label=LABNUMMER))
@@ -975,9 +983,8 @@ server <- function(input, output, session) {
   
   plot_builder <- function(data, x, y, current_data, clicked_data, facets){
 
-      
       plot <-ggplot(data = data,
-                           mapping = aes(x = x, y = y, colour = NAAM, group = MONSTERPUNTCODE)) +
+                           mapping = aes(x = {{x}}, y = {{y}}, colour = NAAM, group = MONSTERPUNTCODE)) +
         
         geom_line(alpha = 0.7) +
         geom_point(size = 2.5, alpha = 0.5) +
@@ -986,7 +993,7 @@ server <- function(input, output, session) {
         scale_x_date(date_labels = "%x") +
         guides(size = "none", x = guide_axis(angle = 45)) +
         
-        facet_wrap(vars(facets), scales = 'free_y') #still need to check first that ratio's really exist
+        facet_wrap(vars({{facets}}), scales = 'free_y') #still need to check first that ratio's really exist
       
       if (isTruthy(clicked_data)) #clicked data has to exist first
       {
