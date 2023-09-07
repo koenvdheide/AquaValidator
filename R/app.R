@@ -827,8 +827,28 @@ server <- function(input, output, session) {
   })
   
 ###############################validation#######################################
-  validation_exporter <- function(){
-    #move duplicate exporting code here
+  validation_exporter <- function(selected_samples, selected_results, export_path){
+    selected_samples_export_columns <- selected_samples %>% select(SAMPLE_OPMERKING,
+                                                                   SAMPLE_ID)
+    selected_results_export_columns <- selected_results %>% select(SAMPLE_ID,
+                                                                   #RESULT_OPMERKING,
+                                                                   MEETPUNT_ID,
+                                                                   SAMPLE_TEST_ID,
+                                                                   SAMPLE_RESULT_ID)
+    
+    export_data <- full_join(selected_samples_export_columns,
+                             selected_results_export_columns,
+                             by = 'SAMPLE_ID')
+    tryCatch({
+      readr::write_csv2(export_data, export_path, append = TRUE)
+      return(TRUE)
+      
+    }, error = function(e){
+      showModal(modalDialog(title = "Error bij wegschrijven",e)) #geef de error als een popup scherm zodat de gebruiker het ziet
+      return(FALSE)
+      })
+    
+   
   }
   observeEvent(input$button_valideer, {
     selected_rows <- selected_sample()
@@ -838,27 +858,13 @@ server <- function(input, output, session) {
     validated_samples <<- validated_samples %>% rbind(selected_rows)
     validated_results <<- validated_results %>% rbind(selected_rows_results)
     
-    validated_samples_export <- validated_samples %>% select(SAMPLE_OPMERKING,
-                                                             SAMPLE_ID
-    )
-    validated_results_export <- validated_results %>% select(#RESULT_OPMERKING,
-                                                             SAMPLE_ID,
-                                                             MEETPUNT_ID,
-                                                             SAMPLE_TEST_ID,
-                                                             SAMPLE_RESULT_ID
-    )
-    export_data <- full_join(validated_samples_export,
-                             validated_results_export,
-                             by = 'SAMPLE_ID')
-    tryCatch({
-      readr::write_csv2(export_data, "F:/2-Ano/Alg/13_Fiatteren/Validator/gevalideerde_samples.csv",append = TRUE)
+    validation_exporter(validated_samples, validated_results , "F:/2-Ano/Alg/13_Fiatteren/Validator/gevalideerde_samples.csv")
+    
+    if(isTRUE(validation_exporter)){ #only do this if exporting was successful 
       validated_samples <<- tibble()
       validated_results <<- tibble()
       samples(anti_join(samples(),selected_rows, by = 'LABNUMMER')) #remove finished samples from view
-    }, error = function(e){
-      showModal(modalDialog(title = "Error bij wegschrijven",e)) #geef de error als een popup scherm zodat de gebruiker het ziet
-    })
-    
+    }
   })
   
   observeEvent(input$button_duplo_aanvraag, {
