@@ -55,3 +55,7 @@ Vrievenveeneffluent.png
 VriezenveenInfluent.png
 Vriezenveeneffluent.png
 uitvallers.R
+.Rproj.user
+.Rdata
+.DS_Store
+.quarto
