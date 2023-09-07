@@ -403,7 +403,7 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$tabel_fiatteerlijst_cell_edit,{
-    #reminder that if "samples" columns change/rearrange this can overwrite the wrong columns!
+    #reminder that if "samples" columns change in order this can overwrite the wrong columns!
     isolate({
     samples(DT::editData(samples(),
                          input$tabel_fiatteerlijst_cell_edit,
@@ -439,15 +439,17 @@ server <- function(input, output, session) {
   selected_sample_historical_results <- reactive({
     #includes current result for now
     selected_meetpunt <- select(selected_sample_current_results(), MONSTERPUNTCODE)
-    matching_results <- semi_join(results(), selected_sample_current_results(),
+    matching_results <- semi_join(results(),
+                                  selected_sample_current_results(),
                                   by = c('MONSTERPUNTCODE')) %>%
-      arrange(desc(SAMPLINGDATE)) %>% #it SHOULD already put the most recent result first but this ensures it
-      top_n_results(n = input$instellingen_hoeveelheid_resultaten)
+                        arrange(desc(SAMPLINGDATE)) %>% #it SHOULD already put the most recent result first but this ensures it
+                        top_n_results(n = input$instellingen_hoeveelheid_resultaten)
     
     plot_selected_samples(rep(FALSE, nrow(matching_results))) #fill plot_selected_samples so it doesn't throw out of bounds errors later
     return(matching_results)
   })
   
+  #nightmare code because we have to deal with three group layers, we want all the results (layer 1) of the most recent labnummers (layer 2) for each monsterpuntcode (layer 3)
   top_n_results <- function(n, full_results) {
     top_results <-
       full_results %>% 
@@ -971,10 +973,30 @@ server <- function(input, output, session) {
     )
   }
   
-  plot_builder <- function(){
-    #common code for building results & ratios plots
+  plot_builder <- function(data, x, y, current_data, clicked_data, facets){
+
+      
+      plot <-ggplot(data = data,
+                           mapping = aes(x = x, y = y, colour = NAAM, group = MONSTERPUNTCODE)) +
+        
+        geom_line(alpha = 0.7) +
+        geom_point(size = 2.5, alpha = 0.5) +
+        geom_point(data = current_data, size = 3.5) +
+        
+        scale_x_date(date_labels = "%x") +
+        guides(size = "none", x = guide_axis(angle = 45)) +
+        
+        facet_wrap(vars(facets), scales = 'free_y') #still need to check first that ratio's really exist
+      
+      if (isTruthy(clicked_data)) #clicked data has to exist first
+      {
+        isolate({
+          plot <- plot + geom_point(data = clicked_data, size = 3.5)
+        })
+      }
+      
+      return(plot)
   }
-  
 }
 
 shinyApp(ui = ui,
