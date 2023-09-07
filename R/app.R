@@ -857,7 +857,9 @@ server <- function(input, output, session) {
     validated_samples <<- validated_samples %>% rbind(selected_rows)
     validated_results <<- validated_results %>% rbind(selected_rows_results)
     
-    export_succeeded <- validation_exporter(validated_samples, validated_results, "F:/2-Ano/Alg/13_Fiatteren/Validator/gevalideerde_samples.csv")
+    export_succeeded <- validation_exporter(validated_samples,
+                                            validated_results,
+                                            "F:/2-Ano/Alg/13_Fiatteren/Validator/gevalideerde_samples.csv")
     
     if(isTRUE(export_succeeded)){ #only do this if exporting was successful 
       validated_samples <<- tibble()
@@ -871,32 +873,18 @@ server <- function(input, output, session) {
     selected_result_rows <- selected_results()
     req(selected_results())
     
-    #samples(anti_join(samples(),selected_rows, by = 'LABNUMMER')) #do we want to remove REJECTED samples from view?
-    
     rejected_samples <<- rejected_samples %>% rbind(selected_rows)
     rejected_results <<- rejected_results %>% rbind(selected_result_rows)
     
-    rejected_samples_export <- rejected_samples %>% select(SAMPLE_OPMERKING,
-                                                           SAMPLE_ID
-    )
-    rejected_results_export <- rejected_results %>% select(#RESULT_OPMERKING,
-                                                           SAMPLE_ID,
-                                                           MEETPUNT_ID,
-                                                           SAMPLE_TEST_ID,
-                                                           SAMPLE_RESULT_ID
-    )
-    export_data <- full_join(rejected_samples_export,
-                             rejected_results_export,
-                             by = 'SAMPLE_ID')
-    
-    tryCatch({
-      readr::write_csv2(export_data, "F:/2-Ano/Alg/13_Fiatteren/Validator/afgewezen_sample_resultaten.csv",append = TRUE)
+    export_succeeded <- validation_exporter(rejected_samples,
+                                            rejected_results,
+                                            "F:/2-Ano/Alg/13_Fiatteren/Validator/afgewezen_sample_resultaten.csv")
+    if(isTRUE(export_succeeded)){ 
       rejected_samples <<- tibble()
       rejected_results <<- tibble()
-    }, error = function(e){
-      showModal(modalDialog(title = "Error bij wegschrijven",e)) #geef de error als een popup scherm zodat de gebruiker het ziet
-    })
-    
+      #samples(anti_join(samples(),selected_rows, by = 'LABNUMMER')) #do we want to remove REJECTED samples from view?
+      
+    }
     
   })
   
