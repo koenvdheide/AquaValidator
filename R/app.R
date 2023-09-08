@@ -619,7 +619,9 @@ server <- function(input, output, session) {
     selected_results <- plot_selected_samples()
     #plot_user_choices <- fiatteer_plot_user_settings()
     
-    results_plot <- historical_results %>% plot_builder(
+    plottable_results <- historical_results %>% filter(!is.na(RESULTAAT_ASNUMERIC))
+    
+    results_plot <- plottable_results %>% plot_builder(
                                                        SAMPLINGDATE,
                                                        RESULTAAT_ASNUMERIC,
                                                        current_results, 
