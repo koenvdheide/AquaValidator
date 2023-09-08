@@ -221,6 +221,7 @@ server <- function(input, output, session) {
 #####################################loading file###############################
   observeEvent(input$input_file, {
     loadingtip <- showNotification("Laden...", duration = NULL, closeButton = FALSE)
+    
     tryCatch({
       file_path <- input$input_file$datapath
       fiatteerblad <- input$input_file_fiatteer_blad
@@ -228,7 +229,6 @@ server <- function(input, output, session) {
       # measurepointcolumn <- input$input_file_meetpunt_kolom
       # resultscolumn <- input$input_file_testresultaat_kolom
       # labnrcolumn <- input$input_file_labnummer_kolom
-      
       
       samples(excel_reader(
         file_path,
@@ -239,7 +239,10 @@ server <- function(input, output, session) {
       ) %>% 
         tibble::add_column(SAMPLE_OPMERKING = "", .before = 1) %>% #don't move the comment column without also changing editData!
         arrange(PRIOFINISHDATE))
-      
+    }, error = function(e){
+      showModal(modalDialog(title = "Error bij fiatteerlijst inladen",e)) #geef de error als een popup scherm zodat de gebruiker het ziet
+    })
+    tryCatch({
       results(
         excel_reader(
           file_path,
@@ -253,13 +256,14 @@ server <- function(input, output, session) {
           UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0) %>%
           #see AAV-177 issue
           tibble::add_column(RESULT_OPMERKING = "", .before = 1)) #don't move the comment column without also changing editData!
-      results_to_validate <<- semi_join(results(),samples(), by = c("LABNUMMER"))
-      
-      ratios <<- ratios_calculator(results())
       
     }, error = function(e){
-      showModal(modalDialog(title = "Error",e)) #geef de error als een popup scherm zodat de gebruiker het ziet
+      showModal(modalDialog(title = "Error bij resultaten inladen",e)) #geef de error als een popup scherm zodat de gebruiker het ziet
     })
+
+      results_to_validate <<- semi_join(results(),samples(), by = c("LABNUMMER"))
+      ratios <<- ratios_calculator(results())
+      
     on.exit(removeNotification(loadingtip), add = TRUE)
     on.exit(uiUpdater(uiComponent = "TabsetPanel", inputId = "fiatteer_beeld",selected = "tab_fiatteerlijst"), add = TRUE)
   })
