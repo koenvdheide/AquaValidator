@@ -319,8 +319,9 @@ server <- function(input, output, session) {
   )
   ratios_calculator <- function(results){
     
+    relevant_results <- results %>% filter(!is.na(RESULTAAT_ASNUMERIC))
     calculated_ratios <-
-      results %>%
+      relevant_results %>%
       group_by(LABNUMMER, MONSTERPUNTCODE) %>%
       reframe(
         NAAM = NAAM,
