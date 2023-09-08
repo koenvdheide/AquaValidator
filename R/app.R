@@ -702,6 +702,11 @@ server <- function(input, output, session) {
   })
 
 ################################ratios plot#####################################
+  hide_ratio_graph_without_ratios <- function(){
+    has_ratios <- nrow(selected_sample_historical_ratios()) != 0
+    shinyjs::toggle(id = "ratios_grafiek", condition = has_ratios)
+  }
+  
   selected_sample_current_ratios <-  reactive({
     selected_monsterpuntcode <- select(selected_sample_current_results(), LABNUMMER)
     selected_sample_current_ratios <- ratios %>% filter(LABNUMMER %in% selected_monsterpuntcode$LABNUMMER)
@@ -711,14 +716,8 @@ server <- function(input, output, session) {
   selected_sample_historical_ratios <- reactive({
     selected_monsterpuntcode <- select(selected_sample_historical_results(), LABNUMMER)
     current_ratios <- ratios %>% filter(LABNUMMER %in% selected_monsterpuntcode$LABNUMMER)
-    
     return(current_ratios)
   })
-  
-  hide_ratio_graph_without_ratios <- function(){
-    has_ratios <- nrow(selected_sample_historical_ratios()) != 0
-    shinyjs::toggle(id = "ratios_grafiek", condition = has_ratios)
-  }
   
   output$ratios_grafiek <- renderPlot({
     historical_ratios <- selected_sample_historical_ratios()
