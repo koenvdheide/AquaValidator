@@ -76,7 +76,7 @@ ui <- function(request) {
              
                tabPanel(
                  value = "tab_fiatteer_grafiek",
-                 title = "Grafiek",
+                 title = "Grafieken",
                  plotOutput(
                    "fiatteer_grafiek",
                    click = "fiatteer_grafiek_klik",
@@ -237,8 +237,7 @@ server <- function(input, output, session) {
         #labnummercolumn = labnrcolumn,
         #meetpuntcolumn = measurepointcolumn
       ) %>% 
-        tibble::add_column(#KLAAR = '<input type="checkbox" id="klaar" class="styled">', 
-          SAMPLE_OPMERKING = "", .before = 1) %>% #don't move the comment column!
+        tibble::add_column(SAMPLE_OPMERKING = "", .before = 1) %>% #don't move the comment column without also changing editData!
         arrange(PRIOFINISHDATE))
       
       results(
@@ -253,7 +252,7 @@ server <- function(input, output, session) {
           GEVALIDEERD = TESTSTATUS == 300,
           UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0) %>%
           #see AAV-177 issue
-          tibble::add_column(RESULT_OPMERKING = "", .before = 1)) #don't move the comment column!
+          tibble::add_column(RESULT_OPMERKING = "", .before = 1)) #don't move the comment column without also changing editData!
       results_to_validate <<- semi_join(results(),samples(), by = c("LABNUMMER"))
       
       ratios <<- ratios_calculator(results())
@@ -279,13 +278,15 @@ server <- function(input, output, session) {
           # this removes hour/minute/second from sampling&measurement dates for some reason even though %T should cover this, relying on readxl's inbuilt date recognition for now
           # default date recognition doesn't see MONSTERNAMEDATUM column as valid dates for some reason
           # try parse_date_time() instead?
-          across(contains(c("datum", "date")), ~ as.Date(.x, tryFormats = c(
-                                                            "%d-%m-%Y%t%t%T", 
-                                                            "%Y-%m-%d%t%t%T", 
-                                                            "%Y/%m/%d%t%t%T", 
-                                                            "%d-%m-%Y", 
-                                                            "%Y-%m-%d", 
-                                                            "%Y/%m/%d"))
+          across(contains(c("datum", "date")),
+                 ~ as.Date(.x, tryFormats = c(
+                                              "%d-%m-%Y%t%t%T", 
+                                              "%Y-%m-%d%t%t%T", 
+                                              "%Y/%m/%d%t%t%T", 
+                                              "%d-%m-%Y", 
+                                              "%Y-%m-%d", 
+                                              "%Y/%m/%d")
+                          )
                  ),
           across(contains(
             c(
