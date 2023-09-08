@@ -968,7 +968,7 @@ server <- function(input, output, session) {
         geom_point(size = 2.5, alpha = 0.5) +
         geom_point(data = current_data, size = 3.5) +
         
-        scale_x_date(date_labels = "%x") +
+        scale_x_date(date_labels = "%d-%m-%y", breaks = scales::breaks_pretty(n=12)) +
         guides(size = "none", x = guide_axis(angle = 45)) +
         
         facet_wrap(vars({{facets}}), scales = 'free_y') #still need to check first that ratio's really exist
