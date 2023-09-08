@@ -707,20 +707,28 @@ server <- function(input, output, session) {
   selected_sample_historical_ratios <- reactive({
     selected_monsterpuntcode <- select(selected_sample_historical_results(), LABNUMMER)
     current_ratios <- ratios %>% filter(LABNUMMER %in% selected_monsterpuntcode$LABNUMMER)
+    
     return(current_ratios)
+  })
+  
+  hide_ratio_graph_without_ratios <- reactive({
+    has_ratios <- nrow(selected_sample_historical_ratios()) != 0
+    shinyjs::toggle(id = "ratios_grafiek", condition = has_ratios)
   })
   
   output$ratios_grafiek <- renderPlot({
     historical_ratios <- selected_sample_historical_ratios()
     current_ratios <- selected_sample_current_ratios()
     clicked_ratios <- plot_selected_ratios()
-    
-    ratios_plot <- historical_ratios %>% plot_builder(SAMPLINGDATE,
-                                                      WAARDE,
-                                                      current_ratios,
-                                                      clicked_ratios,
-                                                      RATIO)
+
+    ratios_plot <-
+      historical_ratios %>% plot_builder(SAMPLINGDATE,
+                                         WAARDE,
+                                         current_ratios,
+                                         clicked_ratios,
+                                         RATIO)
     return(ratios_plot)
+    
   })
   
   observeEvent(input$ratios_grafiek_klik, {
