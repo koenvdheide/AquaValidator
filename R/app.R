@@ -612,6 +612,7 @@ server <- function(input, output, session) {
 ####################################fiatteer plot###############################
   output$fiatteer_grafiek <- renderPlot({
     req(selected_sample_historical_results())
+    hide_ratio_graph_without_ratios()
     
     historical_results <- selected_sample_historical_results() 
     current_results <- selected_sample_current_results()
@@ -714,10 +715,10 @@ server <- function(input, output, session) {
     return(current_ratios)
   })
   
-  hide_ratio_graph_without_ratios <- reactive({
+  hide_ratio_graph_without_ratios <- function(){
     has_ratios <- nrow(selected_sample_historical_ratios()) != 0
     shinyjs::toggle(id = "ratios_grafiek", condition = has_ratios)
-  })
+  }
   
   output$ratios_grafiek <- renderPlot({
     historical_ratios <- selected_sample_historical_ratios()
