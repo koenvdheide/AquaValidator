@@ -702,9 +702,12 @@ server <- function(input, output, session) {
   })
 
 ################################ratios plot#####################################
+  has_ratios <- function() {
+      nrow(selected_sample_historical_ratios()) != 0
+    }
+  
   hide_ratio_graph_without_ratios <- function(){
-    has_ratios <- nrow(selected_sample_historical_ratios()) != 0
-    shinyjs::toggle(id = "ratios_grafiek", condition = has_ratios)
+    shinyjs::toggle(id = "ratios_grafiek", condition = has_ratios())
   }
   
   selected_sample_current_ratios <-  reactive({
@@ -723,6 +726,7 @@ server <- function(input, output, session) {
     historical_ratios <- selected_sample_historical_ratios()
     current_ratios <- selected_sample_current_ratios()
     clicked_ratios <- plot_selected_ratios()
+    req(has_ratios())
 
     ratios_plot <-
       historical_ratios %>% plot_builder(SAMPLINGDATE,
