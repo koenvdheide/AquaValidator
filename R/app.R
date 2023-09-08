@@ -471,15 +471,15 @@ server <- function(input, output, session) {
         names_sep = "<br>",
         unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = list, UITVALLEND = list))
       
-      #%>% mutate()
       
-      # labnr_widened_uitvallend <- results %>% tidyr::pivot_wider(
-      #   id_cols = c(TESTCODE,ELEMENTCODE),
-      #   names_from = c(NAAM,LABNUMMER,RUNNR),
-      #   values_from = UITVALLEND, 
-      #   names_sep = "<br>",
-      #   unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = list)
-      #   )
+       # labnr_widened_uitvallend <- results %>% tidyr::pivot_wider(
+       #   id_cols = c(TESTCODE,ELEMENTCODE),
+       #   names_from = c(NAAM,LABNUMMER,RUNNR),
+       #   values_from = UITVALLEND, 
+       #   names_sep = "<br>",
+       #   unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = list)
+       #   )
+        
       
       table_labnr <- table_builder(labnr_widened_results, sort_by = 0) #%>%
       #     formatStyle(
@@ -489,7 +489,10 @@ server <- function(input, output, session) {
       #      backgroundColor = DT::styleEqual(TRUE, 'salmon')
       #      )
       #   
-      return(table_labnr)
+     
+      #loop over UITVALLEND en colour testresults depending on the UITVALLEND value?
+         
+       return(table_labnr)
       
     } else if (input$instellingen_roteer_tabel == "sample") {
       table_sample <- table_builder(
