@@ -473,31 +473,34 @@ server <- function(input, output, session) {
       labnr_widened_results <- results %>% tidyr::pivot_wider(
         id_cols = c(TESTCODE,ELEMENTCODE),
         names_from = c(NAAM,LABNUMMER,RUNNR),
-        values_from = RESULTAAT, 
+        values_from = RESULTAAT,
         names_sep = "<br>",
         unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = list, UITVALLEND = list))
       
+      number_of_sample_columns <- results %>% count(NAAM,LABNUMMER,RUNNR)
       
        # labnr_widened_uitvallend <- results %>% tidyr::pivot_wider(
        #   id_cols = c(TESTCODE,ELEMENTCODE),
        #   names_from = c(NAAM,LABNUMMER,RUNNR),
-       #   values_from = UITVALLEND, 
+       #   values_from = UITVALLEND,
        #   names_sep = "<br>",
        #   unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = list)
        #   )
-        
+
+       
       
-      table_labnr <- table_builder(labnr_widened_results, sort_by = 0) #%>%
-      #     formatStyle(
-      #      columns = 'RESULTAAT',
-      #      valueColumns = 'UITVALLEND',
-      #      target = 'cell',
-      #      backgroundColor = DT::styleEqual(TRUE, 'salmon')
-      #      )
-      #   
+      table_labnr <- table_builder(labnr_widened_results, sort_by = 0) %>%
+          DT::formatStyle(
+           columns = 3:(2 + nrow(number_of_sample_columns)),
+           valueColumns = 'UITVALLEND',
+           target = 'cell',
+           backgroundColor = DT::styleEqual(TRUE, 'salmon')
+           )
+
      
-      #loop over UITVALLEND en colour testresults depending on the UITVALLEND value?
-         
+       result_validation_bools <- purrr::pluck(labnr_widened_results$UITVALLEND)
+       View(result_validation_bools)
+      
        return(table_labnr)
       
     } else if (input$instellingen_roteer_tabel == "sample") {
