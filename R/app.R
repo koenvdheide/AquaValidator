@@ -485,14 +485,16 @@ server <- function(input, output, session) {
           names_sort = TRUE,
           names_sep = "<br>") %>% mutate(TESTCODE = NULL,
                                          ELEMENTCODE = NULL)
-        
-      labnr_combined <- cbind(labnr_widened_results, labnr_widened_uitvallend)
-      number_of_sample_columns <- results %>% count(NAAM, LABNUMMER, RUNNR)
+      labnr_widened_combined <- cbind(labnr_widened_results, labnr_widened_uitvallend)
+
+      what_sample_columns_are_there <- results %>% count(NAAM, LABNUMMER, RUNNR)
+      number_of_sample_columns <- nrow(what_sample_columns_are_there)
+      total_number_of_columns <- ncol(labnr_widened_combined)
       
-      table_labnr <- table_builder(labnr_combined, sort_by = 0) %>%
+      table_labnr <- table_builder(labnr_widened_combined, sort_by = 0) %>%
           DT::formatStyle(
-           columns = 3:(2 + nrow(number_of_sample_columns)), #starts at 3 to offset for the two code columns, why do we have to add 2 instead of 3 to offset at the end? NO IDEA
-           valueColumns = (5 + nrow(number_of_sample_columns)):ncol(labnr_combined),
+           columns = 3:(2 + number_of_sample_columns), #starts at 3 to offset for the two code columns, why do we have to add 2 instead of 3 to offset at the end? NO IDEA
+           valueColumns = (5 + number_of_sample_columns):total_number_of_columns,
            target = 'cell',
            backgroundColor = DT::styleEqual(TRUE, 'salmon')
            )
@@ -560,10 +562,11 @@ server <- function(input, output, session) {
           names_sort = TRUE) %>% mutate(NAAM = NULL,
                                         LABNUMMER = NULL,
                                         RUNNR = NULL)
-      
       test_widened_combined <- cbind(test_widened_results, test_widened_uitvallend)
       
-      number_of_test_columns <- results %>% count(TESTCODE, ELEMENTCODE)
+      what_test_columns_are_there <- results %>% count(TESTCODE, ELEMENTCODE)
+      number_of_test_columns <- nrow(what_test_columns_are_there)
+      total_number_of_columns <- ncol(test_widened_combined)
       
       table_test <- table_builder(
                                 test_widened_combined,
@@ -572,7 +575,7 @@ server <- function(input, output, session) {
                                 group_cols = c(0, 1),
                                 #change to 1,2 if comment column is back
                                 columnDefs = list(list(
-                                  visible = FALSE, targets = c(0)
+                                  visible = FALSE, targets = c(0)#,(6 + number_of_test_columns):total_number_of_columns)
                                 ))
                                 ) %>% DT::formatStyle(
                                   columns = 'LABNUMMER',
@@ -583,8 +586,8 @@ server <- function(input, output, session) {
                                     default = 'gray'
                                   )
                                 ) %>% DT::formatStyle(
-                                  columns = 4:(3+nrow(number_of_test_columns)),
-                                  valueColumns = (6 + nrow(number_of_test_columns)):ncol(test_widened_combined),
+                                  columns = 4:(3 + number_of_test_columns), #why start at 4 but only add 3 for the end? idk
+                                  valueColumns = (6 + number_of_test_columns):total_number_of_columns,
                                   target = 'cell',
                                   backgroundColor = DT::styleEqual(TRUE, 'salmon')
                                   )
