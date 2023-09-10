@@ -475,15 +475,25 @@ server <- function(input, output, session) {
         names_from = c(NAAM,LABNUMMER,RUNNR),
         values_from = RESULTAAT,
         names_sep = "<br>",
-        unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = list, UITVALLEND = list)) %>% 
-      tidyr::unnest_wider(UITVALLEND, names_sep = "_")
+        names_sort = TRUE,
+        unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = list))
+
+        labnr_widened_uitvallend <- results %>% tidyr::pivot_wider(
+          id_cols = c(TESTCODE,ELEMENTCODE),
+          names_from = c(NAAM,LABNUMMER,RUNNR),
+          values_from = UITVALLEND,
+          names_sort = TRUE,
+          names_sep = "<br>") %>% mutate(TESTCODE = NULL,
+                                         ELEMENTCODE = NULL)
+        
       
+      labnr_combined <- cbind(labnr_widened_results, labnr_widened_uitvallend)
       number_of_sample_columns <- results %>% count(NAAM, LABNUMMER, RUNNR)
       
-      table_labnr <- table_builder(labnr_widened_results, sort_by = 0) %>%
+       table_labnr <- table_builder(labnr_combined, sort_by = 0) %>%
           DT::formatStyle(
            columns = 3:(2 + nrow(number_of_sample_columns)), #starts at 3 to offset for the two code columns, why do we have to add 2 instead of 3 to offset at the end? NO IDEA
-           valueColumns = (5 + nrow(number_of_sample_columns)):ncol(labnr_widened_results),
+           valueColumns = (5 + nrow(number_of_sample_columns)):ncol(labnr_combined),
            target = 'cell',
            backgroundColor = DT::styleEqual(TRUE, 'salmon')
            )
