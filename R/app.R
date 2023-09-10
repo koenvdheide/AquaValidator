@@ -253,7 +253,7 @@ server <- function(input, output, session) {
         ) %>% mutate(
           RESULTAAT_ASNUMERIC = if_else(TESTSTATUS != 1000, as.numeric(RESULTAAT), NA),
           GEVALIDEERD = TESTSTATUS == 300,
-          UITVALLEND = TESTSTATUS != 300 & REFCONCLUSION == 0) %>%
+          UITVALLEND = TESTSTATUS != 300 & TESTSTATUS != 1000 & REFCONCLUSION == 0) %>%
           #see AAV-177 issue
           tibble::add_column(RESULT_OPMERKING = "", .before = 1)) #don't move the comment column without also changing editData!
       
