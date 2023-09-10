@@ -475,31 +475,23 @@ server <- function(input, output, session) {
         names_from = c(NAAM,LABNUMMER,RUNNR),
         values_from = RESULTAAT,
         names_sep = "<br>",
-        unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = list, UITVALLEND = list))
+        unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = list, UITVALLEND = list)) %>% 
+      tidyr::unnest_wider(UITVALLEND, names_sep = "_")
       
-      number_of_sample_columns <- results %>% count(NAAM,LABNUMMER,RUNNR)
-      
-       # labnr_widened_uitvallend <- results %>% tidyr::pivot_wider(
-       #   id_cols = c(TESTCODE,ELEMENTCODE),
-       #   names_from = c(NAAM,LABNUMMER,RUNNR),
-       #   values_from = UITVALLEND,
-       #   names_sep = "<br>",
-       #   unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = list)
-       #   )
-
-       
+      number_of_sample_columns <- results %>% count(NAAM, LABNUMMER, RUNNR)
       
       table_labnr <- table_builder(labnr_widened_results, sort_by = 0) %>%
           DT::formatStyle(
-           columns = 3:(2 + nrow(number_of_sample_columns)),
-           valueColumns = 'UITVALLEND',
+           columns = 3:(2 + nrow(number_of_sample_columns)), #starts at 3 to offset for the two code columns, why do we have to add 2 instead of 3 to offset at the end? NO IDEA
+           valueColumns = (5 + nrow(number_of_sample_columns)):ncol(labnr_widened_results),
            target = 'cell',
            backgroundColor = DT::styleEqual(TRUE, 'salmon')
            )
-
-     
-       result_validation_bools <- purrr::pluck(labnr_widened_results$UITVALLEND)
-       View(result_validation_bools)
+ 
+       #result_validation_bools <- purrr::pluck(labnr_widened_results$UITVALLEND)
+       #unnested_results <- labnr_widened_results %>% tidyr::unnest_wider(UITVALLEND, names_sep = "_")
+       #View(unnested_results)
+       
       
        return(table_labnr)
       
