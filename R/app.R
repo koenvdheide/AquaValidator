@@ -486,23 +486,16 @@ server <- function(input, output, session) {
           names_sep = "<br>") %>% mutate(TESTCODE = NULL,
                                          ELEMENTCODE = NULL)
         
-      
       labnr_combined <- cbind(labnr_widened_results, labnr_widened_uitvallend)
       number_of_sample_columns <- results %>% count(NAAM, LABNUMMER, RUNNR)
       
-       table_labnr <- table_builder(labnr_combined, sort_by = 0) %>%
+      table_labnr <- table_builder(labnr_combined, sort_by = 0) %>%
           DT::formatStyle(
            columns = 3:(2 + nrow(number_of_sample_columns)), #starts at 3 to offset for the two code columns, why do we have to add 2 instead of 3 to offset at the end? NO IDEA
            valueColumns = (5 + nrow(number_of_sample_columns)):ncol(labnr_combined),
            target = 'cell',
            backgroundColor = DT::styleEqual(TRUE, 'salmon')
            )
- 
-       #result_validation_bools <- purrr::pluck(labnr_widened_results$UITVALLEND)
-       #unnested_results <- labnr_widened_results %>% tidyr::unnest_wider(UITVALLEND, names_sep = "_")
-       #View(unnested_results)
-       
-      
        return(table_labnr)
       
     } else if (input$instellingen_roteer_tabel == "sample") {
@@ -554,34 +547,47 @@ server <- function(input, output, session) {
           names_from = c(TESTCODE, ELEMENTCODE),
           values_from = RESULTAAT,
           names_sep = "<br>",
+          names_sort = TRUE,
           unused_fn = list(MEASUREDATE = list, 
-                           SAMPLINGDATE = list, 
-                           UITVALLEND = list))
+                           SAMPLINGDATE = list))
       
-      table_test <-
-        table_builder(
-          test_widened_results,
-          sort_by = 1,
-          group = TRUE,
-          group_cols = c(0, 1),
-          #change to 1,2 if comment column is back
-          columnDefs = list(list(
-            visible = FALSE , targets = c(0)
-          ))
-        ) %>% DT::formatStyle(
-          columns = 'LABNUMMER',
-          valueColumns = 'LABNUMMER',
-          backgroundColor = DT::styleEqual(
-            selected_sample_current_results()$LABNUMMER,
-            'yellow',
-            default = 'gray'
-          )
-        ) %>% DT::formatStyle(
-          columns = 'RUNNR',
-          valueColumns = 'UITVALLEND',
-          target = 'cell',
-          backgroundColor = DT::styleEqual(TRUE, 'red')
-        )
+      test_widened_uitvallend <- results %>% 
+        tidyr::pivot_wider(
+          id_cols = c(NAAM,LABNUMMER, RUNNR),
+          names_from = c(TESTCODE, ELEMENTCODE),
+          values_from = UITVALLEND,
+          names_sep = "<br>",
+          names_sort = TRUE) %>% mutate(NAAM = NULL,
+                                        LABNUMMER = NULL,
+                                        RUNNR = NULL)
+      
+      test_widened_combined <- cbind(test_widened_results, test_widened_uitvallend)
+      
+      number_of_test_columns <- results %>% count(TESTCODE, ELEMENTCODE)
+      
+      table_test <- table_builder(
+                                test_widened_combined,
+                                sort_by = 1,
+                                group = TRUE,
+                                group_cols = c(0, 1),
+                                #change to 1,2 if comment column is back
+                                columnDefs = list(list(
+                                  visible = FALSE, targets = c(0)
+                                ))
+                                ) %>% DT::formatStyle(
+                                  columns = 'LABNUMMER',
+                                  valueColumns = 'LABNUMMER',
+                                  backgroundColor = DT::styleEqual(
+                                    selected_sample_current_results()$LABNUMMER,
+                                    'yellow',
+                                    default = 'gray'
+                                  )
+                                ) %>% DT::formatStyle(
+                                  columns = 4:(3+nrow(number_of_test_columns)),
+                                  valueColumns = (6 + nrow(number_of_test_columns)):ncol(test_widened_combined),
+                                  target = 'cell',
+                                  backgroundColor = DT::styleEqual(TRUE, 'salmon')
+                                  )
       #%>% formatSignif(columns = c(-2,-3), digits = 3) #nog kijken hoe we datums uitzonderen
       return(table_test)
     }
