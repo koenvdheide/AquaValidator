@@ -374,6 +374,7 @@ server <- function(input, output, session) {
     #    RESULTAAT_ASNUMERIC[ELEMENTCODE == numerator] / RESULTAAT_ASNUMERIC[ELEMENTCODE == denominator],
     #    NA
     #  )
+    return(calculated_ratios)
   }
 
 ############################fiatteer tab######################################## 
@@ -655,6 +656,7 @@ server <- function(input, output, session) {
                                                        RESULTAAT_ASNUMERIC,
                                                        current_results, 
                                                        selected_results, 
+                                                       shape = UITVALLEND,
                                                        TESTCODE)
             
     #move hover_data to something that doesn't call the WHOLE PLOT AGAIN
@@ -764,6 +766,7 @@ server <- function(input, output, session) {
                                          WAARDE,
                                          current_ratios,
                                          clicked_ratios,
+                                         shape = NULL,
                                          RATIO)
     return(ratios_plot)
     
@@ -831,9 +834,8 @@ server <- function(input, output, session) {
     table_builder(
       selected_data,
       group = TRUE,
-      group_cols = c(0,1),
+      group_cols = c(0,1), #change to 1,2 if comment column is back
       sort_by = 1,
-      #change to 1,2 if comment column is back
       columnDefs = list(list(
         visible = FALSE , targets = c('NAAM','UITVALLEND')
       ))
@@ -988,10 +990,10 @@ server <- function(input, output, session) {
     )
   }
   
-  plot_builder <- function(data, x, y, current_data, clicked_data, facets){
+  plot_builder <- function(data, x, y, current_data, clicked_data, facets, shape){
 
       plot <- ggplot(data = data,
-                           mapping = aes(x = {{x}}, y = {{y}}, colour = NAAM, group = MONSTERPUNTCODE)) +
+                           mapping = aes(x = {{x}}, y = {{y}}, colour = NAAM, group = MONSTERPUNTCODE, shape = {{shape}})) +
         
         geom_line(alpha = 0.7) +
         geom_point(size = 2.5, alpha = 0.5) +
