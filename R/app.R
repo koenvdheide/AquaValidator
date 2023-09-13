@@ -603,6 +603,10 @@ server <- function(input, output, session) {
     }
   })
   
+  observeEvent(input$tabel_testresultaten_wis_selectie,{
+    DT::selectRows(sampleresults_proxy, selected = NULL)
+  })
+  
   observeEvent(input$tabel_sampleresults_cell_edit,{
     isolate({
       #doesn't work with results because that is not actually the dataframe used in sampleresults!
