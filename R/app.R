@@ -1,21 +1,5 @@
-# library(shiny)
-
-# library(shinyjs)
-# library(tidyverse)
-# library(ggplot2)
-# library(leaflet)
-# library(readxl)
-# #library(askpass)
-# library(DT)
-# #library(reactlog)
-# 
-# library(dbplyr)
-# library(odbc)
-
 #reactlog_enable()
-
 aquaApp <- function(...){
-  
 options(shiny.maxRequestSize=30*1024^2)
 
 #UI input variables are intentionally in Dutch, makes it easier to keep them separate from output/internal variables on the server side
@@ -485,12 +469,13 @@ server <- function(input, output, session) {
           names_sort = TRUE,
           names_sep = "<br>") %>% mutate(TESTCODE = NULL,
                                          ELEMENTCODE = NULL)
-        uitvallend_column_sequence <- seq.int(0,ncol(labnr_widened_uitvallend), by = 1)
+        uitvallend_column_sequence <- seq.int(1,ncol(labnr_widened_uitvallend), by = 1)
         
         labnr_widened_combined <- cbind(labnr_widened_results, labnr_widened_uitvallend)
   
         what_sample_columns_are_there <- results %>% count(NAAM, LABNUMMER, RUNNR)
         number_of_sample_columns <- nrow(what_sample_columns_are_there)
+        original_number_of_columns <- ncol(labnr_widened_results)
         total_number_of_columns <- ncol(labnr_widened_combined)
         
         table_labnr <- table_builder(labnr_widened_combined,
@@ -503,7 +488,7 @@ server <- function(input, output, session) {
                                      ) %>%
           DT::formatStyle(
            columns = 3:(2 + number_of_sample_columns), #starts at 3 to offset for the two code columns, why do we have to add 2 instead of 3 to offset at the end? NO IDEA
-           valueColumns = (5 + number_of_sample_columns):total_number_of_columns,
+           valueColumns = (1 + original_number_of_columns):total_number_of_columns,
            target = 'cell',
            backgroundColor = DT::styleEqual(TRUE, 'salmon')
            )
