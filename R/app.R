@@ -32,18 +32,14 @@ ui <- function(request) {
                tabPanel(
                  title = "Fiatteerlijst",
                  value = "tab_fiatteerlijst",
+                 actionButton("tabel_fiatterlijst_wis_selectie", "Wis Selectie"),
                  DT::dataTableOutput("tabel_fiatteerlijst")
                ),
              
-               # tabPanel(
-               #   value = "tab_tabel_samenvatting",
-               #   title = "Tabel Samenvatting",
-               #   DT::dataTableOutput("tabel_samenvatting")
-               # ),
-             
                tabPanel(
-                 title = "Testresultaten",          #textOutput("tab_sample_titel") 
-                 value = "tab_sample",
+                 title = "Testresultaten",          #textOutput("tab_testresultaten_titel") 
+                 value = "tab_testresultaten",
+                 actionButton("tabel_testresultaten_wis_selectie", "Wis Selectie"),
                  radioButtons(
                    "instellingen_roteer_tabel",
                    label = "Gebruik als kolom:",
@@ -53,7 +49,7 @@ ui <- function(request) {
                    inline = TRUE
                  ),
                   checkboxInput("instellingen_verberg_historie_tabel",
-                                "Toon alleen huidig geselecteerde sample(s)",
+                                "Toon meer monsters van geselecteerde meetpunt(en)",
                                 value = TRUE),
                  DT::dataTableOutput("tabel_sampleresults")
                ),
@@ -189,6 +185,10 @@ server <- function(input, output, session) {
   results <- reactiveVal(tibble())
   results_to_validate <- tibble()
   ratios <- tibble()
+  
+  #proxies
+  fiatteerlijst_proxy <- DT::dataTableProxy("tabel_fiatteerlijst")
+  sampleresults_proxy <- DT::dataTableProxy("tabel_sampleresults")
   
   #graph user input
   plot_selected_samples <- reactiveVal()
@@ -391,12 +391,16 @@ server <- function(input, output, session) {
                   )
     )
   })
+  observeEvent(input$tabel_fiatterlijst_wis_selectie,{
+    DT::selectRows(fiatteerlijst_proxy, selected = NULL)
+  })
   
   observeEvent(input$tabel_fiatteerlijst_cell_edit,{
     #reminder that if "samples" columns change in order this can overwrite the wrong columns!
     isolate({
     samples(DT::editData(samples(),
                          input$tabel_fiatteerlijst_cell_edit,
+                         proxy = fiatteerlijst_proxy,
                          rownames = FALSE))
     })
     
