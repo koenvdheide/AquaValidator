@@ -49,7 +49,7 @@ ui <- function(request) {
                    label = "Gebruik als kolom:",
                    choices = c("Labnummer" = "labnr",
                                "Tests" = "test",
-                               "Sample Info" = "sample"),
+                               "Resultaat Info" = "result_info"),
                    inline = TRUE
                  ),
                   checkboxInput("instellingen_verberg_historie_tabel",
@@ -494,7 +494,7 @@ server <- function(input, output, session) {
            )
        return(table_labnr)
       
-    } else if (input$instellingen_roteer_tabel == "sample") {
+    } else if (input$instellingen_roteer_tabel == "result_info") {
       table_sample <- table_builder(
         results,
         sort_by = 2,
