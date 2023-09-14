@@ -295,15 +295,24 @@ server <- function(input, output, session) {
     return (excel_data)
     }
   
-  standard_ratios <- list(
-    BZV_ONOPA = c("BZV5","onopa", "ELEMENT/TEST"),
-    CZV_BZV = c("CZV","BZV5", "ELEMENT/ELEMENT"),
-    CZV_NKA = c("CZV","nka","ELEMENT/TEST"),
-    CZV_TNB = c("CZV","tnb","ELEMENT/TEST"),
-    CZV_TOC = c("CZV","TOC","ELEMENT/ELEMENT"),
-    OFOS_TPA = c("ofos","tpa","TEST/TEST")
+  which_ratios <- list(
+    BZV_ONOPA = c("BZV5","onopa", "ELEMENTCODE", "TESTCODE"),
+    CZV_BZV = c("CZV","BZV5", "ELEMENTCODE", "ELEMENTCODE"),
+    CZV_NKA = c("CZV","nka","ELEMENTCODE", "TESTCODE"),
+    CZV_TNB = c("CZV","tnb","ELEMENTCODE","TESTCODE"),
+    CZV_TOC = c("CZV","TOC","ELEMENTCODE", "ELEMENTCODE"),
+    OFOS_TPA = c("ofos","tpa","TESTCODE","TESTCODE")
   )
-  ratios_calculator <- function(results){
+  ratio_calculator <- function(desired_ratio){
+    ratio_row = ifelse(
+      any({{desired_ratio[3]}} == desired_ratio[1]) & any({{desired_ratio[4]}} == desired_ratio[2]),
+      RESULTAAT_ASNUMERIC[{{desired_ratio[3]}} == desired_ratio[1]] / RESULTAAT_ASNUMERIC[{{desired_ratio[4]}} == desired_ratio[2]],
+      NA
+    )
+  }
+  
+  
+  make_ratios <- function(results){
     
     relevant_results <- results %>% filter(!is.na(RESULTAAT_ASNUMERIC))
     calculated_ratios <-
@@ -313,7 +322,8 @@ server <- function(input, output, session) {
         NAAM = NAAM,
         SAMPLINGDATE = SAMPLINGDATE,
         CZV_BZV_RATIO = ifelse(
-          any(ELEMENTCODE == "CZV") & any(ELEMENTCODE == "BZV5"),
+          any(ELEMENTCODE == "CZV") &
+            any(ELEMENTCODE == "BZV5"),
           RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"] / RESULTAAT_ASNUMERIC[ELEMENTCODE == "BZV5"],
           NA
         ),
@@ -560,6 +570,7 @@ server <- function(input, output, session) {
         
         what_test_columns_are_there <- results %>% count(TESTCODE, ELEMENTCODE)
         number_of_test_columns <- nrow(what_test_columns_are_there)
+        original_number_of_columns <- ncol(test_widened_results)
         total_number_of_columns <- ncol(test_widened_combined)
         
         table_test <- table_builder(
@@ -580,7 +591,7 @@ server <- function(input, output, session) {
                                   )
                                 ) %>% DT::formatStyle(
                                   columns = 4:(3 + number_of_test_columns), #why start at 4 but only need to add 3 for the end? idk
-                                  valueColumns = (6 + number_of_test_columns):total_number_of_columns,
+                                  valueColumns = (1 + original_number_of_columns):total_number_of_columns,
                                   target = 'cell',
                                   backgroundColor = DT::styleEqual(TRUE, 'salmon')
                                   )
