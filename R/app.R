@@ -183,7 +183,6 @@ server <- function(input, output, session) {
   #input 
   samples <- reactiveVal(tibble())
   results <- reactiveVal(tibble())
-  results_to_validate <- tibble()
   ratios <- tibble()
   
   #proxies
@@ -245,8 +244,8 @@ server <- function(input, output, session) {
       showModal(modalDialog(title = "Error bij resultaten inladen",e)) #geef de error als een popup scherm zodat de gebruiker het ziet
     })
 
-      results_to_validate <<- semi_join(results(),samples(), by = c("LABNUMMER"))
-      ratios <<- ratios_calculator(results())
+      
+      ratios <<- make_ratios(results())
       
     on.exit(removeNotification(loadingtip), add = TRUE)
     on.exit(uiUpdater(uiComponent = "TabsetPanel", inputId = "fiatteer_beeld",selected = "tab_fiatteerlijst"), add = TRUE)
@@ -349,21 +348,15 @@ server <- function(input, output, session) {
         values_drop_na = TRUE #needed so that ggplot's geom_line doesn't stop when it encounters an NA value while plotting the ratios
       ) %>% distinct()
     
-    # numerator <- NULL
-    # 
-    # denominator <- NULL
-    # 
-    #  ratio = ifelse(
-    #    any(ELEMENTCODE == numerator) & any(ELEMENTCODE == denominator),
-    #    RESULTAAT_ASNUMERIC[ELEMENTCODE == numerator] / RESULTAAT_ASNUMERIC[ELEMENTCODE == denominator],
-    #    NA
-    #  )
+
+
     return(calculated_ratios)
   }
 
 ############################fiatteer tab######################################## 
   output$tabel_fiatteerlijst <- DT::renderDataTable({
     req(input$input_file)
+    results_to_validate <- semi_join(results(),samples(), by = c("LABNUMMER"))
     
     rejected_tests <-
       results_to_validate %>% 
