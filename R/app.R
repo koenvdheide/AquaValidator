@@ -295,7 +295,7 @@ server <- function(input, output, session) {
     return (excel_data)
     }
   
-  which_ratios <- list(
+  ratios_list <- list(
     BZV_ONOPA = c("BZV5","onopa", "ELEMENTCODE", "TESTCODE"),
     CZV_BZV = c("CZV","BZV5", "ELEMENTCODE", "ELEMENTCODE"),
     CZV_NKA = c("CZV","nka","ELEMENTCODE", "TESTCODE"),
@@ -303,15 +303,17 @@ server <- function(input, output, session) {
     CZV_TOC = c("CZV","TOC","ELEMENTCODE", "ELEMENTCODE"),
     OFOS_TPA = c("ofos","tpa","TESTCODE","TESTCODE")
   )
-  ratio_calculator <- function(desired_ratio){
+  ratio_calculator <- function(ratio_name){
+    desired_ratio <- ratios_list[[ratio_name]]
+    print(desired_ratio[[4]])
     ratio_row = ifelse(
-      any({{desired_ratio[3]}} == desired_ratio[1]) & any({{desired_ratio[4]}} == desired_ratio[2]),
-      RESULTAAT_ASNUMERIC[{{desired_ratio[3]}} == desired_ratio[1]] / RESULTAAT_ASNUMERIC[{{desired_ratio[4]}} == desired_ratio[2]],
+      any({{desired_ratio[[3]]}} == desired_ratio[[1]]) & any({{desired_ratio[[4]]}} == desired_ratio[[2]]),
+      RESULTAAT_ASNUMERIC[{{desired_ratio[[3]]}} == desired_ratio[[1]]] / RESULTAAT_ASNUMERIC[{{ desired_ratio[[4]] }} == desired_ratio[[2]]],
       NA
     )
+    return(ratio_row)
   }
-  
-  
+
   make_ratios <- function(results){
     
     relevant_results <- results %>% filter(!is.na(RESULTAAT_ASNUMERIC))
@@ -321,6 +323,11 @@ server <- function(input, output, session) {
       reframe(
         NAAM = NAAM,
         SAMPLINGDATE = SAMPLINGDATE,
+        # CZV_BZV_RATIO = ratio_calculator("CZV_BZV"),
+        # CZV_NKA_RATIO = ratio_calculator("CZV_NKA"),
+        # BZV_ONOPA_RATIO = ratio_calculator("BZV_ONOPA"),
+        # CZV_TOC_RATIO = ratio_calculator("CZV_TOC"),
+        # CZV_TNB_RATIO = ratio_calculator("CZV_TNB")
         CZV_BZV_RATIO = ifelse(
           any(ELEMENTCODE == "CZV") &
             any(ELEMENTCODE == "BZV5"),
@@ -358,8 +365,6 @@ server <- function(input, output, session) {
         values_drop_na = TRUE #needed so that ggplot's geom_line doesn't stop when it encounters an NA value while plotting the ratios
       ) %>% distinct()
     
-
-
     return(calculated_ratios)
   }
 
