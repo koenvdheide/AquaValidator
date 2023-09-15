@@ -466,9 +466,10 @@ server <- function(input, output, session) {
     results <- historical_or_current_results()
     
     if(input$instellingen_roteer_tabel  == "labnr"){
+      
       labnr_widened_results <- results %>% tidyr::pivot_wider(
         id_cols = c(TESTCODE,ELEMENTCODE),
-        names_from = c(NAAM,LABNUMMER,RUNNR),
+        names_from = c(NAAM, LABNUMMER, HOEDNHD, RUNNR),
         values_from = RESULTAAT,
         names_sep = "<br>",
         names_sort = TRUE,
@@ -476,7 +477,7 @@ server <- function(input, output, session) {
 
         labnr_widened_uitvallend <- results %>% tidyr::pivot_wider(
           id_cols = c(TESTCODE,ELEMENTCODE),
-          names_from = c(NAAM,LABNUMMER,RUNNR),
+          names_from = c(NAAM, LABNUMMER, HOEDNHD, RUNNR),
           values_from = UITVALLEND,
           names_sort = TRUE,
           names_sep = "<br>") %>% mutate(TESTCODE = NULL,
@@ -552,7 +553,7 @@ server <- function(input, output, session) {
     } else if (input$instellingen_roteer_tabel == "test") {
         test_widened_results <- results %>% 
           tidyr::pivot_wider(
-            id_cols = c(NAAM,LABNUMMER, RUNNR),
+            id_cols = c(NAAM,LABNUMMER, RUNNR, HOEDNHD),
             names_from = c(TESTCODE, ELEMENTCODE),
             values_from = RESULTAAT,
             names_sep = "<br>",
@@ -562,12 +563,13 @@ server <- function(input, output, session) {
         
         test_widened_uitvallend <- results %>% 
           tidyr::pivot_wider(
-            id_cols = c(NAAM,LABNUMMER, RUNNR),
+            id_cols = c(NAAM,LABNUMMER, RUNNR, HOEDNHD),
             names_from = c(TESTCODE, ELEMENTCODE),
             values_from = UITVALLEND,
             names_sep = "<br>",
             names_sort = TRUE) %>% mutate(NAAM = NULL,
                                           LABNUMMER = NULL,
+                                          HOEDNHD = NULL,
                                           RUNNR = NULL)
         uitvallend_column_sequence <- seq.int(0,ncol(test_widened_uitvallend), by = 1)
         
@@ -577,7 +579,7 @@ server <- function(input, output, session) {
         number_of_test_columns <- nrow(what_test_columns_are_there)
         original_number_of_columns <- ncol(test_widened_results)
         total_number_of_columns <- ncol(test_widened_combined)
-        
+
         table_test <- table_builder(
                                 test_widened_combined,
                                 sort_by = 1,
@@ -595,7 +597,7 @@ server <- function(input, output, session) {
                                     default = 'gray'
                                   )
                                 ) %>% DT::formatStyle(
-                                  columns = 4:(3 + number_of_test_columns), #why start at 4 but only need to add 3 for the end? idk
+                                  columns = 5:(4 + number_of_test_columns), #why start at 5 but only need to add 4 for the end? idk
                                   valueColumns = (1 + original_number_of_columns):total_number_of_columns,
                                   target = 'cell',
                                   backgroundColor = DT::styleEqual(TRUE, 'salmon')
