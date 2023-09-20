@@ -1,0 +1,1 @@
+"C:\Users\user\synced-folder\R-4.2.3\bin\R.exe" CMD BATCH "run.r"

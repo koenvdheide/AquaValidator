@@ -1027,5 +1027,5 @@ shinyApp(ui = ui,
          enableBookmarking = "server",
          options = list())
 }
-#pkgload::load_all() #this makes loading the project as a package freak out for some reason
+#pkgload::load_all() #this makes loading the project as a package freak out for some reason, moved to startup.R
 aquaApp()
