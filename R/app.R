@@ -833,6 +833,7 @@ server <- function(input, output, session) {
         ELEMENTCODE,
         RESULTAAT,
         REFMESSAGE,
+        RESULT_OPMERKING,
         SAMPLINGDATE,
         MEASUREDATE,
         UITVALLEND
