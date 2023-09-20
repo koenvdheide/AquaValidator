@@ -220,7 +220,7 @@ server <- function(input, output, session) {
         #labnummercolumn = labnrcolumn,
         #meetpuntcolumn = measurepointcolumn
       ) %>% 
-        tibble::add_column(SAMPLE_OPMERKING = "", .before = 1) %>% #don't move the comment column without also changing editData!
+        #tibble::add_column(SAMPLE_OPMERKING = "", .before = 1) %>% #don't move the comment column without also changing editData!
         arrange(PRIOFINISHDATE))
     }, error = function(e){
       showModal(modalDialog(title = "Error bij fiatteerlijst inladen",e)) #geef de error als een popup scherm zodat de gebruiker het ziet
@@ -236,17 +236,16 @@ server <- function(input, output, session) {
         ) %>% mutate(
           RESULTAAT_ASNUMERIC = if_else(TESTSTATUS != 1000, as.numeric(RESULTAAT), NA),
           GEVALIDEERD = TESTSTATUS == 300,
-          UITVALLEND = TESTSTATUS != 300 & TESTSTATUS != 1000 & REFCONCLUSION == 0) %>%
+          UITVALLEND = TESTSTATUS != 300 & TESTSTATUS != 1000 & REFCONCLUSION == 0)) #%>%
           #see AAV-177 issue
-          tibble::add_column(RESULT_OPMERKING = "", .before = 1)) #don't move the comment column without also changing editData!
+          #tibble::add_column(RESULT_OPMERKING = "", .before = 1)) #don't move the comment column without also changing editData!
+      
+      ratios <<- make_ratios(results())
       
     }, error = function(e){
       showModal(modalDialog(title = "Error bij resultaten inladen",e)) #geef de error als een popup scherm zodat de gebruiker het ziet
     })
 
-      
-      ratios <<- make_ratios(results())
-      
     on.exit(removeNotification(loadingtip), add = TRUE)
     on.exit(uiUpdater(uiComponent = "TabsetPanel", inputId = "fiatteer_beeld",selected = "tab_fiatteerlijst"), add = TRUE)
   })
@@ -473,7 +472,7 @@ server <- function(input, output, session) {
         values_from = RESULTAAT,
         names_sep = "<br>",
         names_sort = TRUE,
-        unused_fn = list(MEASUREDATE = list, SAMPLINGDATE = list))
+        unused_fn = list(RESULT_OPMERKING = list, MEASUREDATE = list, SAMPLINGDATE = list))
 
         labnr_widened_uitvallend <- results %>% tidyr::pivot_wider(
           id_cols = c(TESTCODE,ELEMENTCODE),
@@ -513,7 +512,7 @@ server <- function(input, output, session) {
         sort_by = 2,
         comment_col = TRUE,
         group = TRUE,
-        group_cols = c(2,3), #change to 1,2 if comment column is removed
+        group_cols = c(3,4), #change to 1,2 if comment columns are removed
         columnDefs = list(list(
           visible = FALSE ,
           targets = c(
@@ -530,6 +529,9 @@ server <- function(input, output, session) {
             "SAMPLE_TEST_ID",
             "SAMPLE_RESULT_ID",
             "GEVALIDEERD",
+            "SAMPLE_OPMERKING",
+            #"RESULTAAT_AFGEROND",
+            "REFVALUE",
             "SOORTWATER"
           )
           )
@@ -545,7 +547,7 @@ server <- function(input, output, session) {
         valueColumns = 'UITVALLEND',
         target = 'cell',
         backgroundColor = DT::styleEqual(TRUE, 'salmon')
-      )
+      ) 
       return(table_sample)
       
       #%>% formatSignif(columns = c(-2,-3), digits = 3) #nog kijken hoe we datums uitzonderen
