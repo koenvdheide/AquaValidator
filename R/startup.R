@@ -4,7 +4,7 @@
 #'
 #' @export
 #'
-startup <- function(browser = TRUE,...){
+startValidator <- function(browser = TRUE,...){
   pkgload::load_all(".")
   shiny::runApp("R", launch.browser = browser,...)
 }
