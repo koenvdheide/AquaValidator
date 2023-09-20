@@ -1,0 +1,1 @@
+"C:\Users\kheide\OneDrive - Aqualysis\R-4.2.3\bin\R.exe" CMD BATCH "run.r"
