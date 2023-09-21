@@ -908,7 +908,7 @@ server <- function(input, output, session) {
       validated_samples <<- tibble()
       validated_results <<- tibble()
       samples(anti_join(samples(),selected_rows, by = 'LABNUMMER')) #remove finished samples from view
-      showModal(modalDialog(title = "Validatie Gelukt", "Gevalideerde samples zijn geëxporteerd" ))
+      showModal(modalDialog(title = "Validatie Gelukt", "Gevalideerde samples zijn geëxporteerd", easyClose = TRUE ))
     }
   })
   
@@ -927,7 +927,7 @@ server <- function(input, output, session) {
       rejected_samples <<- tibble()
       rejected_results <<- tibble()
       #samples(anti_join(samples(),selected_rows, by = 'LABNUMMER')) #do we want to remove REJECTED samples from view?
-      showModal(modalDialog(title = "Duplo Opdracht Gelukt", "Afgewezen resultaten zijn geëxporteerd"))
+      showModal(modalDialog(title = "Duplo Opdracht Gelukt", "Afgewezen resultaten zijn geëxporteerd", easyClose = TRUE))
     }
     
   })
