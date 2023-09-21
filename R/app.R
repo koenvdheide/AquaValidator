@@ -507,12 +507,18 @@ server <- function(input, output, session) {
        return(table_labnr)
       
     } else if (input$instellingen_roteer_tabel == "result_info") {
+      labnr_column_index <- which(colnames(results) == "LABNUMMER")
+      labnr_column_index <- (labnr_column_index[1] - 1) #which() returns vector,first element contains the actual index. subtract 1 from index because R counts indexes from 1, DT counts from 0
+      
+      description_column_index <- which(colnames(results) == "NAAM")
+      description_column_index <- (description_column_index[1] - 1)
+      
       table_sample <- table_builder(
         results,
-        sort_by = 2,
+        sort_by = labnr_column_index,
         comment_col = TRUE,
         group = TRUE,
-        group_cols = c(3,4), #change to 1,2 if comment columns are removed
+        group_cols = c(description_column_index,labnr_column_index), 
         columnDefs = list(list(
           visible = FALSE ,
           targets = c(
@@ -581,14 +587,20 @@ server <- function(input, output, session) {
         number_of_test_columns <- nrow(what_test_columns_are_there)
         original_number_of_columns <- ncol(test_widened_results)
         total_number_of_columns <- ncol(test_widened_combined)
+        
+        labnr_column_index <- which(colnames(test_widened_results) == "LABNUMMER") 
+        labnr_column_index <- (labnr_column_index[1] - 1) #which() returns vector,first element contains the actual index. subtract 1 from index because R counts indexes from 1, DT counts from 0
+        
+        description_column_index <- which(colnames(test_widened_results) == "NAAM")
+        description_column_index <- (description_column_index[1] - 1)
 
         table_test <- table_builder(
                                 test_widened_combined,
-                                sort_by = 1,
+                                sort_by = labnr_column_index,
                                 group = TRUE,
-                                group_cols = c(0, 1), #change to 1,2 if comment column is back
+                                group_cols = c(description_column_index, labnr_column_index),
                                 columnDefs = list(list(
-                                  visible = FALSE, targets = c(0, -uitvallend_column_sequence) #hide columns on the right coming from UITVALLEND
+                                  visible = FALSE, targets = c(description_column_index, -uitvallend_column_sequence) #hide columns on the right coming from UITVALLEND
                                 ))
                                 ) %>% DT::formatStyle(
                                   columns = 'LABNUMMER',
