@@ -553,7 +553,12 @@ server <- function(input, output, session) {
         valueColumns = 'UITVALLEND',
         target = 'cell',
         backgroundColor = DT::styleEqual(TRUE, 'salmon')
-      ) 
+      ) %>% DT::formatStyle(
+        columns = 'RESULTAAT',
+        valueColumns = 'TESTSTATUS',
+        target = 'cell',
+        backgroundColor = DT::styleEqual(1000, 'darkgreen')
+      )
       return(table_sample)
       
       #%>% formatSignif(columns = c(-2,-3), digits = 3) #nog kijken hoe we datums uitzonderen
