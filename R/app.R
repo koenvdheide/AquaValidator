@@ -1027,7 +1027,7 @@ server <- function(input, output, session) {
         guides(size = "none", x = guide_axis(angle = 45)) +
         
         facet_wrap(vars({{facets}}), scales = 'free_y') + #still need to check first that ratio's really exist
-        theme(strip.text = element_text(size = 18))
+        theme(strip.text = element_text(size = 16))
       if (isTruthy(clicked_data)) #clicked data has to exist first
       {
         isolate({
