@@ -1026,8 +1026,8 @@ server <- function(input, output, session) {
         scale_x_date(date_labels = "%d-%m-%y", breaks = scales::breaks_pretty(n=12)) +
         guides(size = "none", x = guide_axis(angle = 45)) +
         
-        facet_wrap(vars({{facets}}), scales = 'free_y') #still need to check first that ratio's really exist
-      
+        facet_wrap(vars({{facets}}), scales = 'free_y') + #still need to check first that ratio's really exist
+        theme(strip.text = element_text(size = 18))
       if (isTruthy(clicked_data)) #clicked data has to exist first
       {
         isolate({
