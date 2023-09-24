@@ -10,8 +10,8 @@ ui <- function(request) {
   
   navbarPage(
     title= div(tags$img(src='Logo-Aqualysis-RGB-HR.png', align = 'left', width = "130px", height = "34px"),
-               HTML('&nbsp;'),
-               "Validatie"),
+               HTML('&emsp;'),
+               "AquaValidator"),
     
     tabPanel("Fiatteren",
            fluidPage(
