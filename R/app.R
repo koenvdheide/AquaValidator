@@ -904,7 +904,7 @@ server <- function(input, output, session) {
   
 ###############################validation#######################################
   validation_exporter <- function(selected_samples, selected_results, export_path){
-    selected_samples_export_columns <- selected_samples %>% select(#SAMPLE_OPMERKING,
+    selected_samples_export_columns <- selected_samples %>% select(SAMPLE_OPMERKING,
                                                                    SAMPLE_ID)
     selected_results_export_columns <- selected_results %>% select(SAMPLE_ID,
                                                                    #RESULT_OPMERKING,
