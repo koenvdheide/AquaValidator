@@ -518,7 +518,7 @@ server <- function(input, output, session) {
             columns = 3:(2 + number_of_sample_columns), #starts at 3 to offset for the two code columns, why do we have to add 2 instead of 3 to offset at the end? NO IDEA
             valueColumns = (1 + original_and_uitvallend_columns):total_columns,
             target = 'cell',
-            backgroundColor = DT::styleEqual(1000, 'lightgreen')
+            backgroundColor = DT::styleEqual(c(1000,300), c('lightgreen','gray'))
           )
        return(table_labnr)
       
@@ -573,7 +573,7 @@ server <- function(input, output, session) {
         columns = 'RESULTAAT',
         valueColumns = 'TESTSTATUS',
         target = 'cell',
-        backgroundColor = DT::styleEqual(1000, 'lightgreen')
+        backgroundColor = DT::styleEqual(c(1000,300), c('lightgreen','gray'))
       )
       return(table_sample)
       
@@ -652,7 +652,7 @@ server <- function(input, output, session) {
                                   columns = 5:(4 + number_of_test_columns), 
                                   valueColumns = (1 + original_and_uitvallend_columns):total_columns,
                                   target = 'cell',
-                                  backgroundColor = DT::styleEqual(1000, 'lightgreen')
+                                  backgroundColor = DT::styleEqual(c(1000,300), c('lightgreen','gray'))
                                   )
         return(table_test)
     }
