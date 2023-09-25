@@ -4,10 +4,8 @@ options(shiny.maxRequestSize=30*1024^2)
 
 #UI input variables are intentionally in Dutch, makes it easier to keep them separate from output/internal variables on the server side
 ui <- function(request) {
-  
   tagList( 
-  shinyjs::useShinyjs(),
-  
+  shinyjs::useShinyjs(), #enable javascript
   navbarPage(
     title= div(tags$img(src='Logo-Aqualysis-RGB-HR.png', align = 'left', width = "130px", height = "34px"),
                HTML('&emsp;'),
@@ -37,7 +35,7 @@ ui <- function(request) {
                ),
              
                tabPanel(
-                 title = "Testresultaten",          #textOutput("tab_testresultaten_titel") 
+                 title = "Testresultaten",
                  value = "tab_testresultaten",
                  actionButton("tabel_testresultaten_wis_selectie", "Wis Selectie"),
                  radioButtons(
@@ -154,7 +152,7 @@ ui <- function(request) {
                          mainPanel())),
   
   footer = div(#bookmarkButton(label = "Sla fiatteer voortgang op"),
-                actionButton("button_duplo_aanvraag", label = "Vraag duplo aan voor geselecteerde resultaten"),
+                actionButton("button_duplo_aanvraag", label = "Duplo voor geselecteerde resultaten"),
                 actionButton("button_valideer", label = "Valideer geselecteerde samples"))
 )
 )}
@@ -181,25 +179,25 @@ server <- function(input, output, session) {
   # )
   
   #input 
-  samples <- reactiveVal(tibble())
-  results <- reactiveVal(tibble())
-  ratios <- tibble()
+  fiatteer_samples <- reactiveVal(tibble())
+  complete_results <- reactiveVal(tibble())
+  complete_ratios <- tibble()
   
-  #proxies
+  #proxies needed for editing datatables
   fiatteerlijst_proxy <- DT::dataTableProxy("tabel_fiatteerlijst")
   sampleresults_proxy <- DT::dataTableProxy("tabel_sampleresults")
   
   #graph user input
   plot_selected_samples <- reactiveVal()
-  plot_hover_selected_samples <- reactiveVal()
+  plot_hoverselected_samples <- reactiveVal()
   plot_selected_ratios <- reactiveVal()
   
   #output
   validated_samples <- tibble()
   validated_results <- tibble()
   
-  rejected_samples <- tibble()
-  rejected_results <- tibble()
+  duplo_samples <- tibble()
+  duplo_results <- tibble()
   
 #####################################loading file###############################
   observeEvent(input$input_file, {
@@ -213,20 +211,19 @@ server <- function(input, output, session) {
       # resultscolumn <- input$input_file_testresultaat_kolom
       # labnrcolumn <- input$input_file_labnummer_kolom
       
-      samples(excel_reader(
+      fiatteer_samples(excel_reader(
         file_path,
         sheet = fiatteerblad
         #resultcolumn = resultscolumn,
         #labnummercolumn = labnrcolumn,
         #meetpuntcolumn = measurepointcolumn
       ) %>% 
-        #tibble::add_column(SAMPLE_OPMERKING = "", .before = 1) %>% #don't move the comment column without also changing editData!
         arrange(PRIOFINISHDATE))
     }, error = function(e){
-      showModal(modalDialog(title = "Error bij fiatteerlijst inladen",e)) #geef de error als een popup scherm zodat de gebruiker het ziet
+      showModal(modalDialog(title = "Probleem met inladen van fiatteerlijst:",e)) #geef de error als een popup scherm zodat de gebruiker het ziet
     })
     tryCatch({
-      results(
+      complete_results(
         excel_reader(
           file_path,
           sheet = resultatenblad
@@ -236,18 +233,17 @@ server <- function(input, output, session) {
         ) %>% mutate(
           RESULTAAT_ASNUMERIC = if_else(TESTSTATUS != 1000, as.numeric(RESULTAAT), NA),
           GEVALIDEERD = TESTSTATUS == 300,
-          UITVALLEND = TESTSTATUS != 300 & TESTSTATUS != 1000 & REFCONCLUSION == 0)) #%>%
-          #see AAV-177 issue
-          #tibble::add_column(RESULT_OPMERKING = "", .before = 1)) #don't move the comment column without also changing editData!
+          UITVALLEND = TESTSTATUS != 300 & TESTSTATUS != 1000 & REFCONCLUSION == 0))
       
-      ratios <<- make_ratios(results())
+      complete_ratios <<- calculate_ratios(complete_results())
       
     }, error = function(e){
-      showModal(modalDialog(title = "Error bij resultaten inladen",e)) #geef de error als een popup scherm zodat de gebruiker het ziet
+      showModal(modalDialog(title = "Probleem met inladen van meetresultaten:",e)) #geef de error als een popup scherm zodat de gebruiker het ziet
     })
-
     on.exit(removeNotification(loadingtip), add = TRUE)
-    on.exit(uiUpdater(uiComponent = "TabsetPanel", inputId = "fiatteer_beeld",selected = "tab_fiatteerlijst"), add = TRUE)
+    on.exit(uiUpdater(uiComponent = "TabsetPanel", #move user's view to fiatteerlijst tab when loading is complete
+                      inputId = "fiatteer_beeld",
+                      selected = "tab_fiatteerlijst"),add = TRUE) 
   })
   
   excel_reader <-
@@ -294,26 +290,26 @@ server <- function(input, output, session) {
     return (excel_data)
     }
   
-  ratios_list <- list(
-    BZV_ONOPA = c("BZV5","onopa", "ELEMENTCODE", "TESTCODE"),
-    CZV_BZV = c("CZV","BZV5", "ELEMENTCODE", "ELEMENTCODE"),
-    CZV_NKA = c("CZV","nka","ELEMENTCODE", "TESTCODE"),
-    CZV_TNB = c("CZV","tnb","ELEMENTCODE","TESTCODE"),
-    CZV_TOC = c("CZV","TOC","ELEMENTCODE", "ELEMENTCODE"),
-    OFOS_TPA = c("ofos","tpa","TESTCODE","TESTCODE")
-  )
-  ratio_calculator <- function(ratio_name){
-    desired_ratio <- ratios_list[[ratio_name]]
-    print(desired_ratio[[4]])
-    ratio_row = ifelse(
-      any({{desired_ratio[[3]]}} == desired_ratio[[1]]) & any({{desired_ratio[[4]]}} == desired_ratio[[2]]),
-      RESULTAAT_ASNUMERIC[{{desired_ratio[[3]]}} == desired_ratio[[1]]] / RESULTAAT_ASNUMERIC[{{ desired_ratio[[4]] }} == desired_ratio[[2]]],
-      NA
-    )
-    return(ratio_row)
-  }
+  # ratios_list <- list(
+  #   BZV_ONOPA = c("BZV5","onopa", "ELEMENTCODE", "TESTCODE"),
+  #   CZV_BZV = c("CZV","BZV5", "ELEMENTCODE", "ELEMENTCODE"),
+  #   CZV_NKA = c("CZV","nka","ELEMENTCODE", "TESTCODE"),
+  #   CZV_TNB = c("CZV","tnb","ELEMENTCODE","TESTCODE"),
+  #   CZV_TOC = c("CZV","TOC","ELEMENTCODE", "ELEMENTCODE"),
+  #   OFOS_TPA = c("ofos","tpa","TESTCODE","TESTCODE")
+  # )
+  # ratio_calculator <- function(ratio_name){
+  #   desired_ratio <- ratios_list[[ratio_name]]
+  #   print(desired_ratio[[4]])
+  #   ratio_row = ifelse(
+  #     any({{desired_ratio[[3]]}} == desired_ratio[[1]]) & any({{desired_ratio[[4]]}} == desired_ratio[[2]]),
+  #     RESULTAAT_ASNUMERIC[{{desired_ratio[[3]]}} == desired_ratio[[1]]] / RESULTAAT_ASNUMERIC[{{ desired_ratio[[4]] }} == desired_ratio[[2]]],
+  #     NA
+  #   )
+  #   return(ratio_row)
+  #}
 
-  make_ratios <- function(results){
+  calculate_ratios <- function(results){
     
     relevant_results <- results %>% filter(!is.na(RESULTAAT_ASNUMERIC))
     calculated_ratios <-
@@ -361,7 +357,7 @@ server <- function(input, output, session) {
         cols = c(CZV_BZV_RATIO, CZV_NKA_RATIO, BZV_ONOPA_RATIO,CZV_TOC_RATIO,CZV_TNB_RATIO),
         names_to = "RATIO",
         values_to = "WAARDE",
-        values_drop_na = TRUE #needed so that ggplot's geom_line doesn't stop when it encounters an NA value while plotting the ratios
+        values_drop_na = TRUE #needed because ggplot's geom_line adds a break when it encounters an NA value and that looks ugly
       ) %>% distinct()
     
     return(calculated_ratios)
@@ -369,21 +365,19 @@ server <- function(input, output, session) {
 
 ############################fiatteer tab######################################## 
   output$tabel_fiatteerlijst <- DT::renderDataTable({
-    req(input$input_file)
-    results_to_validate <- semi_join(results(),samples(), by = c("LABNUMMER"))
+    req(input$input_file) #don't try to create the table until there's a valid input file
     
-    rejected_tests <-
-      results_to_validate %>% 
-      filter(UITVALLEND == TRUE) %>% 
-      select(LABNUMMER, TESTCODE)
+    fiatteer_results <- semi_join(complete_results(),fiatteer_samples(), by = c("LABNUMMER")) #get the measurement results belonging to our fiatteer samples
     
-    fiatteer_data <- samples() %>%
-      nest_join(rejected_tests,
-                by = "LABNUMMER",
-                name = "UITVALLENDE_TESTS_LIST") %>%
-      tidyr::hoist(UITVALLENDE_TESTS_LIST, 
-                   UITVALLERS = "TESTCODE")
-    
+    rejected_tests <- get_rejected_tests(fiatteer_results)
+
+    fiatteer_data <- fiatteer_samples() %>% #nest_join and hoist rejected_tests to already show the user which tests need validation on the fiatteerlijst tab
+                      nest_join(rejected_tests,
+                                by = "LABNUMMER",
+                                name = "UITVALLENDE_TESTS_LIST") %>%
+                                tidyr::hoist(UITVALLENDE_TESTS_LIST, 
+                                             UITVALLERS = "TESTCODE")
+                              
     table_builder(fiatteer_data, 
                   comment_col = TRUE,
                   columnDefs = list(list(
@@ -398,14 +392,22 @@ server <- function(input, output, session) {
                   )
     )
   })
+  
+  get_rejected_tests <- function(results){
+    rejected_tests <-
+      results %>% 
+      filter(UITVALLEND == TRUE) %>% 
+      select(LABNUMMER, TESTCODE)
+    
+  }
   observeEvent(input$tabel_fiatterlijst_wis_selectie,{
     DT::selectRows(fiatteerlijst_proxy, selected = NULL)
   })
   
   observeEvent(input$tabel_fiatteerlijst_cell_edit,{
-    #reminder that if "samples" columns change in order this can overwrite the wrong columns!
+    #reminder that if columns are rearranged in "fiatteer_samples" this can then overwrite the wrong columns!
     isolate({
-    samples(DT::editData(samples(),
+    fiatteer_samples(DT::editData(fiatteer_samples(),
                          input$tabel_fiatteerlijst_cell_edit,
                          proxy = fiatteerlijst_proxy,
                          rownames = FALSE))
@@ -413,8 +415,8 @@ server <- function(input, output, session) {
     
   })
   
-  selected_sample <- reactive({
-    data <- samples() #redundant but needed because subsetting a reactiveval is buggy
+  selected_sample_rows <- reactive({
+    data <- fiatteer_samples() #redundant but needed because subsetting a reactiveval is buggy
     if (isTruthy(input$tabel_fiatteerlijst_rows_selected)) {
       return(data[input$tabel_fiatteerlijst_rows_selected,])
     }
@@ -429,10 +431,10 @@ server <- function(input, output, session) {
   })
   
   selected_sample_current_results <- reactive({
-    req(selected_sample())
-    selected_labnummer <- select(selected_sample(), LABNUMMER)
-    matching_result <- semi_join(results(),
-                                 selected_sample(),
+    req(selected_sample_rows())
+    selected_labnummer <- select(selected_sample_rows(), LABNUMMER)
+    matching_result <- semi_join(complete_results(),
+                                 selected_sample_rows(),
                                  by = c('LABNUMMER'))
     return(matching_result)
   })
@@ -440,7 +442,7 @@ server <- function(input, output, session) {
   selected_sample_historical_results <- reactive({
     #includes current result for now
     selected_meetpunt <- select(selected_sample_current_results(), MONSTERPUNTCODE)
-    matching_results <- semi_join(results(),
+    matching_results <- semi_join(complete_results(),
                                   selected_sample_current_results(),
                                   by = c('MONSTERPUNTCODE')) %>%
                         arrange(desc(SAMPLINGDATE)) %>% #it SHOULD already put the most recent result first but this ensures it
@@ -674,13 +676,13 @@ server <- function(input, output, session) {
     isolate({
       #doesn't work with results because that is not actually the dataframe used in sampleresults!
       #doesn't work with historical_or_current_results because that is a function (technically) so editData tries to edit a FUNCTION
-      #results(DT::editData(results(),
+      #complete_results(DT::editData(complete_results(),
       #                     input$tabel_sampleresults_cell_edit,
       #                     rownames = FALSE))
     })
   })
   
-  selected_results <- reactive({
+  selected_result_rows <- reactive({
     data <- historical_or_current_results() #redundant but needed because subsetting a reactiveval is buggy
     if (isTruthy(input$tabel_sampleresults_rows_selected)) {
       return(data[input$tabel_sampleresults_rows_selected,])
@@ -702,7 +704,7 @@ server <- function(input, output, session) {
     
     historical_results <- selected_sample_historical_results() 
     current_results <- selected_sample_current_results()
-    selected_results <- plot_selected_samples()
+    selected_samples <- plot_selected_samples()
     #plot_user_choices <- fiatteer_plot_user_settings()
     
     plottable_results <- historical_results %>% filter(!is.na(RESULTAAT_ASNUMERIC))
@@ -711,7 +713,7 @@ server <- function(input, output, session) {
                                                        SAMPLINGDATE,
                                                        RESULTAAT_ASNUMERIC,
                                                        current_results, 
-                                                       selected_results, 
+                                                       selected_samples, 
                                                        shape = UITVALLEND,
                                                        TESTCODE)
             
@@ -743,7 +745,7 @@ server <- function(input, output, session) {
     })
   
   observeEvent(input$fiatteer_grafiek_zweef,{
-    plot_hover_selected_samples(nearPoints(selected_sample_historical_results(),input$fiatteer_grafiek_zweef))
+    plot_hoverselected_samples(nearPoints(selected_sample_historical_results(),input$fiatteer_grafiek_zweef))
   })
   
   observeEvent(input$fiatteer_grafiek_klik, {
@@ -801,13 +803,13 @@ server <- function(input, output, session) {
   
   selected_sample_current_ratios <-  reactive({
     selected_monsterpuntcode <- select(selected_sample_current_results(), LABNUMMER)
-    selected_sample_current_ratios <- ratios %>% filter(LABNUMMER %in% selected_monsterpuntcode$LABNUMMER)
+    selected_sample_current_ratios <- complete_ratios %>% filter(LABNUMMER %in% selected_monsterpuntcode$LABNUMMER)
     return(selected_sample_current_ratios)
   })
   
   selected_sample_historical_ratios <- reactive({
     selected_monsterpuntcode <- select(selected_sample_historical_results(), LABNUMMER)
-    current_ratios <- ratios %>% filter(LABNUMMER %in% selected_monsterpuntcode$LABNUMMER)
+    current_ratios <- complete_ratios %>% filter(LABNUMMER %in% selected_monsterpuntcode$LABNUMMER)
     return(current_ratios)
   })
   
@@ -903,10 +905,10 @@ server <- function(input, output, session) {
   })
   
 ###############################validation#######################################
-  validation_exporter <- function(selected_samples, selected_results, export_path){
+  validation_exporter <- function(selected_samples, selected_result_rows, export_path){
     selected_samples_export_columns <- selected_samples %>% select(SAMPLE_OPMERKING,
                                                                    SAMPLE_ID)
-    selected_results_export_columns <- selected_results %>% select(SAMPLE_ID,
+    selected_results_export_columns <- selected_result_rows %>% select(SAMPLE_ID,
                                                                    #RESULT_OPMERKING,
                                                                    MEETPUNT_ID,
                                                                    SAMPLE_TEST_ID,
@@ -926,9 +928,9 @@ server <- function(input, output, session) {
   }
   
   observeEvent(input$button_valideer, {
-    selected_rows <- selected_sample()
+    selected_rows <- selected_sample_rows()
     selected_rows_results <-selected_sample_current_results()
-    req(selected_sample())
+    req(selected_sample_rows())
     
     validated_samples <<- validated_samples %>% rbind(selected_rows)
     validated_results <<- validated_results %>% rbind(selected_rows_results)
@@ -940,26 +942,26 @@ server <- function(input, output, session) {
     if(isTRUE(export_succeeded)){ #only do this if exporting was successful 
       validated_samples <<- tibble()
       validated_results <<- tibble()
-      samples(anti_join(samples(),selected_rows, by = 'LABNUMMER')) #remove finished samples from view
+      fiatteer_samples(anti_join(fiatteer_samples(),selected_rows, by = 'LABNUMMER')) #remove finished samples from view
       showModal(modalDialog(title = "Validatie Gelukt", "Gevalideerde samples zijn geëxporteerd", easyClose = TRUE ))
     }
   })
   
   observeEvent(input$button_duplo_aanvraag, {
-    selected_rows <- selected_sample()
-    selected_result_rows <- selected_results()
-    req(selected_results())
+    selected_rows <- selected_sample_rows()
+    selected_result_rows <- selected_result_rows()
+    req(selected_result_rows())
     
-    rejected_samples <<- rejected_samples %>% rbind(selected_rows)
-    rejected_results <<- rejected_results %>% rbind(selected_result_rows)
+    duplo_samples <<- duplo_samples %>% rbind(selected_rows)
+    duplo_results <<- duplo_results %>% rbind(selected_result_rows)
     
-    export_succeeded <- validation_exporter(rejected_samples,
-                                            rejected_results,
+    export_succeeded <- validation_exporter(duplo_samples,
+                                            duplo_results,
                                             "F:/2-Ano/Alg/13_Fiatteren/Validator/afgewezen_sample_resultaten.csv")
     if(isTRUE(export_succeeded)){ 
-      rejected_samples <<- tibble()
-      rejected_results <<- tibble()
-      #samples(anti_join(samples(),selected_rows, by = 'LABNUMMER')) #do we want to remove REJECTED samples from view?
+      duplo_samples <<- tibble()
+      duplo_results <<- tibble()
+      #fiatteer_samples(anti_join(fiatteer_samples(),selected_rows, by = 'LABNUMMER')) #do we want to remove REJECTED samples from view?
       showModal(modalDialog(title = "Duplo Opdracht Gelukt", "Afgewezen resultaten zijn geëxporteerd", easyClose = TRUE))
     }
     
