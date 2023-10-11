@@ -150,8 +150,8 @@ ui <- function(request) {
                          mainPanel())),
   
   footer = div(#bookmarkButton(label = "Sla fiatteer voortgang op"),
-                actionButton("button_duplo_aanvraag", label = "Duplo voor geselecteerde resultaten"),
-                actionButton("button_valideer", label = "Valideer geselecteerde samples"))
+                actionButton("button_duplo_aanvraag", label = "Geselecteerde resultaten duplo aanvragen"),
+                actionButton("button_valideer", label = "Geselecteerde samples valideren"))
 )
 )}
 server <- function(input, output, session) {
@@ -291,6 +291,7 @@ server <- function(input, output, session) {
     return (excel_data)
     }
   
+  # this commented out block was an attempt to generalize ratio calculation code, didn't work out.
   # ratios_list <- list(
   #   BZV_ONOPA = c("BZV5","onopa", "ELEMENTCODE", "TESTCODE"),
   #   CZV_BZV = c("CZV","BZV5", "ELEMENTCODE", "ELEMENTCODE"),
@@ -394,8 +395,8 @@ server <- function(input, output, session) {
       )
   })
   
-#' Filters out rows that are UITVALLEND (meaning they need validation right now) and returns their LABNUMMER and TESTCODE.
-#' @param results original (full) results dataframe.
+#' Simple function that gets rows that are UITVALLEND (meaning they need validation right now) and returns their LABNUMMER and TESTCODE.
+#' @param results Original (full) results dataframe.
 #'
 #' @return Same as results but with only LABNUMMER and TESTCODE columns.
   get_rejected_tests <- function(results){
@@ -422,7 +423,7 @@ server <- function(input, output, session) {
     
   })
   
-  #here we watch for user selecting one or more rows in the fiatteerlijst table and return the row data when needed.
+  #Here we watch for user selecting one or more rows in the fiatteerlijst table and return the row data when needed.
   #if this reactive gets called (for example by opening the results tab) while the user has not selected any rows it returns a popup.
   selected_sample_rows <- reactive({
     data <- fiatteer_samples() #redundant but needed because subsetting a reactiveVal is buggy
@@ -440,7 +441,7 @@ server <- function(input, output, session) {
     }
   })
   
-  #this retrieves the test results belonging to CURRENTLY SELECTED samples in the fiatteerlijst
+  #This retrieves the test results belonging to USER SELECTED samples in the fiatteerlijst
   selected_sample_current_results <- reactive({
     req(selected_sample_rows())
     selected_labnummer <- select(selected_sample_rows(), LABNUMMER)
@@ -450,14 +451,11 @@ server <- function(input, output, session) {
     return(matching_result)
   })
   
-  #this retrieves the test results belonging to CURRENTLY SELECTED samples in the fiatteerlijst 
-  #AND 
+  #This retrieves ALL test results belonging to the same MONSTERPUNTCODE as our selected samples in the fiatteerlijst 
+  #(note that this includes the current result)
   selected_sample_historical_results <- reactive({
-    #includes current result for now
     selected_meetpunt <- select(selected_sample_current_results(), MONSTERPUNTCODE)
-    matching_results <- semi_join(complete_results(),
-                                  selected_sample_current_results(),
-                                  by = c('MONSTERPUNTCODE')) %>%
+    matching_results <- semi_join(complete_results(),selected_sample_current_results(), by = c('MONSTERPUNTCODE')) %>%
                         arrange(desc(SAMPLINGDATE)) %>% #it SHOULD already put the most recent result first but this ensures it
                         top_n_results(n = input$instellingen_hoeveelheid_resultaten)
     
@@ -465,23 +463,27 @@ server <- function(input, output, session) {
     return(matching_results)
   })
   
-#' Title
-#' nightmare code because we have to deal with three group layers, we want all the results (layer 1) of the most recent labnummers (layer 2) for each monsterpuntcode (layer 3)
-#' @param n 
-#' @param full_results 
+#' Returns the results belonging to n most recent labnummers for each monsterpuntcode.
+#' Nightmare code because we have to deal with three group layers, we want all the results (layer 1) of the n most recent labnummers (layer 2) for each monsterpuntcode (layer 3).
+#' @param n Maximum number of labnummers to return results for. So n = 10 means this returns the results of the 10 most recent labnummers.
+#' @param full_results Dataframe containing the results we want the top n of
 #'
-#' @return
+#' @return Same as full_results.
 #'
-  top_n_results <- function(n, full_results) {
+  top_n_results <- function(n, full_results, group_one = MONSTERPUNTCODE, group_two = LABNUMMER) {
     top_results <-
       full_results %>% 
-      group_by(MONSTERPUNTCODE)  %>% 
-      group_modify(~ {.x %>% group_by(LABNUMMER) %>% 
+      group_by({{group_one}})  %>% 
+      group_modify(~ {.x %>% group_by({{group_two}}) %>% 
                       filter(cur_group_id() >= n_groups(.) - n)}) %>% 
       ungroup()
   }
   
 #############################results tab########################################
+  #Resultaten table. Table consists of results belonging to the samples that user selected in the fiatteerlijst table.
+  #There are 3 different possible layouts. "labnr" where each labnummer is its own column, "result_info" where the columns are left as is and "tests" where each kind of test is its own column
+  #
+  #Because formatStyle can only color table cells with values that are part of the same table we have to add columns to each table which indicate what background colors we want for our result cells. These columns are useless for the users so we hide them from view.
   output$tabel_sampleresults <- DT::renderDataTable({
     results <- historical_or_current_results()
     
@@ -495,6 +497,7 @@ server <- function(input, output, session) {
         names_sort = TRUE,
         unused_fn = list(RESULT_OPMERKING = list, MEASUREDATE = list, SAMPLINGDATE = list))
 
+        #we need this dataframe to color rejected test results red
         labnr_widened_uitvallend <- results %>% tidyr::pivot_wider(
           id_cols = c(TESTCODE,ELEMENTCODE),
           names_from = c(NAAM, LABNUMMER, HOEDNHD, RUNNR),
@@ -503,6 +506,7 @@ server <- function(input, output, session) {
           names_sep = "<br>") %>% mutate(TESTCODE = NULL,
                                          ELEMENTCODE = NULL)
         
+        #and we need this dataframe to color cancelled tests green
         labnr_widened_teststatus <- results %>% tidyr::pivot_wider(
           id_cols = c(TESTCODE,ELEMENTCODE),
           names_from = c(NAAM, LABNUMMER, HOEDNHD, RUNNR),
@@ -510,11 +514,10 @@ server <- function(input, output, session) {
           names_sort = TRUE,
           names_sep = "<br>") %>% mutate(TESTCODE = NULL,
                                          ELEMENTCODE = NULL)
-        
-        extra_column_amount <- seq.int(1,(ncol(labnr_widened_uitvallend) + ncol(labnr_widened_teststatus)), by = 1)
-
         labnr_widened_combined <- cbind(labnr_widened_results, labnr_widened_uitvallend, labnr_widened_teststatus)
-  
+        
+        #here we count columns in a bunch of different ways so that we know the positions of columns to hide in the table that the user sees.        
+        extra_column_amount <- seq.int(1,(ncol(labnr_widened_uitvallend) + ncol(labnr_widened_teststatus)), by = 1)
         what_sample_columns_are_there <- results %>% count(NAAM, LABNUMMER, RUNNR)
         number_of_sample_columns <- nrow(what_sample_columns_are_there)
         original_number_of_columns <- ncol(labnr_widened_results)
@@ -525,18 +528,16 @@ server <- function(input, output, session) {
                                      sort_by = 0,
                                      columnDefs = list(list(
                                        visible = FALSE,
-                                       targets = -extra_column_amount #hide columns on the right coming from UITVALLEND
-                                       )
-                                       )
+                                       targets = -extra_column_amount))#hide the columns we use for coloring
                                      ) %>%
           DT::formatStyle(
-           columns = 3:(2 + number_of_sample_columns), #starts at 3 to offset for the two code columns, why do we have to add 2 instead of 3 to offset at the end? NO IDEA
+           columns = 3:(2 + number_of_sample_columns), #starts at 3 to offset for the elementcode and testcode columns, why do we have to add 2 instead of 3 to offset at the end? NO IDEA
            valueColumns = (1 + original_number_of_columns):total_columns,
            target = 'cell',
            backgroundColor = DT::styleEqual(TRUE, 'salmon')
            ) %>%
           DT::formatStyle(
-            columns = 3:(2 + number_of_sample_columns), #starts at 3 to offset for the two code columns, why do we have to add 2 instead of 3 to offset at the end? NO IDEA
+            columns = 3:(2 + number_of_sample_columns), #starts at 3 to offset for the elementcode and testcode columns, why do we have to add 2 instead of 3 to offset at the end? NO IDEA
             valueColumns = (1 + original_and_uitvallend_columns):total_columns,
             target = 'cell',
             backgroundColor = DT::styleEqual(c(1000,300), c('lightgreen','gray'))
@@ -544,12 +545,15 @@ server <- function(input, output, session) {
        return(table_labnr)
       
     } else if (input$instellingen_roteer_tabel == "result_info") {
+      
+      #we need to get these indices because DT accepts only indexes (and not names) for grouping columns
       labnr_column_index <- which(colnames(results) == "LABNUMMER")
-      labnr_column_index <- (labnr_column_index[1] - 1) #which() returns vector,first element contains the actual index. subtract 1 from index because R counts indexes from 1, DT counts from 0
+      labnr_column_index <- (labnr_column_index[1] - 1) #which() returns vector,first element contains the index we need. We subtract 1 from index because R counts indexes from 1, DT counts from 0
       
       description_column_index <- which(colnames(results) == "NAAM")
       description_column_index <- (description_column_index[1] - 1)
       
+      #notice that we don't need to create the extra dataframes for coloring columns here because these columns are already present.
       table_sample <- table_builder(
         results,
         sort_by = labnr_column_index,
@@ -575,30 +579,24 @@ server <- function(input, output, session) {
             "SAMPLE_OPMERKING",
             #"RESULTAAT_AFGEROND",
             "REFVALUE",
-            "SOORTWATER"
-          )
-          )
+            "SOORTWATER")))
+        )  %>% DT::formatStyle(
+          columns = 'LABNUMMER',
+          valueColumns = 'LABNUMMER',
+          backgroundColor = DT::styleEqual(selected_sample_current_results()$LABNUMMER, 'yellow', 
+                                           default = 'gray')
+        ) %>% DT::formatStyle(
+          columns = 'RESULTAAT',
+          valueColumns = 'UITVALLEND',
+          target = 'cell',
+          backgroundColor = DT::styleEqual(TRUE, 'salmon')
+        ) %>% DT::formatStyle(
+          columns = 'RESULTAAT',
+          valueColumns = 'TESTSTATUS',
+          target = 'cell',
+          backgroundColor = DT::styleEqual(c(1000,300), c('lightgreen','gray'))
         )
-      )  %>% DT::formatStyle(
-        columns = 'LABNUMMER',
-        valueColumns = 'LABNUMMER',
-        backgroundColor = DT::styleEqual(selected_sample_current_results()$LABNUMMER, 'yellow', 
-                                         default = 'gray'
-        )
-      ) %>% DT::formatStyle(
-        columns = 'RESULTAAT',
-        valueColumns = 'UITVALLEND',
-        target = 'cell',
-        backgroundColor = DT::styleEqual(TRUE, 'salmon')
-      ) %>% DT::formatStyle(
-        columns = 'RESULTAAT',
-        valueColumns = 'TESTSTATUS',
-        target = 'cell',
-        backgroundColor = DT::styleEqual(c(1000,300), c('lightgreen','gray'))
-      )
       return(table_sample)
-      
-      #%>% formatSignif(columns = c(-2,-3), digits = 3) #nog kijken hoe we datums uitzonderen
       
     } else if (input$instellingen_roteer_tabel == "test") {
         test_widened_results <- results %>% 
@@ -611,6 +609,7 @@ server <- function(input, output, session) {
             unused_fn = list(MEASUREDATE = list, 
                              SAMPLINGDATE = list))
         
+        #we need this dataframe to color rejected test results red
         test_widened_uitvallend <- results %>% 
           tidyr::pivot_wider(
             id_cols = c(NAAM,LABNUMMER, RUNNR, HOEDNHD),
@@ -622,6 +621,7 @@ server <- function(input, output, session) {
                                           HOEDNHD = NULL,
                                           RUNNR = NULL)
         
+        #and we need this dataframe to color cancelled tests green
         test_widened_teststatus <- results %>% tidyr::pivot_wider(
           id_cols = c(NAAM,LABNUMMER, RUNNR, HOEDNHD),
           names_from = c(TESTCODE, ELEMENTCODE),
@@ -632,10 +632,10 @@ server <- function(input, output, session) {
                                         HOEDNHD = NULL,
                                         RUNNR = NULL)
         
-        extra_column_amount <- seq.int(0,(ncol(test_widened_uitvallend) + ncol(test_widened_teststatus)), by = 1)
-        
         test_widened_combined <- cbind(test_widened_results, test_widened_uitvallend, test_widened_teststatus)
         
+        #here we count columns in a bunch of different ways so that we know the positions of columns to hide in the table that the user sees.
+        extra_column_amount <- seq.int(0,(ncol(test_widened_uitvallend) + ncol(test_widened_teststatus)), by = 1)
         what_test_columns_are_there <- results %>% count(TESTCODE, ELEMENTCODE)
         number_of_test_columns <- nrow(what_test_columns_are_there)
         original_number_of_columns <- ncol(test_widened_results)
@@ -648,14 +648,12 @@ server <- function(input, output, session) {
         description_column_index <- which(colnames(test_widened_results) == "NAAM")
         description_column_index <- (description_column_index[1] - 1)
 
-        table_test <- table_builder(
-                                test_widened_combined,
-                                sort_by = labnr_column_index,
-                                group = TRUE,
-                                group_cols = c(description_column_index, labnr_column_index),
-                                columnDefs = list(list(
-                                  visible = FALSE, targets = c(description_column_index, -extra_column_amount) #hide columns on the right coming from UITVALLEND
-                                ))
+        table_test <- table_builder(test_widened_combined,
+                                    sort_by = labnr_column_index,
+                                    group = TRUE,
+                                    group_cols = c(description_column_index, labnr_column_index),
+                                    columnDefs = list(list(
+                                      visible = FALSE, targets = c(description_column_index, -extra_column_amount))) #hide the columns we use for coloring
                                 ) %>% DT::formatStyle(
                                   columns = 'LABNUMMER',
                                   valueColumns = 'LABNUMMER',
@@ -674,11 +672,12 @@ server <- function(input, output, session) {
                                   valueColumns = (1 + original_and_uitvallend_columns):total_columns,
                                   target = 'cell',
                                   backgroundColor = DT::styleEqual(c(1000,300), c('lightgreen','gray'))
-                                  )
+                                )
         return(table_test)
     }
   })
   
+  #This reactive switches the table view between only current results or to include historical results.
   historical_or_current_results <- reactive({
     if(input$instellingen_toon_historie_tabel  == FALSE){
       return(selected_sample_current_results())
@@ -687,20 +686,21 @@ server <- function(input, output, session) {
     }
   })
   
+  #Observer that triggers when user clicks the "wis selectie" button in the top left to clear the selected rows.
   observeEvent(input$tabel_testresultaten_wis_selectie,{
     DT::selectRows(sampleresults_proxy, selected = NULL)
   })
   
+  
   observeEvent(input$tabel_sampleresults_cell_edit,{
     isolate({
-      #doesn't work with results because that is not actually the dataframe used in sampleresults!
-      #doesn't work with historical_or_current_results because that is a function (technically) so editData tries to edit a FUNCTION
       #complete_results(DT::editData(complete_results(),
       #                     input$tabel_sampleresults_cell_edit,
       #                     rownames = FALSE))
     })
   })
   
+  #like selected_sample_rows
   selected_result_rows <- reactive({
     data <- historical_or_current_results() #redundant but needed because subsetting a reactiveval is buggy
     if (isTruthy(input$tabel_sampleresults_rows_selected)) {
@@ -717,19 +717,20 @@ server <- function(input, output, session) {
   })
   
 ####################################fiatteer plot###############################
+  #This generates the plot(s) showing test results. 
   output$fiatteer_grafiek <- renderPlot({
     req(selected_sample_historical_results())
+    
     hide_ratio_graph_without_ratios()
     
+    #Retrieve both current and historical results (despite historical_results already including current_results) because we want current results as its own variable so we can highlight them in the plot.
     historical_results <- selected_sample_historical_results() 
     current_results <- selected_sample_current_results()
+    plottable_results <- historical_results %>% filter(!is.na(RESULTAAT_ASNUMERIC)) #remove NA results because geom_line creates breaks when encountering NA values.
+    
     selected_samples <- plot_highlighted_samples()
-    #plot_user_choices <- fiatteer_plot_user_settings()
     
-    plottable_results <- historical_results %>% filter(!is.na(RESULTAAT_ASNUMERIC))
-    
-    results_plot <- plottable_results %>% plot_builder(
-                                                       SAMPLINGDATE,
+    results_plot <- plottable_results %>% plot_builder(SAMPLINGDATE,
                                                        RESULTAAT_ASNUMERIC,
                                                        current_results, 
                                                        selected_samples, 
@@ -739,30 +740,25 @@ server <- function(input, output, session) {
     #move hover_data to something that doesn't call the WHOLE PLOT AGAIN
     #plot <- plot + geom_text(data = hover_data(), aes(label=LABNUMMER))
     
-    # if (plot_user_choices$fiatteer_wrap_choice == TRUE)
-    # {
-    #   plot <-
-    #     plot + facet_wrap(plot_user_choices$wrap_category, scales = 'free_y')
-    # }
-    #
     return(results_plot)
   })
 
-  fiatteer_plot_user_settings <-
-    reactive({
-      user_selection <- list(
-        colour = input$grafiek_kleur_selectie,
-        plot_choice = input$grafiek_keuze,
-        wrap_choice = input$grafiek_wrap_keuze,
-        wrap_category = input$grafiek_wrap_categorie_selectie
-      )
-      # toon alle factor levels bij de wrap categorie (nog niet werkzaam)
-      #freezeReactiveValue(input, "grafiek_wrap_selectie")
-      #updateCheckboxGroupInput(inputId = "grafiek_wrap_selectie",inline = TRUE,choices = input$grafiek_wrap_categorie_selectie,selected = input$grafiek_wrap_categorie_selectie)
-      
-      return(user_selection)
-    })
+  # fiatteer_plot_user_settings <-
+  #   reactive({
+  #     user_selection <- list(
+  #       colour = input$grafiek_kleur_selectie,
+  #       plot_choice = input$grafiek_keuze,
+  #       wrap_choice = input$grafiek_wrap_keuze,
+  #       wrap_category = input$grafiek_wrap_categorie_selectie
+  #     )
+  #     # toon alle factor levels bij de wrap categorie (nog niet werkzaam)
+  #     #freezeReactiveValue(input, "grafiek_wrap_selectie")
+  #     #updateCheckboxGroupInput(inputId = "grafiek_wrap_selectie",inline = TRUE,choices = input$grafiek_wrap_categorie_selectie,selected = input$grafiek_wrap_categorie_selectie)
+  #     
+  #     return(user_selection)
+  #   })
   
+  #Triggers when user hovers over a datapoint in a results plot.
   observeEvent(input$fiatteer_grafiek_zweef,{
     plot_hovered_samples(nearPoints(selected_sample_historical_results(),input$fiatteer_grafiek_zweef))
   })
@@ -771,6 +767,7 @@ server <- function(input, output, session) {
     #moved to double click because of a shiny issue with firing click events while making a brush selection
   })
   
+  #This handles "box" selections where users hold and drag a selection across datapoints in a results plot.
   observeEvent(input$fiatteer_grafiek_gebied, {
     isolate({
       
@@ -785,12 +782,13 @@ server <- function(input, output, session) {
       associated_ratios <- semi_join(selected_sample_historical_ratios(),
                                      selected_test_results, 
                                      by = 'LABNUMMER')
-      plot_highlighted_ratios(associated_ratios)
+      plot_highlighted_ratios(associated_ratios) #ensures that ratios belonging to the same samples get highlighted too
       
     })
 
   })
   
+  #Triggers when user double clicks in a results plot.
   observeEvent(input$fiatteer_grafiek_dblklik, {
     isolate({
       
@@ -805,46 +803,53 @@ server <- function(input, output, session) {
       associated_ratios <- semi_join(selected_sample_historical_ratios(),
                                      selected_test_result, 
                                      by = 'LABNUMMER')
-      plot_highlighted_ratios(associated_ratios)
-      #showModal(modalDialog(DT::dataTableOutput("fiatteer_grafiek_tabel")))
+      plot_highlighted_ratios(associated_ratios) #ensures that ratios belonging to the same samples get highlighted too
 
     })
   })
 
 ################################ratios plot#####################################
+  
+#' Just checks if currently selected samples have any ratios associated with them. After all, it's entirely possible to have a combination of test results that we don't calculate ratios for.
+#' @return Boolean that's TRUE if currently selected samples have valid ratios, FALSE if not. 
   has_ratios <- function() {
       nrow(selected_sample_historical_ratios()) != 0
     }
   
+#' Hides the ratios plot object if there are no ratios to show.
+#' This is needed because Shiny "reserves" space for each plot object even if that object is empty. Hiding the plot object this way clears up this space.
+#' @return Nothing.
   hide_ratio_graph_without_ratios <- function(){
     shinyjs::toggle(id = "ratios_grafiek", condition = has_ratios())
   }
   
+  #Gets the ratios belonging to the currently selected sample(s)
   selected_sample_current_ratios <-  reactive({
     selected_monsterpuntcode <- select(selected_sample_current_results(), LABNUMMER)
     selected_sample_current_ratios <- complete_ratios %>% filter(LABNUMMER %in% selected_monsterpuntcode$LABNUMMER)
     return(selected_sample_current_ratios)
   })
   
+  #Gets the ratios belonging to all the historical results of the currently selected sample(s)
   selected_sample_historical_ratios <- reactive({
     selected_monsterpuntcode <- select(selected_sample_historical_results(), LABNUMMER)
     current_ratios <- complete_ratios %>% filter(LABNUMMER %in% selected_monsterpuntcode$LABNUMMER)
     return(current_ratios)
   })
   
+  #Here we render the ratio plots. Note that the rendering only happens if there actually are ratios to show.
   output$ratios_grafiek <- renderPlot({
     historical_ratios <- selected_sample_historical_ratios()
     current_ratios <- selected_sample_current_ratios()
-    clicked_ratios <- plot_highlighted_ratios()
+    selected_ratios <- plot_highlighted_ratios()
     req(has_ratios())
 
-    ratios_plot <-
-      historical_ratios %>% plot_builder(SAMPLINGDATE,
-                                         WAARDE,
-                                         current_ratios,
-                                         clicked_ratios,
-                                         shape = NULL,
-                                         RATIO)
+    ratios_plot <- historical_ratios %>% plot_builder(SAMPLINGDATE,
+                                                       WAARDE,
+                                                       current_ratios,
+                                                       selected_ratios,
+                                                       shape = NULL,
+                                                       RATIO)
     return(ratios_plot)
     
   })
@@ -853,6 +858,7 @@ server <- function(input, output, session) {
     #moved to double click because of a shiny issue with firing click events while making a brush selection
   })
   
+  #Triggers when user drags a "box" selection across datapoints in a ratios plot.
   observeEvent(input$ratios_grafiek_gebied, {
     isolate({
       
@@ -867,11 +873,11 @@ server <- function(input, output, session) {
       associated_samples <- semi_join(selected_sample_historical_results(),
                                       selected_ratios,
                                       by = 'LABNUMMER')
-      plot_highlighted_samples(associated_samples)
-      #showModal(modalDialog(DT::dataTableOutput("fiatteer_grafiek_tabel")))
+      plot_highlighted_samples(associated_samples) #make sure to also highlight test results belonging to the same sample
     })
   })
   
+  #Triggers when user makes a double click in a ratios plot.
   observeEvent(input$ratios_grafiek_dblklik, {
     isolate({
       
@@ -886,16 +892,17 @@ server <- function(input, output, session) {
       associated_sample <- semi_join(selected_sample_historical_results(),
                                      selected_ratios,
                                      by = 'LABNUMMER')
-      plot_highlighted_samples(associated_sample)
+      plot_highlighted_samples(associated_sample) #make sure to also highlight test results belonging to the same sample
       
     })
   })
   
 #############################plot table#########################################
+  #This renders the datatable below the plots where we show details about the highlighted samples.
   output$fiatteer_grafiek_tabel <- DT::renderDataTable({
     req(plot_highlighted_samples())
     
-    highlighted_samples <- plot_highlighted_samples() %>% 
+    highlighted_samples <- plot_highlighted_samples() %>%
       select(
         NAAM,
         LABNUMMER,
@@ -907,7 +914,8 @@ server <- function(input, output, session) {
         RESULT_OPMERKING,
         SAMPLINGDATE,
         MEASUREDATE,
-        UITVALLEND
+        UITVALLEND,
+        TESTSTATUS
       )
     table_builder(
       highlighted_samples,
@@ -915,36 +923,38 @@ server <- function(input, output, session) {
       group_cols = c(0,1), #change to 1,2 if comment column is back
       sort_by = 1,
       columnDefs = list(list(
-        visible = FALSE , targets = c('NAAM','UITVALLEND')
+        visible = FALSE , targets = c('NAAM','UITVALLEND','TESTSTATUS')
       ))
-    ) %>% DT::formatStyle(columns = 'RESULTAAT',
-                          valueColumns = 'UITVALLEND',
-                          target = 'cell',
-                          backgroundColor = DT::styleEqual(TRUE,'salmon'))
+        ) %>% DT::formatStyle(columns = 'RESULTAAT',
+                              valueColumns = 'UITVALLEND',
+                              target = 'cell',
+                              backgroundColor = DT::styleEqual(TRUE,'salmon')
+        ) %>% DT::formatStyle(columns = 'RESULTAAT',
+                              valueColumns = 'TESTSTATUS',
+                              target = 'cell',
+                              backgroundColor = DT::styleEqual(1000, 'lightgreen')
+                              )
   })
   
 ###############################validation#######################################
-#' Title
+#' Writes the identifiers (like SAMPLE_ID) of given samples and results to a .csv file. 
+#' This is intended to be used to export validated or rejected sample data.
 #'
-#' @param selected_samples 
-#' @param selected_result_rows 
-#' @param export_path 
-#'
-#' @return
-#'
-#' @examples
-  validation_exporter <- function(selected_samples, selected_result_rows, export_path){
-    selected_samples_export_columns <- selected_samples %>% select(SAMPLE_OPMERKING,
+#' @return Boolean. TRUE if export succeeded, FALSE if not.
+  validation_exporter <- function(samples_to_export, results_to_export, export_path){
+    samples_to_export_columns <- samples_to_export %>% select(SAMPLE_OPMERKING,
                                                                    SAMPLE_ID)
-    selected_results_export_columns <- selected_result_rows %>% select(SAMPLE_ID,
-                                                                   #RESULT_OPMERKING,
+    selected_results_export_columns <- results_to_export %>% select(SAMPLE_ID,
+                                                                   RESULT_OPMERKING,
                                                                    MEETPUNT_ID,
                                                                    SAMPLE_TEST_ID,
                                                                    SAMPLE_RESULT_ID)
     
-    export_data <- full_join(selected_samples_export_columns,
+
+    #is full_join excessive? seems to lead to duplicates? is left_join sufficient?
+    export_data <- full_join(samples_to_export_columns,
                              selected_results_export_columns,
-                             by = 'SAMPLE_ID') #is full_join excessive? seems to lead to duplicates?
+                             by = 'SAMPLE_ID') %>% distinct()
     tryCatch({
       readr::write_csv2(export_data, export_path, append = TRUE)
       return(TRUE)
@@ -955,41 +965,45 @@ server <- function(input, output, session) {
       })
   }
   
+  #Triggers when user clicks the "valideer" button on the bottom. Retrieves the currently selected samples and their associated results, it then adds these to a global(!) dataframe variable and tries to export this dataframe as a .csv file.
+  #We transfer the validated samples to a globally available dataframe so that if the export fails for whatever reason the validated samples don't get lost.
+  #Also, if the next export attempt succeeds it will also write the samples that were present in the previously failed attempt.
   observeEvent(input$button_valideer, {
     selected_rows <- selected_sample_rows()
     selected_rows_results <-selected_sample_current_results()
     req(selected_sample_rows())
     
-    validated_samples <<- validated_samples %>% rbind(selected_rows)
-    validated_results <<- validated_results %>% rbind(selected_rows_results)
+    validated_samples <<- validated_samples %>% rbind(selected_rows) %>% distinct()  #possibility for duplicates when export fails and then succeeds the next time so we filter those
+    validated_results <<- validated_results %>% rbind(selected_rows_results) %>% distinct()
     
     export_succeeded <- validation_exporter(validated_samples,
                                             validated_results,
-                                            "F:/2-Ano/Alg/13_Fiatteren/Validator/gevalideerde_samples.csv")
+                                            "F:/2-Ano/Alg/13_Fiatteren/Validator/samples_goedgekeurd.csv")
     
-    if(isTRUE(export_succeeded)){ #only do this if exporting was successful 
+    if(isTRUE(export_succeeded)){ #only do this if exporting was successful
+      fiatteer_samples(anti_join(fiatteer_samples(),validated_samples, by = 'LABNUMMER')) #remove finished samples from view
       validated_samples <<- tibble()
       validated_results <<- tibble()
-      fiatteer_samples(anti_join(fiatteer_samples(),selected_rows, by = 'LABNUMMER')) #remove finished samples from view
-      showNotification("Gevalideerde samples zijn geëxporteerd" )
+      showNotification("Gevalideerde samples zijn geëxporteerd")
     }
   })
   
+  #Identical to the button_valideer observer except this writes the rejected results.
   observeEvent(input$button_duplo_aanvraag, {
     selected_rows <- selected_sample_rows()
     selected_result_rows <- selected_result_rows()
     req(selected_result_rows())
     
-    duplo_samples <<- duplo_samples %>% rbind(selected_rows)
-    duplo_results <<- duplo_results %>% rbind(selected_result_rows)
+    duplo_samples <<- duplo_samples %>% rbind(selected_rows) %>% distinct()
+    duplo_results <<- duplo_results %>% rbind(selected_result_rows) %>% distinct()
     
     export_succeeded <- validation_exporter(duplo_samples,
                                             duplo_results,
-                                            "F:/2-Ano/Alg/13_Fiatteren/Validator/afgewezen_resultaten.csv")
+                                            "F:/2-Ano/Alg/13_Fiatteren/Validator/resultaten_duplo_aangevraagd.csv")
     if(isTRUE(export_succeeded)){ 
+      fiatteer_samples(anti_join(fiatteer_samples(),duplo_samples, by = 'LABNUMMER')) #do we want to remove REJECTED samples from view too?
       duplo_samples <<- tibble()
       duplo_results <<- tibble()
-      #fiatteer_samples(anti_join(fiatteer_samples(),selected_rows, by = 'LABNUMMER')) #do we want to remove REJECTED samples from view?
       showNotification("Afgewezen resultaten zijn geëxporteerd")
     }
     
@@ -997,7 +1011,6 @@ server <- function(input, output, session) {
   
 ############################common functions####################################  
   
-#' Title
 #'
 #' @param uiComponent 
 #' @param inputId 
@@ -1009,8 +1022,6 @@ server <- function(input, output, session) {
 #' @param choiceValues 
 #'
 #' @return
-#'
-#' @examples
   uiUpdater <-
     function(uiComponent,
              inputId,
@@ -1044,7 +1055,6 @@ server <- function(input, output, session) {
       
     }
   
-#' Title
 #'
 #' @param table_data 
 #' @param rownames 
@@ -1057,13 +1067,12 @@ server <- function(input, output, session) {
 #' @param columnDefs 
 #'
 #' @return
-#'
-#' @examples
   table_builder <- function(table_data,
                             rownames = FALSE,
                             dom = 'Bltipr',
                             sort_by = NA,
                             sort_direction = 'desc',
+                            selection = c("multiple", "single", "none"),
                             comment_col = FALSE,
                             group = FALSE,
                             group_cols = 0,
@@ -1107,7 +1116,8 @@ server <- function(input, output, session) {
     )
   }
   
-#' Title
+  
+  
 #'
 #' @param data 
 #' @param x 
@@ -1118,8 +1128,6 @@ server <- function(input, output, session) {
 #' @param shape 
 #'
 #' @return
-#'
-#' @examples
   plot_builder <- function(data, x, y, current_data, clicked_data, facets, shape){
 
       plot <- ggplot(data = data,
