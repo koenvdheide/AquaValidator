@@ -244,9 +244,9 @@ server <- function(input, output, session) {
     })
     
     on.exit(removeNotification(loadingtip), add = TRUE)
-    on.exit(uiUpdater(uiComponent = "TabsetPanel", #move user's view to fiatteerlijst tab when loading is complete
-                      inputId = "fiatteer_beeld",
-                      selected = "tab_fiatteerlijst"),add = TRUE) 
+    on.exit(freezeReactiveValue(input,"fiatteer_beeld" ), add = TRUE)
+    on.exit(updateTabsetPanel(inputId = "fiatteer_beeld", selected = "tab_fiatteerlijst")) #move user's view to fiatteerlijst tab when loading completes
+
   })
   
 #' Just a wrapper for readxl's read_excel that includes some datatype casting for columns we already know will be in the file.
@@ -1001,78 +1001,52 @@ server <- function(input, output, session) {
                                             duplo_results,
                                             "F:/2-Ano/Alg/13_Fiatteren/Validator/resultaten_duplo_aangevraagd.csv")
     if(isTRUE(export_succeeded)){ 
-      fiatteer_samples(anti_join(fiatteer_samples(),duplo_samples, by = 'LABNUMMER')) #do we want to remove REJECTED samples from view too?
+      fiatteer_samples(anti_join(fiatteer_samples(),duplo_samples, by = 'LABNUMMER')) 
       duplo_samples <<- tibble()
       duplo_results <<- tibble()
-      showNotification("Afgewezen resultaten zijn geëxporteerd")
+      showNotification("Duplo resultaten zijn geëxporteerd")
     }
     
   })
   
-############################common functions####################################  
-  
-#'
-#' @param uiComponent 
-#' @param inputId 
-#' @param label 
-#' @param choices 
-#' @param data 
-#' @param selected 
-#' @param choiceNames 
-#' @param choiceValues 
-#'
-#' @return
-  uiUpdater <-
-    function(uiComponent,
-             inputId,
-             label = NULL,
-             choices = NULL,
-             data = NULL,
-             selected = NULL,
-             choiceNames = NULL,
-             choiceValues = NULL) {
-      freezeReactiveValue(input, inputId)
-      
-      switch(
-        uiComponent,
-        #add dumb trick to add "none"/"geen" as first choice for optional inputs?
-        CheckboxGroup = updateCheckboxGroupInput(
-          inputId = inputId,
-          choices = choices,
-          selected = selected
-        ),
-        
-        VarSelect = updateVarSelectInput(
-          inputId = inputId,
-          data = data,
-          selected = selected
-        ),
-        
-        TabsetPanel = updateTabsetPanel(inputId = inputId, selected = selected),
-        
-        NavbarPage = updateNavbarPage(inputId = inputId, selected = selected)
-      )
-      
+  #Identical to the button_valideer observer except this writes the cancelled results.
+  observeEvent(input$button_cancel, {
+    selected_rows <- selected_sample_rows()
+    selected_result_rows <- selected_result_rows()
+    req(selected_result_rows())
+    
+    cancelled_samples <<- cancelled_samples %>% rbind(selected_rows) %>% distinct()
+    cancelled_results <<- cancelled_results %>% rbind(selected_result_rows) %>% distinct()
+    
+    export_succeeded <- validation_exporter(cancelled_samples,
+                                            cancelled_results,
+                                            "F:/2-Ano/Alg/13_Fiatteren/Validator/resultaten_cancelled.csv")
+    if(isTRUE(export_succeeded)){ 
+      fiatteer_samples(anti_join(fiatteer_samples(),cancelled_samples, by = 'LABNUMMER')) 
+      cancelled_samples <<- tibble()
+      cancelled_results <<- tibble()
+      showNotification("Cancelled resultaten zijn geëxporteerd")
     }
+  })
   
+############################common functions####################################  
+
+#' A wrapper for DT::datatable() that has sensible defaults for creating datatables and hides the convoluted syntax of some arguments.
+#' @param table_data Dataframe that we want to present as a datatable.
+#' @param dom Activates and sets the position of various datatable elements like the export buttons.
+#' @param sort_by Datatables can start out already sorted by a given column. Which (if any) column should this be?
+#' @param sort_direction Sort descending (default) with 'desc' or ascending with 'asc'.
+#' @param comment_col Indicates whether there is a comment column. If TRUE it assumes the first column is for comments and makes it editable.
+#' @param group FALSE means the datatable has no grouped rows, TRUE enables row grouping.
+#' @param group_cols If grouping is enabled, which columns should we group rows by?
+#' @param columnDefs A versatile option for setting a broad range of different attributes for columns. We generally use it to hide specific columns from view.
 #'
-#' @param table_data 
-#' @param rownames 
-#' @param dom 
-#' @param sort_by 
-#' @param sort_direction 
-#' @param comment_col 
-#' @param group 
-#' @param group_cols 
-#' @param columnDefs 
-#'
-#' @return
+#' @return DataTable as returned by DT::datatable()
   table_builder <- function(table_data,
-                            rownames = FALSE,
                             dom = 'Bltipr',
                             sort_by = NA,
                             sort_direction = 'desc',
-                            selection = c("multiple", "single", "none"),
+                            selection = "multiple",
                             comment_col = FALSE,
                             group = FALSE,
                             group_cols = 0,
@@ -1117,39 +1091,39 @@ server <- function(input, output, session) {
   }
   
   
-  
+#' Wrapper for ggplot() that creates plots with consistent settings such as theme, labels, font size etc.
+#' @param data dataframe to use for creating the plots.
+#' @param x name of column (passed as string) to be used as x-axis.
+#' @param y name of column (passed as string) to be used as y-axis.
+#' @param current_data dataframe with results belonging to current samples, these results will be highlighted in the plots.
+#' @param clicked_data dataframe with results belonging to points selected by the user, these results will also be highlighted.
+#' @param facets name of column (passed as string) to split up the data by
+#' @param shape name of column (passed as string) to be used as shape categories.
 #'
-#' @param data 
-#' @param x 
-#' @param y 
-#' @param current_data 
-#' @param clicked_data 
-#' @param facets 
-#' @param shape 
-#'
-#' @return
+#' @return ggplot object as created by ggplot().
   plot_builder <- function(data, x, y, current_data, clicked_data, facets, shape){
-
-      plot <- ggplot(data = data,
-                           mapping = aes(x = {{x}}, y = {{y}}, colour = NAAM, group = MONSTERPUNTCODE, shape = {{shape}})) +
+    suppressWarnings({
+  
+        plot <- ggplot(data = data,
+                             mapping = aes(x = {{x}}, y = {{y}}, colour = NAAM, group = MONSTERPUNTCODE, shape = {{shape}})) +
+          
+          geom_line(alpha = 0.7) +
+          geom_point(size = 2.5, alpha = 0.5) +
+          geom_point(data = current_data, size = 3.5) +
+          
+          scale_x_date(date_labels = "%d-%m-%y", breaks = scales::breaks_pretty(n=12)) +
+          guides(size = "none", x = guide_axis(angle = 45)) +
+          
+          facet_wrap(vars({{facets}}), scales = 'free_y') + 
+          theme(strip.text = element_text(size = 16)) 
         
-        geom_line(alpha = 0.7) +
-        geom_point(size = 2.5, alpha = 0.5) +
-        geom_point(data = current_data, size = 3.5) +
-        
-        scale_x_date(date_labels = "%d-%m-%y", breaks = scales::breaks_pretty(n=12)) +
-        guides(size = "none", x = guide_axis(angle = 45)) +
-        
-        facet_wrap(vars({{facets}}), scales = 'free_y') + #still need to check first that ratio's really exist
-        theme(strip.text = element_text(size = 16)) 
-        #theme_light(base_size = 16)
-      if (isTruthy(clicked_data)) #clicked data has to exist first
-      {
-        isolate({
-          plot <- plot + geom_point(data = clicked_data, size = 2.7, alpha = 1)
-        })
-      }
-      
+        if (isTruthy(clicked_data)) #clicked data has to exist first
+        {
+          isolate({
+            plot <- plot + geom_point(data = clicked_data, size = 2.7, alpha = 1)
+          })
+        }
+      })
       return(plot)
   }
 }
@@ -1159,5 +1133,4 @@ shinyApp(ui = ui,
          enableBookmarking = "server",
          options = list())
 }
-#pkgload::load_all() #this makes loading the project as a package freak out for some reason, moved to startup.R
 aquaApp()
