@@ -937,18 +937,30 @@ server <- function(input, output, session) {
   })
   
 ###############################validation#######################################
-#' Writes the identifiers (like SAMPLE_ID) of given samples and results to a .csv file. 
-#' This is intended to be used to export validated or rejected sample data.
+#' Writes the identifiers (like SAMPLE_ID) and comments of given samples and results to a .csv file. 
+#' This is intended to be used to export validated or rejected samples.
 #'
 #' @return Boolean. TRUE if export succeeded, FALSE if not.
   validation_exporter <- function(samples_to_export, results_to_export, export_path){
-    samples_to_export_columns <- samples_to_export %>% select(SAMPLE_OPMERKING,
-                                                                   SAMPLE_ID)
-    selected_results_export_columns <- results_to_export %>% select(SAMPLE_ID,
-                                                                   RESULT_OPMERKING,
-                                                                   MEETPUNT_ID,
-                                                                   SAMPLE_TEST_ID,
-                                                                   SAMPLE_RESULT_ID)
+    
+    username <- input$instellingen_gebruiker
+    time <- as.character(Sys.time())
+    
+    samples_to_export_columns <-
+      samples_to_export %>% select(SAMPLE_OPMERKING,
+                                   LABNUMMER,
+                                   MONSTERPUNTCODE,
+                                   NAAM,
+                                   SAMPLE_ID)
+    
+    selected_results_export_columns <-
+      results_to_export %>% select(SAMPLE_ID,
+                                   TESTCODE,
+                                   ELEMENTCODE,
+                                   RESULT_OPMERKING,
+                                   MEETPUNT_ID,
+                                   SAMPLE_TEST_ID,
+                                   SAMPLE_RESULT_ID)
     
 
     #is full_join excessive? seems to lead to duplicates? is left_join sufficient?
@@ -956,7 +968,12 @@ server <- function(input, output, session) {
                              selected_results_export_columns,
                              by = 'SAMPLE_ID') %>% distinct()
     tryCatch({
-      readr::write_csv2(export_data, export_path, append = TRUE)
+      if (!file.exists(export_path)) { #first export that creates the file should also write the column names
+        readr::write_csv2(export_data, export_path, col_names = TRUE) 
+      }
+      else {
+        readr::write_csv2(export_data, export_path, append = TRUE)
+      }
       return(TRUE)
       
     }, error = function(e){
