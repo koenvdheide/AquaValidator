@@ -88,17 +88,21 @@ ui <- function(request) {
                
                tabPanel(
                  "Algemeen",
-                 textInput(
-                   "instellingen_gebruiker",
-                   label = "Gebruiker",
-                   value = "",
-                   placeholder = "Je naam (initialen)"
-                 ),
+                 # selectInput(
+                 #   "instellingen_gebruiker",
+                 #   label = "Gebruiker",
+                 #   choices = list( "Matthijs Dobbelaar", "Hans Kieftenbelt", "Angelique Vollenbroek"),
+                 #   
+                 # ),
                  numericInput(
                    "instellingen_hoeveelheid_resultaten",
                    "Hoeveel resultaten moeten er per monsterpunt worden getoond?",
                    value = 10,
                    min = 1
+                 ),
+                 bookmarkButton(
+                   label = "Sla instellingen op",
+                   title = "Sla huidige instellingen op, ze worden automatisch ingeladen als je de validator later weer opstart."
                  )
                ),
                tabPanel(
@@ -943,7 +947,7 @@ server <- function(input, output, session) {
 #' @return Boolean. TRUE if export succeeded, FALSE if not.
   validation_exporter <- function(samples_to_export, results_to_export, export_path){
     
-    username <- input$instellingen_gebruiker
+    username <- as.character(Sys.getenv("USERNAME"))
     time <- as.character(Sys.time())
     
     samples_to_export_columns <-
@@ -1143,6 +1147,18 @@ server <- function(input, output, session) {
       })
       return(plot)
   }
+  
+##############################bookmarking#######################################
+  
+  onBookmark(function(state){
+    #state$values$username <- input$instellingen_gebruiker
+  })
+  onBookmarked(updateQueryString)
+  
+  onRestore(function(state){
+    #updateSelectInput(inputId = "instellingen_gebruiker",selected = state$values$username)
+  })
+  
 }
 
 shinyApp(ui = ui,
