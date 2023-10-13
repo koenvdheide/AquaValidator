@@ -141,9 +141,7 @@ ui <- function(request) {
                ),
                tabPanel("Fiatteerlijst"), 
                
-               tabPanel(
-                 "Testresultaten"
-               )
+               tabPanel("Testresultaten")
                
              )
            ))),
@@ -153,17 +151,17 @@ ui <- function(request) {
            sidebarLayout(sidebarPanel(),
                          mainPanel())),
   
-  footer = div(#bookmarkButton(label = "Sla fiatteer voortgang op"),
-                actionButton("button_duplo_aanvraag", label = "Geselecteerde resultaten duplo aanvragen"),
-                actionButton("button_valideer", label = "Geselecteerde samples valideren"))
+  footer = div( actionButton("button_valideer", label = "Samples valideren"),
+                actionButton("button_duplo_aanvraag", label = "Tests duplo aanvragen"),
+                actionButton("button_cancel", label = "Tests cancellen"))
 )
 )}
 server <- function(input, output, session) {
 ##################### common server variables #######################  
   
-  settings <- reactiveValues(
-    username = NULL
-  )
+  #settings <- reactiveValues(
+  #  username = NULL
+  #)
   
   #database connection
   # sql_connection_string <-
@@ -190,7 +188,7 @@ server <- function(input, output, session) {
   sampleresults_proxy <- DT::dataTableProxy("tabel_sampleresults")
   
   #when user selects points in graphs that selection ends up in these variables
-  #renamed to "highlighted" samples to avoid  confusion with "selected"  rows in tables
+  #renamed to "highlighted" samples to avoid  confusion with "selected"  samples in tables
   plot_highlighted_samples <- reactiveVal() #filled when user does a double click or box drag selection for results plot 
   plot_hovered_samples <- reactiveVal() #filled when user hovers over points for results plot
   plot_highlighted_ratios <- reactiveVal() #filled when user does a double click or box drag selection for ratios plot
@@ -198,9 +196,17 @@ server <- function(input, output, session) {
   #output
   validated_samples <- tibble()
   validated_results <- tibble()
+  validated_path <- "F:/2-Ano/Alg/13_Fiatteren/Validator/samples_goedgekeurd.csv"
   
   duplo_samples <- tibble()
   duplo_results <- tibble()
+  duplo_path <- "F:/2-Ano/Alg/13_Fiatteren/Validator/resultaten_duplo_aangevraagd.csv"
+  
+  cancelled_samples <- tibble()
+  cancelled_results <- tibble()
+  cancelled_path <- "F:/2-Ano/Alg/13_Fiatteren/Validator/resultaten_cancelled.csv"
+  
+  
   
 #####################################loading file###############################
   #This observer triggers when the user has selected a (Excel) file. The observer first retrieves the filepath and expected Excel sheet names.
@@ -212,6 +218,7 @@ server <- function(input, output, session) {
       file_path <- input$input_file$datapath
       fiatteerblad <- input$input_file_fiatteer_blad
       resultatenblad <- input$input_file_resultaten_blad
+      
       # measurepointcolumn <- input$input_file_meetpunt_kolom
       # resultscolumn <- input$input_file_testresultaat_kolom
       # labnrcolumn <- input$input_file_labnummer_kolom
@@ -219,19 +226,22 @@ server <- function(input, output, session) {
       fiatteer_samples(excel_reader(
         file_path,
         sheet = fiatteerblad
+        
         #resultcolumn = resultscolumn,
         #labnummercolumn = labnrcolumn,
         #meetpuntcolumn = measurepointcolumn
-      ) %>% 
-        arrange(PRIOFINISHDATE))
+      ) %>% arrange(PRIOFINISHDATE))
+      
     }, error = function(e){
       showModal(modalDialog(title = "Probleem met inladen van fiatteerlijst:",e)) #geef de error als een popup scherm zodat de gebruiker het ziet
     })
+    
     tryCatch({
       complete_results(
         excel_reader(
           file_path,
           sheet = resultatenblad
+          
           #resultcolumn = resultscolumn,
           #labnummercolumn = labnrcolumn,
           #meetpuntcolumn = measurepointcolumn
@@ -249,11 +259,15 @@ server <- function(input, output, session) {
     
     on.exit(removeNotification(loadingtip), add = TRUE)
     on.exit(freezeReactiveValue(input,"fiatteer_beeld" ), add = TRUE)
-    on.exit(updateTabsetPanel(inputId = "fiatteer_beeld", selected = "tab_fiatteerlijst")) #move user's view to fiatteerlijst tab when loading completes
+    on.exit(updateTabsetPanel(inputId = "fiatteer_beeld", selected = "tab_fiatteerlijst"), add = TRUE) #move user's view to fiatteerlijst tab when loading is done.
 
   })
   
-#' Just a wrapper for readxl's read_excel that includes some datatype casting for columns we already know will be in the file.
+  load_two_sheet_excel_file <- function(filePath){
+    
+  }
+  
+#' Just a wrapper for readxl's read_excel that includes some datatype casting for columns we expect to be in the file.
 #' 
 #' @param filePath URL to the Excel file.
 #' @param sheet name or index of the Excel sheet to read in.
@@ -999,7 +1013,7 @@ server <- function(input, output, session) {
     
     export_succeeded <- validation_exporter(validated_samples,
                                             validated_results,
-                                            "F:/2-Ano/Alg/13_Fiatteren/Validator/samples_goedgekeurd.csv")
+                                            validated_path)
     
     if(isTRUE(export_succeeded)){ #only do this if exporting was successful
       fiatteer_samples(anti_join(fiatteer_samples(),validated_samples, by = 'LABNUMMER')) #remove finished samples from view
@@ -1020,7 +1034,7 @@ server <- function(input, output, session) {
     
     export_succeeded <- validation_exporter(duplo_samples,
                                             duplo_results,
-                                            "F:/2-Ano/Alg/13_Fiatteren/Validator/resultaten_duplo_aangevraagd.csv")
+                                            duplo_path)
     if(isTRUE(export_succeeded)){ 
       fiatteer_samples(anti_join(fiatteer_samples(),duplo_samples, by = 'LABNUMMER')) 
       duplo_samples <<- tibble()
@@ -1041,7 +1055,7 @@ server <- function(input, output, session) {
     
     export_succeeded <- validation_exporter(cancelled_samples,
                                             cancelled_results,
-                                            "F:/2-Ano/Alg/13_Fiatteren/Validator/resultaten_cancelled.csv")
+                                            cancelled_path)
     if(isTRUE(export_succeeded)){ 
       fiatteer_samples(anti_join(fiatteer_samples(),cancelled_samples, by = 'LABNUMMER')) 
       cancelled_samples <<- tibble()
@@ -1060,7 +1074,7 @@ server <- function(input, output, session) {
 #' @param comment_col Indicates whether there is a comment column. If TRUE it assumes the first column is for comments and makes it editable.
 #' @param group FALSE means the datatable has no grouped rows, TRUE enables row grouping.
 #' @param group_cols If grouping is enabled, which columns should we group rows by?
-#' @param columnDefs A versatile option for setting a broad range of different attributes for columns. We generally use it to hide specific columns from view.
+#' @param columnDefs A versatile option for setting a broad range of different attributes for columns. We generally use it to hide columns from view.
 #'
 #' @return DataTable as returned by DT::datatable()
   table_builder <- function(table_data,
