@@ -622,7 +622,8 @@ server <- function(input, output, session) {
           valueColumns = 'TESTSTATUS',
           target = 'cell',
           backgroundColor = DT::styleEqual(c(1000,300), c('lightgreen','gray'))
-        )
+        )#%>% DT::formatRound(columns = 'RESULTAAT', 
+         #                  digits = 3) #rounding removes n.b. results
       return(table_sample)
       
     } else if (input$instellingen_roteer_tabel == "test") {
