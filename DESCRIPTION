@@ -1,10 +1,9 @@
 Package: aquavalidator
-Title: What the Package Does (One Line, Title Case)
+Title: AquaValidator
 Version: 1.0
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
+    person("Koen", "van der Heide", , "kheide@aqualysis.nl", role = c("aut", "cre"))
+Description: A GUI to clearly present water analysis results and provide tools to help judge whether these results are accurate and realistic.
 License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
     license
 Encoding: UTF-8

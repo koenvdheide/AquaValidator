@@ -4,12 +4,12 @@
 \name{aquavalidator-package}
 \alias{aquavalidator}
 \alias{aquavalidator-package}
-\title{aquavalidator: What the Package Does (One Line, Title Case)}
+\title{aquavalidator: AquaValidator}
 \description{
-What the package does (one paragraph).
+A GUI to clearly present water analysis results and provide tools to help judge whether these results are accurate and realistic.
 }
 \author{
-\strong{Maintainer}: First Last \email{first.last@example.com} (\href{https://orcid.org/YOUR-ORCID-ID}{ORCID})
+\strong{Maintainer}: Koen van der Heide \email{kheide@aqualysis.nl}
 
 }
 \keyword{internal}
