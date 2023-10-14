@@ -22,8 +22,8 @@ ui <- function(request) {
                  br(),
                  fileInput(
                    "input_file",
-                   label = "Kies Excel samplelijst",
-                   accept = c(".xlsx", ".xls") #ook (bijvoorbeeld) csv en tsv?
+                   label = "Kies fiatteerlijst",
+                   accept = c(".csv, .xlsx", ".xls")
                  )
              ),
                
