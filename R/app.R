@@ -1004,7 +1004,9 @@ server <- function(input, output, session) {
     #is full_join excessive? seems to lead to duplicates? is left_join sufficient?
     export_data <- full_join(samples_to_export_columns,
                              selected_results_export_columns,
-                             by = 'SAMPLE_ID') %>% distinct()
+                             by = 'SAMPLE_ID') %>% 
+                    distinct() %>%
+                    tibble::add_column(ANALIST = username, TIJD = time)
     tryCatch({
       if (!file.exists(export_path)) { #first export that creates the file should also write the column names
         readr::write_csv2(export_data, export_path, col_names = TRUE) 
