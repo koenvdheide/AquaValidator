@@ -288,8 +288,8 @@ server <- function(input, output, session) {
     excel_data <- readxl::read_excel(filePath, progress = TRUE, sheet = sheet) %>%
         mutate(
           across(contains(c("datum", "date")),
-                 ~ format(as.Date(.x, tryFormats = c("%d-%m-%Y%t%t%T", "%Y-%m-%d%t%t%T", "%Y/%m/%d%t%t%T", 
-                                              "%d-%m-%Y", "%Y-%m-%d", "%Y/%m/%d")), '%d-%m-%Y')
+                 ~ as.Date(.x, tryFormats = c("%d-%m-%Y%t%t%T", "%Y-%m-%d%t%t%T", "%Y/%m/%d%t%t%T", 
+                                              "%d-%m-%Y", "%Y-%m-%d", "%Y/%m/%d"))
                  ),
           across(contains(
             c("hoednhd",
