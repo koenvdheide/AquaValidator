@@ -1045,11 +1045,11 @@ server <- function(input, output, session) {
   #Identical to the button_valideer observer except this writes the rejected results.
   observeEvent(input$button_duplo_aanvraag, {
     selected_rows <- selected_sample_rows()
-    selected_result_rows <- selected_result_rows()
-    req(selected_result_rows())
+    selected_results <- selected_results()
+    req(selected_results())
     
     duplo_samples <<- duplo_samples %>% rbind(selected_rows) %>% distinct()
-    duplo_results <<- duplo_results %>% rbind(selected_result_rows) %>% distinct()
+    duplo_results <<- duplo_results %>% rbind(selected_results) %>% distinct()
     
     export_succeeded <- validation_exporter(duplo_samples,
                                             duplo_results,
@@ -1066,11 +1066,11 @@ server <- function(input, output, session) {
   #Identical to the button_valideer observer except this writes the cancelled results.
   observeEvent(input$button_cancel, {
     selected_rows <- selected_sample_rows()
-    selected_result_rows <- selected_result_rows()
-    req(selected_result_rows())
+    selected_results <- selected_results()
+    req(selected_results())
     
     cancelled_samples <<- cancelled_samples %>% rbind(selected_rows) %>% distinct()
-    cancelled_results <<- cancelled_results %>% rbind(selected_result_rows) %>% distinct()
+    cancelled_results <<- cancelled_results %>% rbind(selected_results) %>% distinct()
     
     export_succeeded <- validation_exporter(cancelled_samples,
                                             cancelled_results,
