@@ -533,7 +533,7 @@ server <- function(input, output, session) {
           names_sep = "<br>") %>% mutate(TESTCODE = NULL,
                                          ELEMENTCODE = NULL)
         labnr_widened_combined <- cbind(labnr_widened_results, labnr_widened_uitvallend, labnr_widened_teststatus)
-        
+
         #here we count columns in a bunch of different ways so that we know the positions of columns to hide in the table that the user sees.        
         extra_column_amount <- seq.int(1,(ncol(labnr_widened_uitvallend) + ncol(labnr_widened_teststatus)), by = 1)
         what_sample_columns_are_there <- results %>% count(NAAM, LABNUMMER, RUNNR)
@@ -541,25 +541,30 @@ server <- function(input, output, session) {
         original_number_of_columns <- ncol(labnr_widened_results)
         original_and_uitvallend_columns <- ncol(labnr_widened_uitvallend) + original_number_of_columns
         total_columns <- ncol(labnr_widened_combined)
+        results_columns <- 3:(2 + number_of_sample_columns) #starts at 3 to offset for the elementcode and testcode columns, why do we have to add 2 instead of 3 to offset at the end? NO IDEA
         
+        results_table_dataframe <<- labnr_widened_combined
         table_labnr <- table_builder(labnr_widened_combined,
                                      sort_by = 0,
+                                     selection = list(mode = "multiple", target = 'cell'),
                                      columnDefs = list(list(
                                        visible = FALSE,
                                        targets = -extra_column_amount))#hide the columns we use for coloring
                                      ) %>%
           DT::formatStyle(
-           columns = 3:(2 + number_of_sample_columns), #starts at 3 to offset for the elementcode and testcode columns, why do we have to add 2 instead of 3 to offset at the end? NO IDEA
+           columns = results_columns, 
            valueColumns = (1 + original_number_of_columns):total_columns,
            target = 'cell',
            backgroundColor = DT::styleEqual(TRUE, 'salmon')
            ) %>%
           DT::formatStyle(
-            columns = 3:(2 + number_of_sample_columns), #starts at 3 to offset for the elementcode and testcode columns, why do we have to add 2 instead of 3 to offset at the end? NO IDEA
+            columns = results_columns, 
             valueColumns = (1 + original_and_uitvallend_columns):total_columns,
             target = 'cell',
             backgroundColor = DT::styleEqual(c(1000,300), c('lightgreen','gray'))
-          )
+          ) #%>% #rounding removes n.b. results
+            #DT::formatRound(columns = results_columns,
+            #digits = 3) 
        return(table_labnr)
       
     } else if (input$instellingen_roteer_tabel == "result_info") {
@@ -572,6 +577,7 @@ server <- function(input, output, session) {
       description_column_index <- (description_column_index[1] - 1)
       
       #notice that we don't need to create the extra dataframes for coloring columns here because these columns are already present.
+      results_table_dataframe <<- results
       table_sample <- table_builder(
         results,
         sort_by = labnr_column_index,
@@ -582,7 +588,6 @@ server <- function(input, output, session) {
           visible = FALSE ,
           targets = c(
             "MONSTERPUNTCODE",
-            "PROJECTCODE",
             "RESULTAAT_ASNUMERIC",
             "UITVALLEND",
             "NAAM",
@@ -666,8 +671,10 @@ server <- function(input, output, session) {
         description_column_index <- which(colnames(test_widened_results) == "NAAM")
         description_column_index <- (description_column_index[1] - 1)
 
+        results_table_dataframe <<- test_widened_combined
         table_test <- table_builder(test_widened_combined,
                                     sort_by = labnr_column_index,
+                                    selection = list(mode = "multiple", target = 'cell'),
                                     group = TRUE,
                                     group_cols = c(description_column_index, labnr_column_index),
                                     columnDefs = list(list(
@@ -695,6 +702,8 @@ server <- function(input, output, session) {
     }
   })
   
+  results_table_dataframe <<- tibble()
+  
   #This reactive switches the table view between only current results or to include historical results.
   historical_or_current_results <- reactive({
     if(input$instellingen_toon_historie_tabel  == FALSE){
@@ -718,11 +727,17 @@ server <- function(input, output, session) {
     })
   })
   
-  #like selected_sample_rows
-  selected_result_rows <- reactive({
-    data <- historical_or_current_results() #redundant but needed because subsetting a reactiveval is buggy
+  #like selected_sample_rows but with logic for handling individual cells being selected
+  selected_results <- reactive({
     if (isTruthy(input$tabel_sampleresults_rows_selected)) {
-      return(data[input$tabel_sampleresults_rows_selected,])
+      return(results_table_dataframe[input$tabel_sampleresults_rows_selected,])
+    }
+    if(isTruthy(input$tabel_sampleresults_cells_selected)){
+      row_id <- input$tabel_sampleresults_cells_selected[,1]
+      column_id <- input$tabel_sampleresults_cells_selected[,2] +1 #need +1 because DT counts columns from 1 while R counts from 0
+                     
+      selected_cell <- results_table_dataframe[row_id,column_id ]
+      return(selected_cell)
     }
     else{
       showModal(modalDialog(
@@ -1113,6 +1128,7 @@ server <- function(input, output, session) {
       extensions = extensions,
       filter = "top",
       editable = editable,
+      selection = selection,
       escape = FALSE,
       options = list(
         dom = dom, #dom needed to remove search bar (redundant with column search)
@@ -1122,7 +1138,7 @@ server <- function(input, output, session) {
         rowGroup = rowGroup,
         columnDefs = columnDefs
       ) 
-    )
+    ) 
   }
   
   
