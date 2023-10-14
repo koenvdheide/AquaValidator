@@ -183,9 +183,13 @@ server <- function(input, output, session) {
   complete_results <- reactiveVal(tibble()) #"resultaten" sheet
   complete_ratios <- tibble() #ratios calculated from the "resultaten" sheet
   
+
+
+  
   #proxies are needed to reflect user edits onto the underlying data (like when adding comments)
   fiatteerlijst_proxy <- DT::dataTableProxy("tabel_fiatteerlijst")
   sampleresults_proxy <- DT::dataTableProxy("tabel_sampleresults")
+  results_table_dataframe <- tibble() #The results tab has multiple possible layouts. To make sure edits and select commands work well we need a tibble to save the data in its current layout.
   
   #when user selects points in graphs that selection ends up in these variables
   #renamed to "highlighted" samples to avoid  confusion with "selected"  samples in tables
@@ -304,7 +308,7 @@ server <- function(input, output, session) {
               "element",
               "parameter",
               "soortwater")
-            ), as.factor)
+            ), as.factor),
         ) 
     return (excel_data)
     }
