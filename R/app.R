@@ -603,9 +603,8 @@ server <- function(input, output, session) {
             "SAMPLE_TEST_ID",
             "SAMPLE_RESULT_ID",
             "GEVALIDEERD",
-            "SAMPLE_OPMERKING",
+            #"SAMPLE_OPMERKING",
             #"RESULTAAT_AFGEROND",
-            "REFVALUE",
             "SOORTWATER")))
         )  %>% DT::formatStyle(
           columns = 'LABNUMMER',
