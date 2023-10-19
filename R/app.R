@@ -712,7 +712,7 @@ server <- function(input, output, session) {
                                   columns = 5:(4 + number_of_test_columns), 
                                   valueColumns = (1 + original_and_uitvallend_columns):total_columns,
                                   target = 'cell',
-                                  backgroundColor = DT::styleEqual(c(1000,300), c('lightgreen','gray'))
+                                  backgroundColor = DT::styleEqual(c(1000), c('lightgreen'))
                                 )
         return(table_test)
     }
