@@ -632,7 +632,7 @@ server <- function(input, output, session) {
           columns = 'RESULTAAT',
           valueColumns = 'TESTSTATUS',
           target = 'cell',
-          backgroundColor = DT::styleEqual(c(1000,300), c('lightgreen','gray'))
+          backgroundColor = DT::styleEqual(c(1000), c('lightgreen'))
         )#%>% DT::formatRound(columns = 'RESULTAAT', 
          #                  digits = 3) #rounding removes n.b. results
       return(table_sample)
