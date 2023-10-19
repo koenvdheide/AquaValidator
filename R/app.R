@@ -1180,8 +1180,8 @@ server <- function(input, output, session) {
                              mapping = aes(x = {{x}}, y = {{y}}, colour = NAAM, group = MONSTERPUNTCODE, shape = {{shape}})) +
           
           geom_line(alpha = 0.7) +
-          geom_point(size = 2.5, alpha = 0.5) +
-          geom_point(data = current_data, size = 3.5) +
+          geom_point(size = 2.5, alpha = 0.5, na.rm = TRUE) +
+          geom_point(data = current_data, size = 3.5, na.rm = TRUE) +
           
           scale_x_date(date_labels = "%d-%m-%y", breaks = scales::breaks_pretty(n=12)) +
           guides(size = "none", x = guide_axis(angle = 45)) +
@@ -1192,7 +1192,7 @@ server <- function(input, output, session) {
         if (isTruthy(clicked_data)) #clicked data has to exist first
         {
           isolate({
-            plot <- plot + geom_point(data = clicked_data, size = 2.7, alpha = 1)
+            plot <- plot + geom_point(data = clicked_data, size = 2.7, alpha = 1, na.rm = TRUE)
           })
         }
       })
