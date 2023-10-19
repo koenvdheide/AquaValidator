@@ -46,9 +46,9 @@ ui <- function(request) {
                                "Resultaat Info" = "result_info"),
                    inline = TRUE
                  ),
-                  checkboxInput("instellingen_toon_historie_tabel",
-                                "Toon meer monsters van geselecteerde meetpunt(en)",
-                                value = FALSE),
+                    checkboxInput("instellingen_toon_historie_tabel",
+                                      "Toon meer monsters van geselecteerde meetpunt(en)",
+                                      value = FALSE),
                  DT::dataTableOutput("tabel_sampleresults")
                ),
              
@@ -141,8 +141,10 @@ ui <- function(request) {
                ),
                tabPanel("Fiatteerlijst"), 
                
-               tabPanel("Testresultaten")
-               
+               tabPanel("Testresultaten",
+                        checkboxInput("instellingen_resultaten_afronden",
+                                      "Resultaten afronden?",
+                                      value = FALSE))
              )
            ))),
   
@@ -501,9 +503,17 @@ server <- function(input, output, session) {
   #Resultaten table. Table consists of results belonging to the samples that user selected in the fiatteerlijst table.
   #There are 3 different possible layouts. "labnr" where each labnummer is its own column, "result_info" where the columns are left as is and "tests" where each kind of test is its own column
   #
-  #Because formatStyle can only color table cells with values that are part of the same table we have to add columns to each table which indicate what background colors we want for our result cells. These columns are useless for the users so we hide them from view.
+  #formatStyle can only color table cells with values that are part of the same table. So we have to add columns to each table which indicate what background colors we want for our result cells. These columns are useless for the users so we hide them from view.
   output$tabel_sampleresults <- DT::renderDataTable({
     results <- historical_or_current_results()
+    
+    if(input$instellingen_resultaten_afronden == TRUE){
+      results<- results %>% select(!RESULTAAT, 
+                                    RESULTAAT = RESULTAAT_AFGEROND)
+    }
+    else{
+      results <- results %>% select(!RESULTAAT_AFGEROND)
+    }
     
     if(input$instellingen_roteer_tabel  == "labnr"){
       
@@ -513,7 +523,7 @@ server <- function(input, output, session) {
         values_from = RESULTAAT,
         names_sep = "<br>",
         names_sort = TRUE,
-        unused_fn = list(RESULT_OPMERKING = list, MEASUREDATE = list, SAMPLINGDATE = list))
+        unused_fn = list(RESULT_OPMERKING = list, MEASUREDATE = max, SAMPLINGDATE = max))
 
         #we need this dataframe to color rejected test results red
         labnr_widened_uitvallend <- results %>% tidyr::pivot_wider(
