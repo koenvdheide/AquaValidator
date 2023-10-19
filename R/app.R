@@ -359,27 +359,27 @@ server <- function(input, output, session) {
         # CZV_TNB_RATIO = ratio_calculator("CZV_TNB")
         CZV_BZV_RATIO = ifelse(
           any(ELEMENTCODE == "CZV") & any(ELEMENTCODE == "BZV5"),
-          RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"] / RESULTAAT_ASNUMERIC[ELEMENTCODE == "BZV5"],
+          mean(RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"]) / mean(RESULTAAT_ASNUMERIC[ELEMENTCODE == "BZV5"]),
           NA
         ),
         CZV_NKA_RATIO = ifelse(
           any(ELEMENTCODE == "CZV") & any(TESTCODE == "nka"),
-          RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"] / RESULTAAT_ASNUMERIC[TESTCODE == "nka"],
+          mean(RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"]) / mean(RESULTAAT_ASNUMERIC[TESTCODE == "nka"]),
           NA
         ),
         BZV_ONOPA_RATIO = ifelse(
           any(ELEMENTCODE == "BZV5") & any(TESTCODE == "onopa"),
-          RESULTAAT_ASNUMERIC[ELEMENTCODE == "BZV5"] / RESULTAAT_ASNUMERIC[TESTCODE == "onopa"],
+          mean(RESULTAAT_ASNUMERIC[ELEMENTCODE == "BZV5"]) / mean(RESULTAAT_ASNUMERIC[TESTCODE == "onopa"]),
           NA
         ),
         CZV_TOC_RATIO = ifelse(
           any(ELEMENTCODE == "CZV") & any(ELEMENTCODE == "TOC"),
-          RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"] / RESULTAAT_ASNUMERIC[ELEMENTCODE == "TOC"],
+          mean(RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"]) / mean(RESULTAAT_ASNUMERIC[ELEMENTCODE == "TOC"]),
           NA
         ),
         CZV_TNB_RATIO =ifelse(
           any(ELEMENTCODE == "CZV") & any(TESTCODE == "tnb"),
-          RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"] / RESULTAAT_ASNUMERIC[TESTCODE == "tnb"],
+          mean(RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"]) / mean(RESULTAAT_ASNUMERIC[TESTCODE == "tnb"]),
           NA
         )
       ) %>% tidyr::pivot_longer(
