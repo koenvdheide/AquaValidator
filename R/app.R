@@ -185,9 +185,6 @@ server <- function(input, output, session) {
   complete_results <- reactiveVal(tibble()) #"resultaten" sheet
   complete_ratios <- tibble() #ratios calculated from the "resultaten" sheet
   
-
-
-  
   #proxies are needed to reflect user edits onto the underlying data (like when adding comments)
   fiatteerlijst_proxy <- DT::dataTableProxy("tabel_fiatteerlijst")
   sampleresults_proxy <- DT::dataTableProxy("tabel_sampleresults")
@@ -200,17 +197,26 @@ server <- function(input, output, session) {
   plot_highlighted_ratios <- reactiveVal() #filled when user does a double click or box drag selection for ratios plot
   
   #output
+  export_path <- "F:/2-Ano/Alg/13_Fiatteren/Validator"
+    
   validated_samples <- tibble()
   validated_results <- tibble()
-  validated_path <- "F:/2-Ano/Alg/13_Fiatteren/Validator/samples_goedgekeurd.csv"
+  
+  #geef iedere analist een eigen export file zodat ze niet elkaars bestanden bezetten
+  validated_filename <- paste(Sys.getenv("USERNAME"),"samples_goedgekeurd.csv", sep = "_") 
+  validated_path <- paste(export_path, validated_filename, sep = "/")
   
   duplo_samples <- tibble()
   duplo_results <- tibble()
-  duplo_path <- "F:/2-Ano/Alg/13_Fiatteren/Validator/resultaten_duplo_aangevraagd.csv"
+  
+  duplo_filename <- paste(Sys.getenv("USERNAME"),"resultaten_duplo.csv", sep = "_") 
+  duplo_path <- paste(export_path, duplo_filename, sep = "/")
   
   cancelled_samples <- tibble()
   cancelled_results <- tibble()
-  cancelled_path <- "F:/2-Ano/Alg/13_Fiatteren/Validator/resultaten_cancelled.csv"
+  
+  cancelled_filename <- paste(Sys.getenv("USERNAME"),"resultaten_cancelled.csv", sep = "_")
+  cancelled_path <- paste(export_path, cancelled_filename, sep = "/")
   
   
   
@@ -990,20 +996,23 @@ server <- function(input, output, session) {
     time <- as.character(Sys.time())
     
     samples_to_export_columns <-
-      samples_to_export %>% select(SAMPLE_OPMERKING,
-                                   LABNUMMER,
-                                   MONSTERPUNTCODE,
-                                   NAAM,
-                                   SAMPLE_ID)
+              samples_to_export %>% select(
+                SAMPLE_OPMERKING,
+                LABNUMMER,
+                MONSTERPUNTCODE,
+                OMSCHRIJVING,
+                SAMPLE_ID)
     
     selected_results_export_columns <-
-      results_to_export %>% select(SAMPLE_ID,
-                                   TESTCODE,
-                                   ELEMENTCODE,
-                                   RESULT_OPMERKING,
-                                   MEETPUNT_ID,
-                                   SAMPLE_TEST_ID,
-                                   SAMPLE_RESULT_ID)
+              results_to_export %>% select(
+                RESULT_OPMERKING,
+                ELEMENTCODE,
+                TESTCODE,
+                MEETPUNT_ID,
+                SAMPLE_ID,
+                SAMPLE_TEST_ID,
+                SAMPLE_RESULT_ID
+              )
     
 
     #is full_join excessive? seems to lead to duplicates? is left_join sufficient?
