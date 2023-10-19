@@ -511,7 +511,7 @@ server <- function(input, output, session) {
   #
   #formatStyle can only color table cells with values that are part of the same table. So we have to add columns to each table which indicate what background colors we want for our result cells. These columns are useless for the users so we hide them from view.
   output$tabel_sampleresults <- DT::renderDataTable({
-    results <- historical_or_current_results()
+    results <- historical_or_current_results() %>% arrange(desc(LABNUMMER))
     
     if(input$instellingen_resultaten_afronden == TRUE){
       results<- results %>% select(!RESULTAAT, 
