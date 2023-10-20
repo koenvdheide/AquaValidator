@@ -528,7 +528,6 @@ server <- function(input, output, session) {
         names_from = c(NAAM, LABNUMMER, HOEDNHD, RUNNR),
         values_from = RESULTAAT,
         names_sep = "<br>",
-        names_sort = TRUE,
         unused_fn = list(RESULT_OPMERKING = list, MEASUREDATE = max, SAMPLINGDATE = max))
 
         #we need this dataframe to color rejected test results red
@@ -536,7 +535,6 @@ server <- function(input, output, session) {
           id_cols = c(TESTCODE,ELEMENTCODE),
           names_from = c(NAAM, LABNUMMER, HOEDNHD, RUNNR),
           values_from = UITVALLEND,
-          names_sort = TRUE,
           names_sep = "<br>") %>% mutate(TESTCODE = NULL,
                                          ELEMENTCODE = NULL)
         
@@ -545,7 +543,6 @@ server <- function(input, output, session) {
           id_cols = c(TESTCODE,ELEMENTCODE),
           names_from = c(NAAM, LABNUMMER, HOEDNHD, RUNNR),
           values_from = TESTSTATUS,
-          names_sort = TRUE,
           names_sep = "<br>") %>% mutate(TESTCODE = NULL,
                                          ELEMENTCODE = NULL)
         labnr_widened_combined <- cbind(labnr_widened_results, labnr_widened_uitvallend, labnr_widened_teststatus)
@@ -644,9 +641,8 @@ server <- function(input, output, session) {
             names_from = c(TESTCODE, ELEMENTCODE),
             values_from = RESULTAAT,
             names_sep = "<br>",
-            names_sort = TRUE,
-            unused_fn = list(MEASUREDATE = list, 
-                             SAMPLINGDATE = list))
+            unused_fn = list(MEASUREDATE = max, 
+                             SAMPLINGDATE = max))
         
         #we need this dataframe to color rejected test results red
         test_widened_uitvallend <- results %>% 
@@ -654,8 +650,7 @@ server <- function(input, output, session) {
             id_cols = c(NAAM,LABNUMMER, RUNNR, HOEDNHD),
             names_from = c(TESTCODE, ELEMENTCODE),
             values_from = UITVALLEND,
-            names_sep = "<br>",
-            names_sort = TRUE) %>% mutate(NAAM = NULL,
+            names_sep = "<br>") %>% mutate(NAAM = NULL,
                                           LABNUMMER = NULL,
                                           HOEDNHD = NULL,
                                           RUNNR = NULL)
@@ -665,8 +660,7 @@ server <- function(input, output, session) {
           id_cols = c(NAAM,LABNUMMER, RUNNR, HOEDNHD),
           names_from = c(TESTCODE, ELEMENTCODE),
           values_from = TESTSTATUS,
-          names_sep = "<br>",
-          names_sort = TRUE) %>% mutate(NAAM = NULL,
+          names_sep = "<br>") %>% mutate(NAAM = NULL,
                                         LABNUMMER = NULL,
                                         HOEDNHD = NULL,
                                         RUNNR = NULL)
