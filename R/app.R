@@ -1,8 +1,7 @@
 #reactlog_enable()
 aquaApp <- function(...){
-options(shiny.maxRequestSize=30*1024^2)
+options(shiny.maxRequestSize=30*1024^2) #sets the maximum allowed input size at 30 MB
 
-#UI input variables are intentionally in Dutch, makes it easier to keep them separate from output/internal variables on the server side
 ui <- function(request) {
   tagList( 
   shinyjs::useShinyjs(), #enable javascript for some more complex modifications of our tables and plots
@@ -95,22 +94,16 @@ ui <- function(request) {
                
                tabPanel(
                  "Algemeen",
-                 # selectInput(
-                 #   "instellingen_gebruiker",
-                 #   label = "Gebruiker",
-                 #   choices = list( "Matthijs Dobbelaar", "Hans Kieftenbelt", "Angelique Vollenbroek"),
-                 #   
-                 # ),
                  numericInput(
                    "instellingen_hoeveelheid_resultaten",
                    "Hoeveel resultaten moeten er per monsterpunt worden getoond?",
                    value = 10,
                    min = 1
-                 ),
-                 bookmarkButton(
-                   label = "Sla instellingen op",
-                   title = "Sla huidige instellingen op, ze worden automatisch ingeladen als je de validator later weer opstart."
-                 )
+                 )#,
+                 #bookmarkButton(
+                 #  label = "Sla instellingen op",
+                 #  title = "Sla huidige instellingen op, ze worden automatisch ingeladen als je de validator later weer opstart."
+                 #)
                ),
                tabPanel(
                  "Input",
@@ -160,17 +153,13 @@ ui <- function(request) {
            sidebarLayout(sidebarPanel(),
                          mainPanel())),
   
-  footer = div( actionButton("button_valideer", label = "Samples valideren"),
-                actionButton("button_duplo_aanvraag", label = "Tests duplo aanvragen"),
-                actionButton("button_cancel", label = "Tests cancellen"))
+  footer = div( actionButton("button_valideer", label = "Sample(s) valideren"),
+                actionButton("button_duplo", label = "Test(s) duplo aanvragen"),
+                actionButton("button_cancel", label = "Test(s) cancellen"))
 )
 )}
 server <- function(input, output, session) {
 ##################### common server variables #######################  
-  
-  #settings <- reactiveValues(
-  #  username = NULL
-  #)
   
   #database connection
   # sql_connection_string <-
@@ -209,7 +198,7 @@ server <- function(input, output, session) {
   validated_samples <- tibble()
   validated_results <- tibble()
   
-  #geef iedere analist een eigen export file zodat ze niet elkaars bestanden bezetten
+  #geef iedere analist een eigen export filepath zodat ze niet elkaars bestanden bezetten
   validated_filename <- paste(Sys.getenv("USERNAME"),"samples_goedgekeurd.csv", sep = "_") 
   validated_path <- paste(export_path, validated_filename, sep = "/")
   
@@ -228,8 +217,8 @@ server <- function(input, output, session) {
   
   
 #####################################loading file###############################
-  #This observer triggers when the user has selected a (Excel) file. The observer first retrieves the filepath and expected Excel sheet names.
-  #it then calls excel_reader to read two Excel sheets and assigns each sheet to its own tibble. Finally ratios are calculate from the results tibble.
+#This triggers when the user has selected a (Excel) file. It first retrieves the path of the selected file and the expected Excel sheet names (from settings).
+#It then calls excel_reader to read two Excel sheets that match the expected names and assigns each sheet to its own tibble. Finally ratios are calculate from the results tibble.
   observeEvent(input$input_file, {
     loadingtip <- showNotification("Laden...", duration = NULL, closeButton = FALSE)
     
@@ -237,18 +226,10 @@ server <- function(input, output, session) {
       file_path <- input$input_file$datapath
       fiatteerblad <- input$input_file_fiatteer_blad
       resultatenblad <- input$input_file_resultaten_blad
-      
-      # measurepointcolumn <- input$input_file_meetpunt_kolom
-      # resultscolumn <- input$input_file_testresultaat_kolom
-      # labnrcolumn <- input$input_file_labnummer_kolom
-      
+  
       fiatteer_samples(excel_reader(
         file_path,
         sheet = fiatteerblad
-        
-        #resultcolumn = resultscolumn,
-        #labnummercolumn = labnrcolumn,
-        #meetpuntcolumn = measurepointcolumn
       ) %>% arrange(PRIOFINISHDATE))
       
     }, error = function(e){
@@ -282,10 +263,6 @@ server <- function(input, output, session) {
 
   })
   
-  load_two_sheet_excel_file <- function(filePath){
-    
-  }
-  
 #' Just a wrapper for readxl's read_excel that includes some datatype casting for columns we expect to be in the file.
 #' 
 #' @param filePath URL to the Excel file.
@@ -293,12 +270,7 @@ server <- function(input, output, session) {
 #'
 #' @return a tibble as returned by read_excel.
 #'
-  excel_reader <-    function(filePath,
-                               sheet = NULL
-                               #resultcolumn,
-                               #labnummercolumn,
-                               #meetpuntcolumn
-                               ){
+  excel_reader <-    function(filePath, sheet = NULL){
       
     excel_data <- readxl::read_excel(filePath, progress = TRUE, sheet = sheet) %>%
         mutate(
@@ -342,7 +314,7 @@ server <- function(input, output, session) {
   #     NA
   #   )
   #   return(ratio_row)
-  #}
+  # }
 
 #' Takes in sample results, creates a copy of these  results, attempts to calculate (currently) six different ratios per row (returning NA if a ratio is not applicable). Each of the six ratios is its own column.
 #' The copied results dataframe is then wiped of all columns except NAAM, SAMPLINGDATE and the ratio columns. This trimmed copy is then pivoted along the ratios so that each ratio column value becomes its own row instead. This pivoted dataframe is then returned. 
@@ -395,13 +367,13 @@ server <- function(input, output, session) {
         values_to = "WAARDE",
         values_drop_na = TRUE #needed because ggplot's geom_line adds a break when it encounters an NA value and this would make for pretty ugly ratios plots.
       ) %>% distinct() #any() causes duplicate ratios to be calculated per LABNUMMER, this removes them.
-    
+
     return(calculated_ratios)
   }
 
 ############################fiatteerlijst tab######################################## 
   #Here we fill out the fiatteerlijst table (the table that the user actually sees).
-  #This table is mostly identical to fiatteer_samples but with two differences: we add a column with rejected tests and we hide a few irrelevant columns from view for the user.
+  #This table is mostly identical to fiatteer_samples but with two differences: we add a column with rejected tests per sample and we hide a few irrelevant columns present in fiatteer_samples.
   output$tabel_fiatteerlijst <- DT::renderDataTable({
     req(input$input_file) #don't try to create the table until there's a valid input file
     
@@ -422,10 +394,10 @@ server <- function(input, output, session) {
                       "STATUS",
                       "FIATGROEP",
                       "SAMPLE_ID"
+                      )
                     )
                   )
                 )
-      )
   })
   
 #' Simple function that gets rows that are UITVALLEND (meaning they need validation right now) and returns their LABNUMMER and TESTCODE.
@@ -439,12 +411,13 @@ server <- function(input, output, session) {
       select(LABNUMMER, TESTCODE)
     
   }
-  #this observer triggers when a user clicks the "wis selectie" button in the top left.
+  #This triggers when the user clicks the "wis selectie" button in the top left and clears any existing selection.
+  #Added this because manually deselecting many rows feels pretty clunky.
   observeEvent(input$tabel_fiatterlijst_wis_selectie,{
     DT::selectRows(fiatteerlijst_proxy, selected = NULL)
   })
   
-  #this observer triggers when a user edits a column in the fiatteerlijst table (currently only possible for SAMPLE_OPMERKING)
+  #This triggers when the user edits a column in the fiatteerlijst table (currently only possible for SAMPLE_OPMERKING)
   #reminder that if the order of columns in "fiatteer_samples" gets changed this can potentially edit the wrong columns!
   observeEvent(input$tabel_fiatteerlijst_cell_edit,{
     isolate({
@@ -462,7 +435,7 @@ server <- function(input, output, session) {
     data <- fiatteer_samples() #redundant but needed because subsetting a reactiveVal is buggy
     selected_rows <- input$tabel_fiatteerlijst_rows_selected
     if (isTruthy(selected_rows)) { 
-      return(data[selected_rows,])
+      return(data[selected_rows, ])
     }
     else{
       showModal(modalDialog(
@@ -474,7 +447,7 @@ server <- function(input, output, session) {
     }
   })
   
-  #This retrieves the test results belonging to USER SELECTED samples in the fiatteerlijst
+  #This retrieves the test results belonging to the selected rows/samples in the fiatteerlijst
   selected_sample_current_results <- reactive({
     req(selected_sample_rows())
     selected_labnummer <- select(selected_sample_rows(), LABNUMMER)
@@ -484,12 +457,12 @@ server <- function(input, output, session) {
     return(matching_result)
   })
   
-  #This retrieves ALL test results belonging to the same MONSTERPUNTCODE as our selected samples in the fiatteerlijst 
-  #(note that this includes the current result)
+  #This retrieves all test results belonging to samples with the same MONSTERPUNTCODE as our selected samples in the fiatteerlijst 
+  #(note that this includes the results belonging to our current sample and possibly includes results from newer samples than the current one)
   selected_sample_historical_results <- reactive({
     selected_meetpunt <- select(selected_sample_current_results(), MONSTERPUNTCODE)
     matching_results <- semi_join(complete_results(),selected_sample_current_results(), by = c('MONSTERPUNTCODE')) %>%
-                        arrange(desc(SAMPLINGDATE)) %>% #it SHOULD already put the most recent result first but this ensures it
+                        arrange(desc(SAMPLINGDATE)) %>% #it SHOULD already put the most recent results first but this ensures it
                         top_n_results(n = input$instellingen_hoeveelheid_resultaten)
     
     plot_highlighted_samples(rep(FALSE, nrow(matching_results))) #fill plot_highlighted_samples so it doesn't throw out of bounds errors later
@@ -499,24 +472,26 @@ server <- function(input, output, session) {
 #' Returns the results belonging to n most recent labnummers for each monsterpuntcode.
 #' Nightmare code because we have to deal with three group layers, we want all the results (layer 1) of the n most recent labnummers (layer 2) for each monsterpuntcode (layer 3).
 #' @param n Maximum number of labnummers to return results for. So n = 10 means this returns the results of the 10 most recent labnummers.
-#' @param full_results Dataframe containing the results we want the top n of
+#' @param full_results Dataframe containing the results we want the top n of.
 #'
 #' @return Same as full_results.
 #'
   top_n_results <- function(n, full_results, group_one = MONSTERPUNTCODE, group_two = LABNUMMER) {
     top_results <-
       full_results %>% 
-      group_by({{group_one}})  %>% 
-      group_modify(~ {.x %>% group_by({{group_two}}) %>% 
+      group_by({{ group_one }})  %>% 
+      group_modify(~ {.x %>% group_by({{ group_two }}) %>% 
                       filter(cur_group_id() >= n_groups(.) - n)}) %>% 
       ungroup()
+    
+    return(top_results)
   }
   
 #############################results tab########################################
   #Resultaten table. Table consists of results belonging to the samples that user selected in the fiatteerlijst table.
-  #There are 3 different possible layouts. "labnr" where each labnummer is its own column, "result_info" where the columns are left as is and "tests" where each kind of test is its own column
+  #There are 3 different possible layouts. "labnr" where each labnummer is its own column, "result_info" where each result is its own row and "tests" where each category of test is its own column
   #
-  #formatStyle can only color table cells with values that are part of the same table. So we have to add columns to each table which indicate what background colors we want for our result cells. These columns are useless for the users so we hide them from view.
+  #formatStyle can only color table cells with values that are part of the same table. Because of this we have to add columns to each table which indicate what background colors we want for our result cells. These columns are useless for the users so we hide them from view.
   output$tabel_sampleresults <- DT::renderDataTable({
     results <- historical_or_current_results() %>% arrange(desc(LABNUMMER))
     
@@ -582,7 +557,7 @@ server <- function(input, output, session) {
             valueColumns = (1 + original_and_uitvallend_columns):total_columns,
             target = 'cell',
             backgroundColor = DT::styleEqual(c(1000,300), c('lightgreen','gray'))
-          ) #%>% #rounding removes n.b. results
+          ) #%>% #rounding this way removes n.b. results
             #DT::formatRound(columns = results_columns,
             #digits = 3) 
        return(table_labnr)
@@ -594,12 +569,12 @@ server <- function(input, output, session) {
       labnr_column_index <- (labnr_column_index[1] - 1) #which() returns vector,first element contains the index we need. We subtract 1 from index because R counts indexes from 1, DT counts from 0
       
       description_column_index <- which(colnames(results) == "NAAM")
-      description_column_index <- (description_column_index[1] - 1)
+      description_column_index <- (description_column_index[1] - 1)  #same as above
       
       #notice that we don't need to create the extra dataframes for coloring columns here because these columns are already present.
       results_table_dataframe <<- results
       table_sample <- table_builder(
-        results,
+        results_table_dataframe,
         sort_by = labnr_column_index,
         comment_col = TRUE,
         group = TRUE,
@@ -620,7 +595,6 @@ server <- function(input, output, session) {
             "SAMPLE_RESULT_ID",
             "GEVALIDEERD",
             #"SAMPLE_OPMERKING",
-            #"RESULTAAT_AFGEROND",
             "SOORTWATER")))
         )  %>% DT::formatStyle(
           columns = 'LABNUMMER',
@@ -873,8 +847,9 @@ server <- function(input, output, session) {
   
   #Gets the ratios belonging to the currently selected sample(s)
   selected_sample_current_ratios <-  reactive({
-    selected_monsterpuntcode <- select(selected_sample_current_results(), LABNUMMER)
-    selected_sample_current_ratios <- complete_ratios %>% filter(LABNUMMER %in% selected_monsterpuntcode$LABNUMMER)
+    selected_labnummer <- select(selected_sample_current_results(), LABNUMMER)
+    selected_sample_current_ratios <- complete_ratios %>% filter(LABNUMMER %in% selected_labnummer$LABNUMMER)
+    
     return(selected_sample_current_ratios)
   })
   
@@ -965,6 +940,7 @@ server <- function(input, output, session) {
         UITVALLEND,
         TESTSTATUS
       )
+    
     table_builder(
       highlighted_samples,
       group = TRUE,
@@ -972,7 +948,7 @@ server <- function(input, output, session) {
       sort_by = 1,
       columnDefs = list(list(
         visible = FALSE , targets = c('NAAM','UITVALLEND','TESTSTATUS')
-      ))
+        ))
         ) %>% DT::formatStyle(columns = 'RESULTAAT',
                               valueColumns = 'UITVALLEND',
                               target = 'cell',
@@ -1054,12 +1030,12 @@ server <- function(input, output, session) {
       fiatteer_samples(anti_join(fiatteer_samples(),validated_samples, by = 'LABNUMMER')) #remove finished samples from view
       validated_samples <<- tibble()
       validated_results <<- tibble()
-      showNotification("Gevalideerde samples zijn geëxporteerd")
+      showNotification(paste("Gevalideerde samples zijn opgeslagen in",export_path), type = "message")
     }
   })
   
   #Identical to the button_valideer observer except this writes the rejected results.
-  observeEvent(input$button_duplo_aanvraag, {
+  observeEvent(input$button_duplo, {
     selected_rows <- selected_sample_rows()
     selected_results <- selected_results()
     req(selected_results())
@@ -1074,7 +1050,7 @@ server <- function(input, output, session) {
       fiatteer_samples(anti_join(fiatteer_samples(),duplo_samples, by = 'LABNUMMER')) 
       duplo_samples <<- tibble()
       duplo_results <<- tibble()
-      showNotification("Duplo resultaten zijn geëxporteerd")
+      showNotification(paste("Duplo aangevraagde resultaten zijn opgeslagen in",export_path), type = "message")
     }
     
   })
@@ -1118,6 +1094,7 @@ server <- function(input, output, session) {
                             sort_direction = 'desc',
                             selection = "multiple",
                             comment_col = FALSE,
+                            rownames = FALSE,
                             group = FALSE,
                             group_cols = 0,
                             columnDefs = NULL) {
@@ -1176,7 +1153,7 @@ server <- function(input, output, session) {
     suppressWarnings({
   
         plot <- ggplot(data = data,
-                             mapping = aes(x = {{x}}, y = {{y}}, colour = NAAM, group = MONSTERPUNTCODE, shape = {{shape}})) +
+                             mapping = aes(x = {{ x }}, y = {{ y }}, colour = NAAM, group = MONSTERPUNTCODE, shape = {{ shape }})) +
           
           geom_line(alpha = 0.7) +
           geom_point(size = 2.5, alpha = 0.5, na.rm = TRUE) +
@@ -1185,7 +1162,7 @@ server <- function(input, output, session) {
           scale_x_date(date_labels = "%d-%m-%y", breaks = scales::breaks_pretty(n=12)) +
           guides(size = "none", x = guide_axis(angle = 45)) +
           
-          facet_wrap(vars({{facets}}), scales = 'free_y') + 
+          facet_wrap(vars({{ facets }}), scales = 'free_y') + 
           theme(strip.text = element_text(size = 16)) 
         
         if (isTruthy(clicked_data)) #clicked data has to exist first
