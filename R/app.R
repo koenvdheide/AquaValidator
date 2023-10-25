@@ -502,28 +502,33 @@ server <- function(input, output, session) {
     
     if(input$instellingen_roteer_tabel  == "labnr"){
       
-      labnr_widened_results <- results %>% tidyr::pivot_wider(
-        id_cols = c(TESTCODE,ELEMENTCODE),
-        names_from = c(NAAM, LABNUMMER, HOEDNHD, RUNNR),
-        values_from = RESULTAAT,
-        names_sep = "<br>",
-        unused_fn = list(RESULT_OPMERKING = list, MEASUREDATE = max, SAMPLINGDATE = max))
-
+      #pivot from this nested function because we do almost the same pivot 3 times
+      labnr_pivot <- function(values_from, add_comments_and_dates = FALSE, remove_extra_columns = FALSE){
+        if(add_comments_and_dates == TRUE) {
+          extra_cols <- list(RESULT_OPMERKING = list, MEASUREDATE = max, SAMPLINGDATE = max)
+        } 
+        else {
+          extra_cols <- NULL
+        }
+        pivoted_table <- results %>% tidyr::pivot_wider(
+          id_cols = c(TESTCODE,ELEMENTCODE),
+          names_from = c(NAAM, LABNUMMER, HOEDNHD, RUNNR),
+          values_from = {{ values_from }},
+          names_sep = "<br>",
+          unused_fn = extra_cols)
+      
+      if(remove_extra_columns == TRUE){
+          pivoted_table <- pivoted_table %>% mutate(TESTCODE = NULL, ELEMENTCODE = NULL)
+        }
+      return(pivoted_table)
+      }
+      
+        labnr_widened_results <- labnr_pivot(RESULTAAT, add_comments_and_dates = TRUE)
         #we need this dataframe to color rejected test results red
-        labnr_widened_uitvallend <- results %>% tidyr::pivot_wider(
-          id_cols = c(TESTCODE,ELEMENTCODE),
-          names_from = c(NAAM, LABNUMMER, HOEDNHD, RUNNR),
-          values_from = UITVALLEND,
-          names_sep = "<br>") %>% mutate(TESTCODE = NULL,
-                                         ELEMENTCODE = NULL)
-        
+        labnr_widened_uitvallend <- labnr_pivot(UITVALLEND, remove_extra_columns = TRUE) 
         #and we need this dataframe to color cancelled tests green
-        labnr_widened_teststatus <- results %>% tidyr::pivot_wider(
-          id_cols = c(TESTCODE,ELEMENTCODE),
-          names_from = c(NAAM, LABNUMMER, HOEDNHD, RUNNR),
-          values_from = TESTSTATUS,
-          names_sep = "<br>") %>% mutate(TESTCODE = NULL,
-                                         ELEMENTCODE = NULL)
+        labnr_widened_teststatus <- labnr_pivot(TESTSTATUS, remove_extra_columns = TRUE)
+        
         labnr_widened_combined <- cbind(labnr_widened_results, labnr_widened_uitvallend, labnr_widened_teststatus)
 
         #here we count columns in a bunch of different ways so that we know the positions of columns to hide in the table that the user sees.        
@@ -613,35 +618,37 @@ server <- function(input, output, session) {
       return(table_sample)
       
     } else if (input$instellingen_roteer_tabel == "test") {
-        test_widened_results <- results %>% 
-          tidyr::pivot_wider(
-            id_cols = c(NAAM,LABNUMMER, RUNNR, HOEDNHD),
-            names_from = c(TESTCODE, ELEMENTCODE),
-            values_from = RESULTAAT,
-            names_sep = "<br>",
-            unused_fn = list(MEASUREDATE = max, 
-                             SAMPLINGDATE = max))
+      
+      #pivot from this nested function because we do almost the same pivot 3 times
+      tests_pivot <- function(values_from, add_dates = FALSE, remove_extra_columns = FALSE){
+        if(add_dates == TRUE) {
+          extra_cols <- list(MEASUREDATE = max, SAMPLINGDATE = max)
+        } 
+        else {
+          extra_cols <- NULL
+        }
         
-        #we need this dataframe to color rejected test results red
-        test_widened_uitvallend <- results %>% 
-          tidyr::pivot_wider(
-            id_cols = c(NAAM,LABNUMMER, RUNNR, HOEDNHD),
-            names_from = c(TESTCODE, ELEMENTCODE),
-            values_from = UITVALLEND,
-            names_sep = "<br>") %>% mutate(NAAM = NULL,
-                                          LABNUMMER = NULL,
-                                          HOEDNHD = NULL,
-                                          RUNNR = NULL)
-        
-        #and we need this dataframe to color cancelled tests green
-        test_widened_teststatus <- results %>% tidyr::pivot_wider(
+        pivoted_table <- results %>% tidyr::pivot_wider(
           id_cols = c(NAAM,LABNUMMER, RUNNR, HOEDNHD),
           names_from = c(TESTCODE, ELEMENTCODE),
-          values_from = TESTSTATUS,
-          names_sep = "<br>") %>% mutate(NAAM = NULL,
-                                        LABNUMMER = NULL,
-                                        HOEDNHD = NULL,
-                                        RUNNR = NULL)
+          values_from = {{ values_from }},
+          names_sep = "<br>",
+          unused_fn = extra_cols)
+      
+      
+      if(remove_extra_columns == TRUE){
+        pivoted_table <- pivoted_table %>% mutate(NAAM = NULL,
+                                                   LABNUMMER = NULL,
+                                                   HOEDNHD = NULL,
+                                                   RUNNR = NULL)
+      }
+      return(pivoted_table)
+    }
+        test_widened_results <- tests_pivot(RESULTAAT, add_dates = TRUE)
+        #we need this dataframe to color rejected test results red
+        test_widened_uitvallend <- tests_pivot(UITVALLEND, remove_extra_columns = TRUE) 
+        #and we need this dataframe to color cancelled tests green
+        test_widened_teststatus <- tests_pivot(TESTSTATUS, remove_extra_columns = TRUE)
         
         test_widened_combined <- cbind(test_widened_results, test_widened_uitvallend, test_widened_teststatus)
         
