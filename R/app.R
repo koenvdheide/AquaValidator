@@ -43,16 +43,23 @@ ui <- function(request) {
                    label = "Gebruik als kolom:",
                    choices = c("Labnummer" = "labnr",
                                "Tests" = "test",
-                               "Resultaat Info" = "result_info"),
-                   inline = TRUE
-                 ),
-                    checkboxInput("instellingen_toon_historie_tabel",
-                                      "Toon meer monsters van geselecteerde meetpunt(en)",
-                                      value = FALSE),
+                               "Resultaat Details" = "result_info"),
+                              inline = TRUE
+                    ),
+                 checkboxInput("instellingen_toon_historie_tabel",
+                              "Toon meer monsters van geselecteerde meetpunt(en)",
+                              value = FALSE),
                  DT::dataTableOutput("tabel_sampleresults")
                ),
              
                tabPanel(
+                 radioButtons(
+                   "instellingen_facets_fiatteer_grafiek",
+                   label = "Toon resultaten per:",
+                   choices = c("Elementcode" = "elementcode",
+                               "Testcode" = "testcode"),
+                   inline = TRUE
+                 ),
                  value = "tab_fiatteer_grafiek",
                  title = "Grafieken",
                  plotOutput(
@@ -773,33 +780,31 @@ server <- function(input, output, session) {
     
     selected_samples <- plot_highlighted_samples()
     
-    results_plot <- plottable_results %>% plot_builder(SAMPLINGDATE,
-                                                       RESULTAAT_ASNUMERIC,
-                                                       current_results, 
-                                                       selected_samples, 
-                                                       shape = UITVALLEND,
-                                                       TESTCODE)
+    if(input$instellingen_facets_fiatteer_grafiek == "testcode"){
+      
+      results_plot <- plottable_results %>% plot_builder(SAMPLINGDATE,
+                                                         RESULTAAT_ASNUMERIC,
+                                                         current_results, 
+                                                         selected_samples, 
+                                                         shape = UITVALLEND,
+                                                         TESTCODE)
+      
+    } else if (input$instellingen_facets_fiatteer_grafiek == "elementcode"){
+      results_plot <- plottable_results %>% plot_builder(SAMPLINGDATE,
+                                                         RESULTAAT_ASNUMERIC,
+                                                         current_results, 
+                                                         selected_samples, 
+                                                         shape = UITVALLEND,
+                                                         ELEMENTCODE)
+    }
+    
+
             
     #move hover_data to something that doesn't call the WHOLE PLOT AGAIN
     #plot <- plot + geom_text(data = hover_data(), aes(label=LABNUMMER))
     
     return(results_plot)
   })
-
-  # fiatteer_plot_user_settings <-
-  #   reactive({
-  #     user_selection <- list(
-  #       colour = input$grafiek_kleur_selectie,
-  #       plot_choice = input$grafiek_keuze,
-  #       wrap_choice = input$grafiek_wrap_keuze,
-  #       wrap_category = input$grafiek_wrap_categorie_selectie
-  #     )
-  #     # toon alle factor levels bij de wrap categorie (nog niet werkzaam)
-  #     #freezeReactiveValue(input, "grafiek_wrap_selectie")
-  #     #updateCheckboxGroupInput(inputId = "grafiek_wrap_selectie",inline = TRUE,choices = input$grafiek_wrap_categorie_selectie,selected = input$grafiek_wrap_categorie_selectie)
-  #     
-  #     return(user_selection)
-  #   })
   
   #Triggers when user hovers over a datapoint in a results plot.
   observeEvent(input$fiatteer_grafiek_zweef,{
