@@ -22,7 +22,7 @@ ui <- function(request) {
                  fileInput(
                    "input_file",
                    label = "Kies fiatteerlijst",
-                   accept = c(".csv, .xlsx", ".xls")
+                   accept = c(".xlsx", ".xls")
                  )
              ),
                
