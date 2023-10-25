@@ -241,15 +241,12 @@ server <- function(input, output, session) {
         excel_reader(
           file_path,
           sheet = resultatenblad
-          
-          #resultcolumn = resultscolumn,
-          #labnummercolumn = labnrcolumn,
-          #meetpuntcolumn = measurepointcolumn
         ) %>% mutate(
           RESULTAAT_ASNUMERIC = if_else(TESTSTATUS != 1000, as.numeric(RESULTAAT), NA),
           GEVALIDEERD = TESTSTATUS == 300,
-          UITVALLEND = TESTSTATUS != 300 & TESTSTATUS != 1000 & REFCONCLUSION == 0)
+          UITVALLEND = TESTSTATUS != 300 & TESTSTATUS != 1000 & (REFCONCLUSION == 0 | is.na(REFCONCLUSION)))
       )
+      View(complete_results())
       
       complete_ratios <<- calculate_ratios(complete_results())
       
