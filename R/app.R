@@ -512,7 +512,7 @@ server <- function(input, output, session) {
     results <- historical_or_current_results() %>% arrange(desc(LABNUMMER))
     
     if(input$instellingen_resultaten_afronden == TRUE){
-      results<- results %>% select(!RESULTAAT, 
+      results <- results %>% select(!RESULTAAT, 
                                     RESULTAAT = RESULTAAT_AFGEROND)
     }
     else{
@@ -562,9 +562,10 @@ server <- function(input, output, session) {
         results_columns <- 3:(2 + number_of_sample_columns) #starts at 3 to offset for the elementcode and testcode columns, why do we have to add 2 instead of 3 to offset at the end? NO IDEA
         
         results_table_dataframe <<- labnr_widened_combined
+        
         table_labnr <- table_builder(labnr_widened_combined,
                                      sort_by = 0,
-                                     selection = list(mode = "multiple", target = 'cell'),
+                                     selection = list(mode = "single", target = 'cell'), 
                                      columnDefs = list(list(
                                        visible = FALSE,
                                        targets = -extra_column_amount))#hide the columns we use for coloring
@@ -691,7 +692,7 @@ server <- function(input, output, session) {
         results_table_dataframe <<- test_widened_combined
         table_test <- table_builder(test_widened_combined,
                                     sort_by = labnr_column_index,
-                                    selection = list(mode = "multiple", target = 'cell'),
+                                    selection = list(mode = "single", target = 'cell'),
                                     group = TRUE,
                                     group_cols = c(description_column_index, labnr_column_index),
                                     columnDefs = list(list(
@@ -1007,8 +1008,6 @@ server <- function(input, output, session) {
 #'
 #' @return Boolean. TRUE if export succeeded, FALSE if not.
   validation_exporter <- function(samples_to_export, results_to_export, export_path){
-    
-    export_path <- normalizePath(export_path, winslash = "/")
     
     username <- as.character(Sys.getenv("USERNAME"))
     time <- as.character(Sys.time())
