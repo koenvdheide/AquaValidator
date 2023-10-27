@@ -92,25 +92,31 @@ ui <- function(request) {
              )
             )
            ),
-    navbarMenu(title = "Referenties",
+    navbarMenu(title = "Ratio Referenties",
+               tabPanel(value = "afvalwater_ratios_tab",
+                        title = "Alle Afvalwater (aw) Ratio's",
+                        fluidPage(fluidRow(
+                          column(width = 6,
+                                 imageOutput("referentie_aw_ratios"))))
+                        ),
                tabPanel(value = "czv_bzv_tab",
-                        title = "CZV / BZV Ratio's",
+                        title = "Afvalwater CZV / BZV",
                         fluidPage(fluidRow(
                           column(width = 6,
                                  imageOutput("referentie_czv_bzv"))))
                         ),
                tabPanel(value = "czv_toc_tab",
-                        title = "CZV / TOC Ratio's",
+                        title = "Afvalwater CZV / TOC",
                         fluidPage(fluidRow(
                           column(width = 6,
                                  imageOutput("referentie_czv_toc"))))
                         ),
                tabPanel(value = "nkj_tnb_tab",
-                        title = "NKj / (TNb - NOT) Ratio's",
+                        title = "NKj / (TNb - NOT)",
                         fluidPage(fluidRow(
                           column(width = 6,
                                  imageOutput("referentie_nkj_tnb"))))
-                      ),
+                        ),
                tabPanel(value = "tnb_minus_not_tab",
                         title = "Afwijking van TNb door hoge NOT",
                         fluidPage(fluidRow(
@@ -118,6 +124,12 @@ ui <- function(request) {
                                  imageOutput("referentie_tnb_storingen")),
                           column(width = 6,
                                  imageOutput("referentie_tnb_not_fractie"))))
+                        ),
+               tabPanel(value = "grondwater_ofos_tpa_tab",
+                        title = "Grondwater OFOS / TPA",
+                        fluidPage(fluidRow(
+                          column(width = 6,
+                                 imageOutput("referentie_gw_ofos_tpa"))))
                         )
                ), 
   tabPanel("Instellingen",
@@ -1153,6 +1165,12 @@ server <- function(input, output, session) {
   
 
 ############################reference plots#####################################
+  output$referentie_aw_ratios <- renderImage({
+    czv_toc <- normalizePath("./referentie_afbeeldingen/afvalwater_ratios.png", winslash = "/")
+    list(src = czv_toc, width = "100%", height = "100%")
+  },
+  deleteFile = FALSE)
+  
   output$referentie_czv_toc <- renderImage({
     czv_toc <- normalizePath("./referentie_afbeeldingen/czv_toc_ratio_plot.png", winslash = "/")
     list(src = czv_toc, width = "100%", height = "100%")
@@ -1182,6 +1200,13 @@ server <- function(input, output, session) {
     list(src = czv_toc, width = "100%", height = "100%")
   },
   deleteFile = FALSE)
+  
+  output$referentie_gw_ofos_tpa <- renderImage({
+    czv_toc <- normalizePath("./referentie_afbeeldingen/grondwater_ofos_tpa.png", winslash = "/")
+    list(src = czv_toc, width = "100%", height = "100%")
+  },
+  deleteFile = FALSE)
+  
   
   
   
