@@ -77,7 +77,14 @@ ui <- function(request) {
                  ),
                  DT::dataTableOutput("fiatteer_grafiek_tabel")
                  
+               ),
+             tabPanel(
+               value = "tab_referenties",
+               title = "Referenties",
+               plotOutput(
+                 "referentie_grafiek"
                )
+             )
              )
            )),
   
