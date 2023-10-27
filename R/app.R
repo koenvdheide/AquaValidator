@@ -125,8 +125,8 @@ ui <- function(request) {
                           column(width = 6,
                                  imageOutput("referentie_tnb_not_fractie"))))
                         ),
-               tabPanel(value = "grondwater_ofos_tpa_tab",
-                        title = "Grondwater OFOS / TPA",
+               tabPanel(value = "oppervlaktewater_ofos_tpa_tab",
+                        title = "Oppervlaktewater OFOS / TPA",
                         fluidPage(fluidRow(
                           column(width = 6,
                                  imageOutput("referentie_gw_ofos_tpa"))))
@@ -1202,7 +1202,7 @@ server <- function(input, output, session) {
   deleteFile = FALSE)
   
   output$referentie_gw_ofos_tpa <- renderImage({
-    czv_toc <- normalizePath("./referentie_afbeeldingen/grondwater_ofos_tpa.png", winslash = "/")
+    czv_toc <- normalizePath("./referentie_afbeeldingen/oppervlaktewater_ofos_tpa.png", winslash = "/")
     list(src = czv_toc, width = "100%", height = "100%")
   },
   deleteFile = FALSE)
