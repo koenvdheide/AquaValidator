@@ -94,16 +94,40 @@ ui <- function(request) {
            ),
     navbarMenu(title = "Ratio Referenties",
                tabPanel(value = "afvalwater_ratios_tab",
-                        title = "Alle Afvalwater (aw) Ratio's",
+                        title = "RWZI Ratio's",
                         fluidPage(fluidRow(
                           column(width = 6,
                                  imageOutput("referentie_aw_ratios"))))
                         ),
+               tabPanel(value = "bzv_onopa_tab",
+                        title = "RWZI BZV / ONOPA",
+                        fluidPage(fluidRow(
+                          column(width = 6,
+                                 imageOutput("referentie_bzv_onopa"))))
+                        ),
                tabPanel(value = "czv_bzv_tab",
-                        title = "Afvalwater CZV / BZV",
+                        title = "RWZI CZV / BZV",
                         fluidPage(fluidRow(
                           column(width = 6,
                                  imageOutput("referentie_czv_bzv"))))
+                        ),
+               tabPanel(value = "czv_nka_tab",
+                        title = "RWZI CZV / NKa",
+                        fluidPage(fluidRow(
+                          column(width = 6,
+                                 imageOutput("referentie_czv_nka"))))
+                        ),
+               tabPanel(value = "ofos_tpa_tab",
+                        title = "RWZI OFOS / TPA",
+                        fluidPage(fluidRow(
+                          column(width = 6,
+                                 imageOutput("referentie_ofos_tpa"))))
+                        ),
+               tabPanel(value = "oppervlaktewater_ofos_tpa_tab",
+                        title = "Oppervlaktewater OFOS / TPA",
+                        fluidPage(fluidRow(
+                          column(width = 6,
+                                 imageOutput("referentie_gw_ofos_tpa"))))
                         ),
                tabPanel(value = "czv_toc_tab",
                         title = "Afvalwater CZV / TOC",
@@ -124,13 +148,8 @@ ui <- function(request) {
                                  imageOutput("referentie_tnb_storingen")),
                           column(width = 6,
                                  imageOutput("referentie_tnb_not_fractie"))))
-                        ),
-               tabPanel(value = "oppervlaktewater_ofos_tpa_tab",
-                        title = "Oppervlaktewater OFOS / TPA",
-                        fluidPage(fluidRow(
-                          column(width = 6,
-                                 imageOutput("referentie_gw_ofos_tpa"))))
                         )
+
                ), 
   tabPanel("Instellingen",
            id = "instellingen_tab",
@@ -1167,6 +1186,24 @@ server <- function(input, output, session) {
 ############################reference plots#####################################
   output$referentie_aw_ratios <- renderImage({
     czv_toc <- normalizePath("./referentie_afbeeldingen/afvalwater_ratios.png", winslash = "/")
+    list(src = czv_toc, width = "100%", height = "100%")
+  },
+  deleteFile = FALSE)
+  
+  output$referentie_bzv_onopa <- renderImage({
+    czv_toc <- normalizePath("./referentie_afbeeldingen/bzv_onopa_ratios.png", winslash = "/")
+    list(src = czv_toc, width = "100%", height = "100%")
+  },
+  deleteFile = FALSE)
+  
+  output$referentie_czv_nka <- renderImage({
+    czv_toc <- normalizePath("./referentie_afbeeldingen/czv_nka_ratios.png", winslash = "/")
+    list(src = czv_toc, width = "100%", height = "100%")
+  },
+  deleteFile = FALSE)
+ 
+  output$referentie_ofos_tpa <- renderImage({
+    czv_toc <- normalizePath("./referentie_afbeeldingen/ofos_tpa_ratios.png", winslash = "/")
     list(src = czv_toc, width = "100%", height = "100%")
   },
   deleteFile = FALSE)
