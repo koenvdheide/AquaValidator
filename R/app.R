@@ -222,9 +222,11 @@ server <- function(input, output, session) {
   cancelled_samples <- tibble()
   cancelled_results <- tibble()
   
-  cancelled_filename <- paste(Sys.getenv("USERNAME"),"resultaten_cancelled.csv", sep = "_")
+  cancelled_filename <- paste(Sys.getenv("USERNAME"),"resultaten_canceled.csv", sep = "_")
   cancelled_path <- paste(export_path, cancelled_filename, sep = "/")
   
+  #samples with either duplo or cancelled results, keep them together because (unlike validated samples) we don't hide them until user presses button_verberg_beoordeelde_resultaten
+  rejected_samples <- tibble() 
   
   
 #####################################loading file###############################
@@ -257,7 +259,6 @@ server <- function(input, output, session) {
           GEVALIDEERD = TESTSTATUS == 300,
           UITVALLEND = TESTSTATUS != 300 & TESTSTATUS != 1000 & (REFCONCLUSION == 0 | is.na(REFCONCLUSION)))
       )
-      View(complete_results())
       
       complete_ratios <<- calculate_ratios(complete_results())
       
@@ -1061,8 +1062,12 @@ server <- function(input, output, session) {
     export_succeeded <- validation_exporter(duplo_samples,
                                             duplo_results,
                                             duplo_path)
+    
+    rejected_samples <<- rejected_samples %>% rbind(duplo_samples)
+    
     if(isTRUE(export_succeeded)){ 
-      fiatteer_samples(anti_join(fiatteer_samples(),duplo_samples, by = 'LABNUMMER')) 
+      #fiatteer_samples(anti_join(fiatteer_samples(),duplo_samples, by = 'LABNUMMER')) 
+   
       duplo_samples <<- tibble()
       duplo_results <<- tibble()
       showNotification(paste("Duplo aangevraagde resultaten zijn opgeslagen in",export_path), type = "message")
@@ -1082,13 +1087,30 @@ server <- function(input, output, session) {
     export_succeeded <- validation_exporter(cancelled_samples,
                                             cancelled_results,
                                             cancelled_path)
+    
+    rejected_samples <<- rejected_samples %>% rbind(cancelled_samples)
+    
     if(isTRUE(export_succeeded)){ 
-      fiatteer_samples(anti_join(fiatteer_samples(),cancelled_samples, by = 'LABNUMMER')) 
+      #fiatteer_samples(anti_join(fiatteer_samples(),cancelled_samples, by = 'LABNUMMER')) 
       cancelled_samples <<- tibble()
       cancelled_results <<- tibble()
-      showNotification("Cancelled resultaten zijn geëxporteerd")
+      showNotification(paste("Canceled resultaten zijn opgeslagen in", export_path), type = "message")
     }
   })
+  
+  observeEvent(input$button_verberg_beoordeelde_resultaten, {
+    fiatteer_samples(anti_join(fiatteer_samples(), rejected_samples, by = 'LABNUMMER'))
+    rejected_samples <<- tibble()
+  })
+  
+
+############################reference plots#####################################
+  output$referentie_grafiek <- renderImage({
+    czv_toc <- normalizePath("./referentie_afbeeldingen/czv_toc_ratio_plot.png", winslash = "/")
+    list(src = czv_toc)
+  },
+  deleteFile = FALSE)
+
   
 ############################common functions####################################  
 
