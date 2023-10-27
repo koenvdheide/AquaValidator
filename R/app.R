@@ -160,13 +160,17 @@ ui <- function(request) {
            sidebarLayout(sidebarPanel(),
                          mainPanel())),
   
-  footer = div( actionButton("button_valideer", label = "Sample(s) valideren"),
-                actionButton("button_duplo", label = "Test(s) duplo aanvragen"),
-                actionButton("button_cancel", label = "Test(s) cancellen"))
+  footer = div( actionButton("button_valideer", label = "Sample(s) valideren",
+                             style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
+                actionButton("button_duplo", label = "Test(s) duplo aanvragen",
+                             style="color: #fff; background-color: #F75C5C; border-color: #2e6da4"),
+                actionButton("button_cancel", label = "Test(s) cancelen",
+                             style="background-color: #60EE60; border-color: #2e6da4"),
+                actionButton("button_verberg_beoordeelde_resultaten", label = "Verberg monsters met afgewezen resultaten (duplo/canceled)"))
 )
 )}
 server <- function(input, output, session) {
-##################### common server variables #######################  
+##################### common server variables ##################################
   
   #database connection
   # sql_connection_string <-
