@@ -336,8 +336,9 @@ server <- function(input, output, session) {
     relevant_results <- results %>% filter(!is.na(RESULTAAT_ASNUMERIC)) #don't bother calculating ratios for results that are not valid numbers
     calculated_ratios <-
       relevant_results %>%
-      group_by(LABNUMMER, MONSTERPUNTCODE) %>%
+      group_by(SAMPLE_ID) %>%
       reframe(
+        MONSTERPUNTCODE = MONSTERPUNTCODE,
         NAAM = NAAM,
         SAMPLINGDATE = SAMPLINGDATE,
         # CZV_BZV_RATIO = ratio_calculator("CZV_BZV"),
@@ -375,7 +376,7 @@ server <- function(input, output, session) {
         names_to = "RATIO",
         values_to = "WAARDE",
         values_drop_na = TRUE #needed because ggplot's geom_line adds a break when it encounters an NA value and this would make for pretty ugly ratios plots.
-      ) %>% distinct() #any() causes duplicate ratios to be calculated per LABNUMMER, this removes them.
+      ) %>% distinct() #any() causes duplicate ratios to be calculated per sample, this removes them.
 
     return(calculated_ratios)
   }
@@ -386,11 +387,11 @@ server <- function(input, output, session) {
   output$tabel_fiatteerlijst <- DT::renderDataTable({
     req(input$input_file) #don't try to create the table until there's a valid input file
     
-    fiatteer_results <- semi_join(complete_results(),fiatteer_samples(), by = c("LABNUMMER")) #get the results belonging to our current samples
+    fiatteer_results <- semi_join(complete_results(),fiatteer_samples(), by = c("SAMPLE_ID")) #get the results belonging to our current samples
     rejected_tests <- get_rejected_tests(fiatteer_results)
     fiatteer_data <- fiatteer_samples() %>% #adds rejected_tests as a fiatteerlijst column to show which tests need validation per sample
                       nest_join(rejected_tests,
-                                by = "LABNUMMER",
+                                by = "SAMPLE_ID",
                                 name = "UITVALLENDE_TESTS_LIST") %>%
                       tidyr::hoist(UITVALLENDE_TESTS_LIST, 
                                    Uitvallers = "TESTCODE"
@@ -416,15 +417,15 @@ server <- function(input, output, session) {
                 ) 
   })
   
-#' Simple function that gets rows that are UITVALLEND (meaning they need validation right now) and returns their LABNUMMER and TESTCODE.
+#' Simple function that gets rows that are UITVALLEND (meaning they need validation right now) and returns their SAMPLE_ID and TESTCODE.
 #' @param results Original (full) results dataframe.
 #'
-#' @return Same as results but with only LABNUMMER and TESTCODE columns.
+#' @return Same as results but with only SAMPLE_ID and TESTCODE columns.
   get_rejected_tests <- function(results){
     rejected_tests <-
       results %>% 
       filter(UITVALLEND == TRUE) %>% 
-      select(LABNUMMER, TESTCODE)
+      select(SAMPLE_ID, TESTCODE)
     
   }
   #This triggers when the user clicks the "wis selectie" button in the top left and clears any existing selection.
@@ -466,10 +467,9 @@ server <- function(input, output, session) {
   #This retrieves the test results belonging to the selected rows/samples in the fiatteerlijst
   selected_sample_current_results <- reactive({
     req(selected_sample_rows())
-    selected_labnummer <- select(selected_sample_rows(), LABNUMMER)
     matching_result <- semi_join(complete_results(),
                                  selected_sample_rows(),
-                                 by = c('LABNUMMER'))
+                                 by = c('SAMPLE_ID'))
     return(matching_result)
   })
   
@@ -485,14 +485,14 @@ server <- function(input, output, session) {
     return(matching_results)
   })
   
-#' Returns the results belonging to n most recent labnummers for each monsterpuntcode.
-#' Nightmare code because we have to deal with three group layers, we want all the results (layer 1) of the n most recent labnummers (layer 2) for each monsterpuntcode (layer 3).
-#' @param n Maximum number of labnummers to return results for. So n = 10 means this returns the results of the 10 most recent labnummers.
+#' Returns the results belonging to n most recent samples for each monsterpuntcode.
+#' Nightmare code because we have to deal with three group layers, we want all the results (layer 1) of the n most recent samples (layer 2) for each monsterpuntcode (layer 3).
+#' @param n Maximum number of samples to return results for. So n = 10 means this returns the results of the 10 most recent samples.
 #' @param full_results Dataframe containing the results we want the top n of.
 #'
 #' @return Same as full_results.
 #'
-  top_n_results <- function(n, full_results, group_one = MONSTERPUNTCODE, group_two = LABNUMMER) {
+  top_n_results <- function(n, full_results, group_one = MONSTERPUNTCODE, group_two = SAMPLE_ID) {
     top_results <-
       full_results %>% 
       group_by({{ group_one }})  %>% 
@@ -821,12 +821,12 @@ server <- function(input, output, session) {
       
       associated_samples <-semi_join(selected_sample_historical_results(), 
                                      selected_test_results,
-                                     by = 'LABNUMMER')
+                                     by = 'SAMPLE_ID')
       plot_highlighted_samples(associated_samples)
       
       associated_ratios <- semi_join(selected_sample_historical_ratios(),
                                      selected_test_results, 
-                                     by = 'LABNUMMER')
+                                     by = 'SAMPLE_ID')
       plot_highlighted_ratios(associated_ratios) #ensures that ratios belonging to the same samples get highlighted too
       
     })
@@ -842,12 +842,12 @@ server <- function(input, output, session) {
       
       associated_sample <-semi_join(selected_sample_historical_results(), 
                                     selected_test_result, 
-                                    by = 'LABNUMMER')
+                                    by = 'SAMPLE_ID')
       plot_highlighted_samples(associated_sample)
       
       associated_ratios <- semi_join(selected_sample_historical_ratios(),
                                      selected_test_result, 
-                                     by = 'LABNUMMER')
+                                     by = 'SAMPLE_ID')
       plot_highlighted_ratios(associated_ratios) #ensures that ratios belonging to the same samples get highlighted too
 
     })
@@ -870,16 +870,16 @@ server <- function(input, output, session) {
   
   #Gets the ratios belonging to the currently selected sample(s)
   selected_sample_current_ratios <-  reactive({
-    selected_labnummer <- select(selected_sample_current_results(), LABNUMMER)
-    selected_sample_current_ratios <- complete_ratios %>% filter(LABNUMMER %in% selected_labnummer$LABNUMMER)
+    selected_sample <- select(selected_sample_current_results(), SAMPLE_ID)
+    selected_sample_current_ratios <- complete_ratios %>% filter(SAMPLE_ID %in% selected_sample$SAMPLE_ID)
     
     return(selected_sample_current_ratios)
   })
   
   #Gets the ratios belonging to all the historical results of the currently selected sample(s)
   selected_sample_historical_ratios <- reactive({
-    selected_monsterpuntcode <- select(selected_sample_historical_results(), LABNUMMER)
-    current_ratios <- complete_ratios %>% filter(LABNUMMER %in% selected_monsterpuntcode$LABNUMMER)
+    selected_monsterpuntcode <- select(selected_sample_historical_results(), SAMPLE_ID)
+    current_ratios <- complete_ratios %>% filter(SAMPLE_ID %in% selected_monsterpuntcode$SAMPLE_ID)
     return(current_ratios)
   })
   
@@ -913,12 +913,12 @@ server <- function(input, output, session) {
       
       associated_ratios <- semi_join(selected_sample_historical_ratios(),
                                      selected_ratios, 
-                                     by = 'LABNUMMER')
+                                     by = 'SAMPLE_ID')
       plot_highlighted_ratios(associated_ratios)
       
       associated_samples <- semi_join(selected_sample_historical_results(),
                                       selected_ratios,
-                                      by = 'LABNUMMER')
+                                      by = 'SAMPLE_ID')
       plot_highlighted_samples(associated_samples) #make sure to also highlight test results belonging to the same sample
     })
   })
@@ -932,12 +932,12 @@ server <- function(input, output, session) {
       
       associated_ratios <- semi_join(selected_sample_historical_ratios(),
                                      selected_ratios,
-                                     by = 'LABNUMMER')
+                                     by = 'SAMPLE_ID')
       plot_highlighted_ratios(associated_ratios)
       
       associated_sample <- semi_join(selected_sample_historical_results(),
                                      selected_ratios,
-                                     by = 'LABNUMMER')
+                                     by = 'SAMPLE_ID')
       plot_highlighted_samples(associated_sample) #make sure to also highlight test results belonging to the same sample
       
     })
@@ -989,6 +989,8 @@ server <- function(input, output, session) {
 #'
 #' @return Boolean. TRUE if export succeeded, FALSE if not.
   validation_exporter <- function(samples_to_export, results_to_export, export_path){
+    
+    export_path <- normalizePath(export_path, winslash = "/")
     
     username <- as.character(Sys.getenv("USERNAME"))
     time <- as.character(Sys.time())
@@ -1050,7 +1052,7 @@ server <- function(input, output, session) {
                                             validated_path)
     
     if(isTRUE(export_succeeded)){ #only do this if exporting was successful
-      fiatteer_samples(anti_join(fiatteer_samples(),validated_samples, by = 'LABNUMMER')) #remove finished samples from view
+      fiatteer_samples(anti_join(fiatteer_samples(),validated_samples, by = 'SAMPLE_ID')) #remove finished samples from view
       validated_samples <<- tibble()
       validated_results <<- tibble()
       showNotification(paste("Gevalideerde samples zijn opgeslagen in",export_path), type = "message")
@@ -1073,8 +1075,6 @@ server <- function(input, output, session) {
     rejected_samples <<- rejected_samples %>% rbind(duplo_samples)
     
     if(isTRUE(export_succeeded)){ 
-      #fiatteer_samples(anti_join(fiatteer_samples(),duplo_samples, by = 'LABNUMMER')) 
-   
       duplo_samples <<- tibble()
       duplo_results <<- tibble()
       showNotification(paste("Duplo aangevraagde resultaten zijn opgeslagen in",export_path), type = "message")
@@ -1098,7 +1098,6 @@ server <- function(input, output, session) {
     rejected_samples <<- rejected_samples %>% rbind(cancelled_samples)
     
     if(isTRUE(export_succeeded)){ 
-      #fiatteer_samples(anti_join(fiatteer_samples(),cancelled_samples, by = 'LABNUMMER')) 
       cancelled_samples <<- tibble()
       cancelled_results <<- tibble()
       showNotification(paste("Canceled resultaten zijn opgeslagen in", export_path), type = "message")
@@ -1106,7 +1105,7 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$button_verberg_beoordeelde_resultaten, {
-    fiatteer_samples(anti_join(fiatteer_samples(), rejected_samples, by = 'LABNUMMER'))
+    fiatteer_samples(anti_join(fiatteer_samples(), rejected_samples, by = 'SAMPLE_ID'))
     rejected_samples <<- tibble()
   })
   
