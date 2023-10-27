@@ -36,74 +36,93 @@ ui <- function(request) {
                tabPanel(
                  title = "Testresultaten",
                  value = "tab_testresultaten",
-                 actionButton("tabel_testresultaten_wis_selectie", "Wis Selectie"),
-                 radioButtons(
-                   "instellingen_roteer_tabel",
-                   label = "Gebruik als kolom:",
-                   choices = c("Labnummer" = "labnr",
-                               "Tests" = "test",
-                               "Resultaat Details" = "result_info"),
-                              inline = TRUE
-                    ),
-                 checkboxInput("instellingen_toon_historie_tabel",
-                              "Toon meer monsters van geselecteerde meetpunt(en)",
-                              value = FALSE),
-                 DT::dataTableOutput("tabel_sampleresults")
-               ),
+                 fluidRow(
+                   column(width = 6,
+                          radioButtons(
+                            "instellingen_roteer_tabel",
+                            label = "Gebruik als kolom:",
+                            choices = c("Labnummer" = "labnr",
+                                        "Tests" = "test",
+                                        "Resultaat Details" = "result_info"),
+                            inline = TRUE),
+
+                          checkboxInput("instellingen_toon_historie_tabel",
+                                        "Toon meer samples van geselecteerde meetpunt(en)",
+                                        value = FALSE)
+                          ),
+                   column(width = 6,
+                          actionButton("tabel_testresultaten_wis_selectie", "Wis Selectie"),
+                          checkboxInput("instellingen_resultaten_afronden",
+                                        "Resultaten afronden?",
+                                        value = FALSE)
+                          )
+                        ),
+                  DT::dataTableOutput("tabel_sampleresults")
+                      ),
              
                tabPanel(
-                 radioButtons(
-                   "instellingen_facets_fiatteer_grafiek",
-                   label = "Toon resultaten per:",
-                   choices = c("Elementcode" = "elementcode",
-                               "Testcode" = "testcode"),
-                   inline = TRUE
-                 ),
-                 value = "tab_fiatteer_grafiek",
                  title = "Grafieken",
-                 plotOutput(
-                   "fiatteer_grafiek",
-                   click = "fiatteer_grafiek_klik",
-                   dblclick = dblclickOpts(id = "fiatteer_grafiek_dblklik"),
-                   hover = hoverOpts(id = "fiatteer_grafiek_zweef"),
-                   brush = brushOpts(id = "fiatteer_grafiek_gebied")
-                 ),
-                 plotOutput(
-                   "ratios_grafiek",
-                   click = "ratios_grafiek_klik",
-                   dblclick = dblclickOpts(id = "ratios_grafiek_dblklik"),
-                   hover = hoverOpts(id = "ratios_grafiek_zweef"),
-                   brush = brushOpts(id = "ratios_grafiek_gebied")
-                 ),
-                 DT::dataTableOutput("fiatteer_grafiek_tabel")
-                 
+                 value = "tab_fiatteer_grafiek",
+                 verticalLayout(
+                     radioButtons(
+                       "instellingen_facets_fiatteer_grafiek",
+                       label = "Toon resultaten per:",
+                       choices = c("Elementcode" = "elementcode",
+                                   "Testcode" = "testcode"),
+                       inline = TRUE
+                     ),
+                     plotOutput(
+                       "fiatteer_grafiek",
+                       click = "fiatteer_grafiek_klik",
+                       dblclick = dblclickOpts(id = "fiatteer_grafiek_dblklik"),
+                       hover = hoverOpts(id = "fiatteer_grafiek_zweef"),
+                       brush = brushOpts(id = "fiatteer_grafiek_gebied")
+                     ),
+                     plotOutput(
+                       "ratios_grafiek",
+                       click = "ratios_grafiek_klik",
+                       dblclick = dblclickOpts(id = "ratios_grafiek_dblklik"),
+                       hover = hoverOpts(id = "ratios_grafiek_zweef"),
+                       brush = brushOpts(id = "ratios_grafiek_gebied")
+                     ),
+                     DT::dataTableOutput("fiatteer_grafiek_tabel")
+                 )
                ),
-             tabPanel(
-               value = "tab_referenties",
-               title = "Referenties",
-               plotOutput(
-                 "referentie_grafiek"
-               )
+
              )
-             )
-           )),
-  
+            )
+           ),
+    navbarMenu(title = "Referenties",
+               tabPanel(value = "czv_bzv_tab",
+                        title = "CZV / BZV Ratio's",
+                        fluidPage(fluidRow(
+                          column(width = 6,
+                                 imageOutput("referentie_czv_bzv"))))
+                        ),
+               tabPanel(value = "czv_toc_tab",
+                        title = "CZV / TOC Ratio's",
+                        fluidPage(fluidRow(
+                          column(width = 6,
+                                 imageOutput("referentie_czv_toc"))))
+                        ),
+               tabPanel(value = "tnb_minus_not_tab",
+                        title = "Afwijking van TNb door hoge NOT",
+                        fluidPage(fluidRow(
+                          column(width = 6,
+                                 imageOutput("referentie_tnb_storingen")),
+                          column(width = 6,
+                                 imageOutput("referentie_tnb_not_fractie"))))
+                        )
+               ), 
   tabPanel("Instellingen",
            id = "instellingen_tab",
-           
-           sidebarLayout(sidebarPanel(
-             checkboxInput("instellingen_extra_opties",
-                           "Extra opties tonen?",
-                           value = FALSE)
-           ),
-           mainPanel(
+           fluidPage(
              tabsetPanel(
-               
                tabPanel(
                  "Algemeen",
                  numericInput(
                    "instellingen_hoeveelheid_resultaten",
-                   "Hoeveel resultaten moeten er per monsterpunt worden getoond?",
+                   "Hoeveel historische samples moeten er per monsterpunt worden getoond?",
                    value = 10,
                    min = 1
                  )#,
@@ -145,15 +164,15 @@ ui <- function(request) {
                    value = "RESULTAAT",
                    placeholder = "Naam van de kolom met de testresultaten"
                  ),
-               ),
-               tabPanel("Fiatteerlijst"), 
-               
-               tabPanel("Testresultaten",
-                        checkboxInput("instellingen_resultaten_afronden",
-                                      "Resultaten afronden?",
-                                      value = FALSE))
+               )
+               #, tabPanel("Fiatteerlijst"), 
+               # 
+               # tabPanel("Testresultaten",
+               #          checkboxInput("instellingen_resultaten_afronden",
+               #                        "Resultaten afronden?",
+               #                        value = FALSE))
              )
-           ))),
+           )),
   
   tabPanel("Hulp",
            id = "hulp_tab",
@@ -1128,11 +1147,34 @@ server <- function(input, output, session) {
   
 
 ############################reference plots#####################################
-  output$referentie_grafiek <- renderImage({
+  output$referentie_czv_toc <- renderImage({
     czv_toc <- normalizePath("./referentie_afbeeldingen/czv_toc_ratio_plot.png", winslash = "/")
-    list(src = czv_toc)
+    list(src = czv_toc, width = "100%", height = "100%")
   },
   deleteFile = FALSE)
+  
+  output$referentie_czv_bzv <- renderImage({
+    czv_toc <- normalizePath("./referentie_afbeeldingen/czv_bzv_ratio_categorieen_plot.png", winslash = "/")
+    list(src = czv_toc, width = "100%", height = "100%")
+  },
+  deleteFile = FALSE)
+  
+  output$referentie_tnb_storingen <- renderImage({
+    czv_toc <- normalizePath("./referentie_afbeeldingen/nkj_tnb_minus_not_mogelijke_storingen.png", winslash = "/")
+    list(src = czv_toc, width = "100%", height = "100%")
+  },
+  deleteFile = FALSE)
+  
+  output$referentie_tnb_not_fractie <- renderImage({
+    czv_toc <- normalizePath("./referentie_afbeeldingen/nkj_tnb_minus_not_versus_not_fractie.png", winslash = "/")
+    list(src = czv_toc, width = "100%", height = "100%")
+  },
+  deleteFile = FALSE)
+  
+  
+  
+  
+
 
   
 ############################common functions####################################  
