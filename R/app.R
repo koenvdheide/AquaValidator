@@ -118,17 +118,19 @@ ui <- function(request) {
                                  imageOutput("referentie_czv_nka"))))
                         ),
                tabPanel(value = "ofos_tpa_tab",
-                        title = "RWZI OFOS / TPA",
+                        title = "RWZI & ow OFOS / TPA",
                         fluidPage(fluidRow(
                           column(width = 6,
-                                 imageOutput("referentie_ofos_tpa"))))
-                        ),
-               tabPanel(value = "oppervlaktewater_ofos_tpa_tab",
-                        title = "Oppervlaktewater OFOS / TPA",
-                        fluidPage(fluidRow(
+                                 imageOutput("referentie_ofos_tpa")),
                           column(width = 6,
                                  imageOutput("referentie_gw_ofos_tpa"))))
                         ),
+               # tabPanel(value = "oppervlaktewater_ofos_tpa_tab",
+               #          title = "Oppervlaktewater OFOS / TPA",
+               #          fluidPage(fluidRow(
+               #            column(width = 6,
+               #                   imageOutput("referentie_gw_ofos_tpa"))))
+               #          ),
                tabPanel(value = "czv_toc_tab",
                         title = "Afvalwater CZV / TOC",
                         fluidPage(fluidRow(
