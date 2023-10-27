@@ -392,8 +392,15 @@ server <- function(input, output, session) {
                       nest_join(rejected_tests,
                                 by = "LABNUMMER",
                                 name = "UITVALLENDE_TESTS_LIST") %>%
-                                tidyr::hoist(UITVALLENDE_TESTS_LIST, 
-                                             UITVALLERS = "TESTCODE")
+                      tidyr::hoist(UITVALLENDE_TESTS_LIST, 
+                                   Uitvallers = "TESTCODE"
+                                   ) %>%
+                      rename("Sample Opmerking" = SAMPLE_OPMERKING,
+                             Labnummer = LABNUMMER,
+                             Omschrijving = OMSCHRIJVING,
+                             Monsternamedatum = MONSTERNAMEDATUM,
+                             Meetpunt = MONSTERPUNTCODE,
+                             Prioriteit = SMPL_PRIO)
                               
     table_builder(fiatteer_data, 
                   comment_col = TRUE,
@@ -406,7 +413,7 @@ server <- function(input, output, session) {
                       )
                     )
                   )
-                )
+                ) 
   })
   
 #' Simple function that gets rows that are UITVALLEND (meaning they need validation right now) and returns their LABNUMMER and TESTCODE.
