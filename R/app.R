@@ -105,6 +105,12 @@ ui <- function(request) {
                           column(width = 6,
                                  imageOutput("referentie_czv_toc"))))
                         ),
+               tabPanel(value = "nkj_tnb_tab",
+                        title = "NKj / (TNb - NOT) Ratio's",
+                        fluidPage(fluidRow(
+                          column(width = 6,
+                                 imageOutput("referentie_nkj_tnb"))))
+                      ),
                tabPanel(value = "tnb_minus_not_tab",
                         title = "Afwijking van TNb door hoge NOT",
                         fluidPage(fluidRow(
@@ -1155,6 +1161,12 @@ server <- function(input, output, session) {
   
   output$referentie_czv_bzv <- renderImage({
     czv_toc <- normalizePath("./referentie_afbeeldingen/czv_bzv_ratio_categorieen_plot.png", winslash = "/")
+    list(src = czv_toc, width = "100%", height = "100%")
+  },
+  deleteFile = FALSE)
+  
+  output$referentie_nkj_tnb <- renderImage({
+    czv_toc <- normalizePath("./referentie_afbeeldingen/nkj_minus_tnb_not_plot_zoomed_in.png", winslash = "/")
     list(src = czv_toc, width = "100%", height = "100%")
   },
   deleteFile = FALSE)
