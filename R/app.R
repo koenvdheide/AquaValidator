@@ -738,9 +738,10 @@ server <- function(input, output, session) {
   
   observeEvent(input$tabel_sampleresults_cell_edit,{
     isolate({
-      #complete_results(DT::editData(complete_results(),
-      #                     input$tabel_sampleresults_cell_edit,
-      #                     rownames = FALSE))
+      results_table_dataframe <<- (DT::editData(results_table_dataframe,
+                                    input$tabel_sampleresults_cell_edit,
+                                    proxy = sampleresults_proxy,
+                                    rownames = FALSE))
     })
   })
   
@@ -750,11 +751,25 @@ server <- function(input, output, session) {
       return(results_table_dataframe[input$tabel_sampleresults_rows_selected,])
     }
     if(isTruthy(input$tabel_sampleresults_cells_selected)){
-      row_id <- input$tabel_sampleresults_cells_selected[,1]
-      column_id <- input$tabel_sampleresults_cells_selected[,2] +1 #need +1 because DT counts columns from 1 while R counts from 0
-                     
-      selected_cell <- results_table_dataframe[row_id,column_id ]
-      return(selected_cell)
+      #row_id <- input$tabel_sampleresults_cells_selected[,1]
+      #column_id <- input$tabel_sampleresults_cells_selected[,2] +1 #need +1 because DT counts columns from 1 while R counts from 0
+      #
+      #selected_cell <- results_table_dataframe[row_id,column_id, drop = FALSE ]
+      #selected_column <-  results_table_dataframe[, column_id, drop = FALSE ] 
+      #selected_row <- results_table_dataframe[row_id, , drop = FALSE]
+      #
+      # if(input$instellingen_roteer_tabel  == "labnr"){
+      #   #information we need is in the column
+      # 
+      # }
+      # if(input$instellingen_roteer_tabel  == "test"){
+      #   #information we need is in the row
+      #
+      #}
+      showNotification("Resultaten beoordelen werkt helaas niet in 'Labnummer' of 'Tests' indelingen, dit kan alleen in de 'Details' indeling.",
+                       type = "warning")
+      
+      return()
     }
     else{
       showModal(modalDialog(
