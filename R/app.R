@@ -542,7 +542,9 @@ server <- function(input, output, session) {
       return(pivoted_table)
       }
       
-        labnr_widened_results <- labnr_pivot(RESULTAAT, add_comments_and_dates = TRUE)
+        labnr_widened_results <- labnr_pivot(RESULTAAT, add_comments_and_dates = TRUE)  %>% rename('Recentste Meetdatum' = MEASUREDATE,
+                                                                                                   'Recenste Samplingdatum' = SAMPLINGDATE,
+                                                                                                   'Resultaat Opmerking' = RESULT_OPMERKING)
         #we need this dataframe to color rejected test results red
         labnr_widened_uitvallend <- labnr_pivot(UITVALLEND, remove_extra_columns = TRUE) 
         #and we need this dataframe to color cancelled tests green
@@ -663,7 +665,8 @@ server <- function(input, output, session) {
       }
       return(pivoted_table)
     }
-        test_widened_results <- tests_pivot(RESULTAAT, add_dates = TRUE)
+        test_widened_results <- tests_pivot(RESULTAAT, add_dates = TRUE) %>% rename('Recentste Meetdatum' = MEASUREDATE,
+                                                                                    'Recenste Samplingdatum' = SAMPLINGDATE)
         #we need this dataframe to color rejected test results red
         test_widened_uitvallend <- tests_pivot(UITVALLEND, remove_extra_columns = TRUE) 
         #and we need this dataframe to color cancelled tests green
