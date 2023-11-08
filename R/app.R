@@ -562,13 +562,14 @@ server <- function(input, output, session) {
   })
   
 #' Returns the results belonging to n most recent samples for each monsterpuntcode.
-#' Nightmare code because we have to deal with three group layers, we want all the results (layer 1) of the n most recent samples (layer 2) for each monsterpuntcode (layer 3).
+#' Nightmare code because we have to deal with three group layers, we want all the results (layer 1) of the n most recent samples (layer 2) for each meetpunt (layer 3).
+#' Note that we get the 10 most recent labnummers (instead of sample id's) because sample id's are not necessarily incremental. 
 #' @param n Maximum number of samples to return results for. So n = 10 means this returns the results of the 10 most recent samples.
 #' @param full_results Dataframe containing the results we want the top n of.
 #'
 #' @return Same as full_results.
 #'
-  top_n_results <- function(n, full_results, group_one = MONSTERPUNTCODE, group_two = SAMPLE_ID) {
+  top_n_results <- function(n, full_results, group_one = MEETPUNT_ID, group_two = LABNUMMER) {
     top_results <-
       full_results %>% 
       group_by({{ group_one }})  %>% 
