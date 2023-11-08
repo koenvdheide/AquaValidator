@@ -137,6 +137,12 @@ ui <- function(request) {
                           column(width = 6,
                                  imageOutput("referentie_czv_toc"))))
                         ),
+               tabPanel(value = "czv_tnb_tab",
+                        title = "Afvalwater CZV / TNb",
+                        fluidPage(fluidRow(
+                          column(width = 6,
+                                 imageOutput("referentie_czv_tnb"))))
+                        ),
                tabPanel(value = "nkj_tnb_tab",
                         title = "NKj / (TNb - NOT)",
                         fluidPage(fluidRow(
@@ -1212,6 +1218,12 @@ server <- function(input, output, session) {
   
   output$referentie_czv_toc <- renderImage({
     czv_toc <- normalizePath("./referentie_afbeeldingen/czv_toc_ratio_plot.png", winslash = "/")
+    list(src = czv_toc, width = "100%", height = "100%")
+  },
+  deleteFile = FALSE)
+  
+  output$referentie_czv_tnb <- renderImage({
+    czv_toc <- normalizePath("./referentie_afbeeldingen/czv_tnb_ratios.png", winslash = "/")
     list(src = czv_toc, width = "100%", height = "100%")
   },
   deleteFile = FALSE)
