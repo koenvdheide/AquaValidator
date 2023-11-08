@@ -335,7 +335,7 @@ server <- function(input, output, session) {
           file_path,
           sheet = resultatenblad
         ) %>% mutate(
-          WAARDE = if_else(TESTSTATUS != 1000, as.numeric(RESULTAAT), NA),
+          WAARDE = if_else(TESTSTATUS != 1000, suppressWarnings(as.numeric(RESULTAAT)), NA),
           GEVALIDEERD = TESTSTATUS == 300,
           UITVALLEND = TESTSTATUS != 300 & TESTSTATUS != 1000 & (REFCONCLUSION == 0 | is.na(REFCONCLUSION)))
       )
@@ -359,10 +359,11 @@ server <- function(input, output, session) {
 #'
 #' @return a tibble as returned by read_excel.
 #'
-  excel_reader <-    function(filePath, sheet = NULL){
-      
-    excel_data <- readxl::read_excel(filePath, progress = TRUE, sheet = sheet) %>%
+  excel_reader <- function(filePath, sheet = NULL){
+    
+      excel_data <- readxl::read_excel(filePath, progress = TRUE, sheet = sheet, col_types = "text") %>%
         mutate(
+          across(contains(c("opmerking", "message")), as.character),
           across(contains(c("datum", "date")),
                  ~ as.Date(.x, tryFormats = c("%d-%m-%Y%t%t%T", "%Y-%m-%d%t%t%T", "%Y/%m/%d%t%t%T", 
                                               "%d-%m-%Y", "%Y-%m-%d", "%Y/%m/%d"))
@@ -372,7 +373,6 @@ server <- function(input, output, session) {
               "klant",
               "code",
               "smpl",
-              "ID",
               "status",
               "groep",
               "workday",
@@ -380,8 +380,17 @@ server <- function(input, output, session) {
               "parameter",
               "soortwater")
             ), as.factor),
-        )
-    ) 
+          across(contains(
+            c("labnummer",
+              "id",
+              "ID")
+            ),as.integer),
+          across(contains(
+            c("conclusion")),
+            as.logical)
+          )
+        
+    
     return (excel_data)
     }
   
