@@ -289,7 +289,7 @@ server <- function(input, output, session) {
   cancelled_filename <- paste(Sys.getenv("USERNAME"),"resultaten_canceled.csv", sep = "_")
   cancelled_path <- paste(export_path, cancelled_filename, sep = "/")
   
-  #samples with either duplo or cancelled results, keep them together because (unlike validated samples) we don't hide them until user presses button_verberg_beoordeelde_resultaten
+  #samples with either duplo or cancelled results, keep them together to hide them if user presses button_verberg_beoordeelde_resultaten
   rejected_samples <- tibble() 
   
   
@@ -381,12 +381,14 @@ server <- function(input, output, session) {
   # ratio_calculator <- function(ratio_name){
   #   desired_ratio <- ratios_list[[ratio_name]]
   #   print(desired_ratio[[4]])
-  #   ratio_row = ifelse(
-  #     any({{desired_ratio[[3]]}} == desired_ratio[[1]]) & any({{desired_ratio[[4]]}} == desired_ratio[[2]]),
-  #     RESULTAAT_ASNUMERIC[{{desired_ratio[[3]]}} == desired_ratio[[1]]] / RESULTAAT_ASNUMERIC[{{ desired_ratio[[4]] }} == desired_ratio[[2]]],
-  #     NA
+  #   ratios <- tibble(
+  #       ratio_row = ifelse(
+  #         any({{desired_ratio[[3]]}} == desired_ratio[[1]]) & any({{desired_ratio[[4]]}} == desired_ratio[[2]]),
+  #         RESULTAAT_ASNUMERIC[{{desired_ratio[[3]]}} == desired_ratio[[1]]] / RESULTAAT_ASNUMERIC[{{ desired_ratio[[4]] }} == desired_ratio[[2]]],
+  #         NA
+  #       )
   #   )
-  #   return(ratio_row)
+  #   return(ratios)
   # }
 
 #' Takes in sample results, creates a copy of these  results, attempts to calculate (currently) six different ratios per row (returning NA if a ratio is not applicable). Each of the six ratios is its own column.
@@ -452,7 +454,7 @@ server <- function(input, output, session) {
     req(input$input_file) #don't try to create the table until there's a valid input file
     
     fiatteer_results <- semi_join(complete_results(),fiatteer_samples(), by = c("SAMPLE_ID")) #get the results belonging to our current samples
-    rejected_tests <- get_rejected_tests(fiatteer_results)
+    rejected_tests <- get_rejected_tests(fiatteer_results) %>% distinct()
     fiatteer_data <- fiatteer_samples() %>% #adds rejected_tests as a fiatteerlijst column to show which tests need validation per sample
                       nest_join(rejected_tests,
                                 by = "SAMPLE_ID",
@@ -463,8 +465,13 @@ server <- function(input, output, session) {
                       rename("Sample Opmerking" = SAMPLE_OPMERKING,
                              Labnummer = LABNUMMER,
                              Omschrijving = OMSCHRIJVING,
-                             Monsternamedatum = MONSTERNAMEDATUM,
+                             "Bemonstering Datum" = MONSTERNAMEDATUM,
                              Meetpunt = MONSTERPUNTCODE,
+                             Hoedanigheid = HOEDNHD,
+                             Soortwater = SOORTWATER,
+                             Klant = KLANT,
+                             Werkdag = WORKDAY,
+                             "Deadline Datum" = PRIOFINISHDATE,
                              Prioriteit = SMPL_PRIO)
                               
     table_builder(fiatteer_data, 
@@ -672,7 +679,6 @@ server <- function(input, output, session) {
           targets = c(
             "MONSTERPUNTCODE",
             "RESULTAAT_ASNUMERIC",
-            "UITVALLEND",
             "NAAM",
             "TESTSTATUS",
             "REFCONCLUSION",
