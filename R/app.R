@@ -77,18 +77,29 @@ ui <- function(request) {
                                    "Testcode" = "testcode"),
                        inline = TRUE
                      ),
+                     radioButtons(
+                       "instellingen_zweef_fiatteer_grafiek",
+                       label = "Zweven over meetresultaat toont:",
+                       choices = c("Niets" = "NIETS",
+                                   "Labnummer" = "LABNUMMER",
+                                   "Datum" = "SAMPLINGDATE",
+                                   "Resultaat" = "WAARDE"),
+                       inline = TRUE
+                     ),
                      plotOutput(
                        "fiatteer_grafiek",
                        click = "fiatteer_grafiek_klik",
                        dblclick = dblclickOpts(id = "fiatteer_grafiek_dblklik"),
-                       hover = hoverOpts(id = "fiatteer_grafiek_zweef"),
+                       hover = hoverOpts(id = "fiatteer_grafiek_zweef",
+                                         delay = 200),
                        brush = brushOpts(id = "fiatteer_grafiek_gebied")
                      ),
                      plotOutput(
                        "ratios_grafiek",
                        click = "ratios_grafiek_klik",
                        dblclick = dblclickOpts(id = "ratios_grafiek_dblklik"),
-                       hover = hoverOpts(id = "ratios_grafiek_zweef"),
+                       hover = hoverOpts(id = "ratios_grafiek_zweef",
+                                         delay = 200),
                        brush = brushOpts(id = "ratios_grafiek_gebied")
                      ),
                      DT::dataTableOutput("fiatteer_grafiek_tabel")
@@ -271,7 +282,7 @@ server <- function(input, output, session) {
   plot_highlighted_samples <- reactiveVal() #filled when user does a double click or box drag selection for results plot 
   plot_hovered_samples <- reactiveVal() #filled when user hovers over points for results plot
   plot_highlighted_ratios <- reactiveVal() #filled when user does a double click or box drag selection for ratios plot
-  
+  plot_hovered_ratios <- reactiveVal() #filled when user hovers over points for ratios plot
   #output
   export_path <- "F:/2-Ano/Alg/13_Fiatteren/Validator"
     
@@ -324,7 +335,7 @@ server <- function(input, output, session) {
           file_path,
           sheet = resultatenblad
         ) %>% mutate(
-          RESULTAAT_ASNUMERIC = if_else(TESTSTATUS != 1000, as.numeric(RESULTAAT), NA),
+          WAARDE = if_else(TESTSTATUS != 1000, as.numeric(RESULTAAT), NA),
           GEVALIDEERD = TESTSTATUS == 300,
           UITVALLEND = TESTSTATUS != 300 & TESTSTATUS != 1000 & (REFCONCLUSION == 0 | is.na(REFCONCLUSION)))
       )
@@ -362,7 +373,6 @@ server <- function(input, output, session) {
               "code",
               "smpl",
               "ID",
-              "labnummer",
               "status",
               "groep",
               "workday",
@@ -370,7 +380,8 @@ server <- function(input, output, session) {
               "parameter",
               "soortwater")
             ), as.factor),
-        ) 
+        )
+    ) 
     return (excel_data)
     }
   
@@ -389,7 +400,7 @@ server <- function(input, output, session) {
   #   ratios <- tibble(
   #       ratio_row = ifelse(
   #         any({{desired_ratio[[3]]}} == desired_ratio[[1]]) & any({{desired_ratio[[4]]}} == desired_ratio[[2]]),
-  #         RESULTAAT_ASNUMERIC[{{desired_ratio[[3]]}} == desired_ratio[[1]]] / RESULTAAT_ASNUMERIC[{{ desired_ratio[[4]] }} == desired_ratio[[2]]],
+  #         WAARDE[{{desired_ratio[[3]]}} == desired_ratio[[1]]] / WAARDE[{{ desired_ratio[[4]] }} == desired_ratio[[2]]],
   #         NA
   #       )
   #   )
@@ -404,13 +415,14 @@ server <- function(input, output, session) {
 #'
   calculate_ratios <- function(results){
     
-    relevant_results <- results %>% filter(!is.na(RESULTAAT_ASNUMERIC)) #don't bother calculating ratios for results that are not valid numbers
+    relevant_results <- results %>% filter(!is.na(WAARDE)) #don't bother calculating ratios for results that are not valid numbers
     calculated_ratios <-
       relevant_results %>%
       group_by(SAMPLE_ID) %>%
       reframe(
         MONSTERPUNTCODE = MONSTERPUNTCODE,
         NAAM = NAAM,
+        LABNUMMER = LABNUMMER,
         SAMPLINGDATE = SAMPLINGDATE,
         # CZV_BZV_RATIO = ratio_calculator("CZV_BZV"),
         # CZV_NKA_RATIO = ratio_calculator("CZV_NKA"),
@@ -419,27 +431,27 @@ server <- function(input, output, session) {
         # CZV_TNB_RATIO = ratio_calculator("CZV_TNB")
         CZV_BZV_RATIO = ifelse(
           any(ELEMENTCODE == "CZV") & any(ELEMENTCODE == "BZV5"),
-          mean(RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"]) / mean(RESULTAAT_ASNUMERIC[ELEMENTCODE == "BZV5"]),
+          mean(WAARDE[ELEMENTCODE == "CZV"]) / mean(WAARDE[ELEMENTCODE == "BZV5"]),
           NA
         ),
         CZV_NKA_RATIO = ifelse(
           any(ELEMENTCODE == "CZV") & any(TESTCODE == "nka"),
-          mean(RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"]) / mean(RESULTAAT_ASNUMERIC[TESTCODE == "nka"]),
+          mean(WAARDE[ELEMENTCODE == "CZV"]) / mean(WAARDE[TESTCODE == "nka"]),
           NA
         ),
         BZV_ONOPA_RATIO = ifelse(
           any(ELEMENTCODE == "BZV5") & any(TESTCODE == "onopa"),
-          mean(RESULTAAT_ASNUMERIC[ELEMENTCODE == "BZV5"]) / mean(RESULTAAT_ASNUMERIC[TESTCODE == "onopa"]),
+          mean(WAARDE[ELEMENTCODE == "BZV5"]) / mean(WAARDE[TESTCODE == "onopa"]),
           NA
         ),
         CZV_TOC_RATIO = ifelse(
           any(ELEMENTCODE == "CZV") & any(ELEMENTCODE == "TOC"),
-          mean(RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"]) / mean(RESULTAAT_ASNUMERIC[ELEMENTCODE == "TOC"]),
+          mean(WAARDE[ELEMENTCODE == "CZV"]) / mean(WAARDE[ELEMENTCODE == "TOC"]),
           NA
         ),
         CZV_TNB_RATIO =ifelse(
           any(ELEMENTCODE == "CZV") & any(TESTCODE == "tnb"),
-          mean(RESULTAAT_ASNUMERIC[ELEMENTCODE == "CZV"]) / mean(RESULTAAT_ASNUMERIC[TESTCODE == "tnb"]),
+          mean(WAARDE[ELEMENTCODE == "CZV"]) / mean(WAARDE[TESTCODE == "tnb"]),
           NA
         )
       ) %>% tidyr::pivot_longer(
@@ -528,6 +540,10 @@ server <- function(input, output, session) {
     data <- fiatteer_samples() #redundant but needed because subsetting a reactiveVal is buggy
     selected_rows <- input$tabel_fiatteerlijst_rows_selected
     if (isTruthy(selected_rows)) { 
+      #clear old plot selection when different rows are selected
+      plot_highlighted_samples(NULL)
+      plot_hovered_samples(NULL)
+      
       return(data[selected_rows, ])
     }
     else{
@@ -684,7 +700,7 @@ server <- function(input, output, session) {
           visible = FALSE ,
           targets = c(
             "MONSTERPUNTCODE",
-            "RESULTAAT_ASNUMERIC",
+            "WAARDE",
             "NAAM",
             "TESTSTATUS",
             "REFCONCLUSION",
@@ -866,41 +882,53 @@ server <- function(input, output, session) {
     hide_ratio_graph_without_ratios()
     
     #Retrieve both current and historical results (despite historical_results already including current_results) because we want current results as its own variable so we can highlight them in the plot.
-    historical_results <- selected_sample_historical_results() 
-    current_results <- selected_sample_current_results()
-    plottable_results <- historical_results %>% filter(!is.na(RESULTAAT_ASNUMERIC)) #remove NA results because geom_line creates breaks when encountering NA values.
-    
+    #we need to plot WAARDE but we rename it to RESULTAAT first to make the y-axis a bit less ugly.
+    current_results <- selected_sample_current_results() 
+    plottable_results <- selected_sample_historical_results() %>% filter(!is.na(WAARDE)) #remove NA results because geom_line creates breaks when encountering NA values.
+                      
     selected_samples <- plot_highlighted_samples()
+    hover_sample <- plot_hovered_samples() 
     
     if(input$instellingen_facets_fiatteer_grafiek == "testcode"){
       
       results_plot <- plottable_results %>% plot_builder(SAMPLINGDATE,
-                                                         RESULTAAT_ASNUMERIC,
+                                                         WAARDE,
                                                          current_results, 
-                                                         selected_samples, 
+                                                         selected_samples,
+                                                         hover_sample,
                                                          shape = UITVALLEND,
                                                          TESTCODE)
       
     } else if (input$instellingen_facets_fiatteer_grafiek == "elementcode"){
       results_plot <- plottable_results %>% plot_builder(SAMPLINGDATE,
-                                                         RESULTAAT_ASNUMERIC,
+                                                         WAARDE,
                                                          current_results, 
                                                          selected_samples, 
+                                                         hover_sample,
                                                          shape = UITVALLEND,
                                                          ELEMENTCODE)
     }
-    
-
-            
-    #move hover_data to something that doesn't call the WHOLE PLOT AGAIN
-    #plot <- plot + geom_text(data = hover_data(), aes(label=LABNUMMER))
     
     return(results_plot)
   })
   
   #Triggers when user hovers over a datapoint in a results plot.
   observeEvent(input$fiatteer_grafiek_zweef,{
-    plot_hovered_samples(nearPoints(selected_sample_historical_results(),input$fiatteer_grafiek_zweef))
+    hover_label <- input$instellingen_zweef_fiatteer_grafiek
+    if (hover_label != "NIETS"){
+      hovered_test_result <- nearPoints(selected_sample_historical_results(), 
+                                           input$fiatteer_grafiek_zweef)
+      
+      associated_samples <-semi_join(selected_sample_historical_results(), 
+                                     hovered_test_result,
+                                     by = 'SAMPLE_ID')
+      plot_hovered_samples(associated_samples)
+      
+      associated_ratios <- semi_join(selected_sample_historical_ratios(),
+                                     hovered_test_result, 
+                                     by = 'SAMPLE_ID')
+      plot_hovered_ratios(associated_ratios) #ensures that ratios belonging to the same samples get highlighted too
+    }
   })
   
   observeEvent(input$fiatteer_grafiek_klik, {
@@ -931,7 +959,6 @@ server <- function(input, output, session) {
   #Triggers when user double clicks in a results plot.
   observeEvent(input$fiatteer_grafiek_dblklik, {
     isolate({
-      
       selected_test_result <- nearPoints(selected_sample_historical_results(),
                                          input$fiatteer_grafiek_dblklik)
       
@@ -983,12 +1010,14 @@ server <- function(input, output, session) {
     historical_ratios <- selected_sample_historical_ratios()
     current_ratios <- selected_sample_current_ratios()
     selected_ratios <- plot_highlighted_ratios()
+    hover_ratio <- plot_hovered_ratios()
     req(has_ratios())
 
     ratios_plot <- historical_ratios %>% plot_builder(SAMPLINGDATE,
                                                        WAARDE,
                                                        current_ratios,
                                                        selected_ratios,
+                                                       hover_ratio,
                                                        shape = NULL,
                                                        RATIO)
     return(ratios_plot)
@@ -998,6 +1027,27 @@ server <- function(input, output, session) {
   observeEvent(input$ratios_grafiek_klik, {
     #moved to double click because of a shiny issue with firing click events while making a brush selection
   })
+  
+  observeEvent(input$ratios_grafiek_zweef, {
+    hover_label = input$instellingen_zweef_fiatteer_grafiek
+    isolate({
+      if (hover_label != "NIETS"){
+        hover_ratio <- nearPoints(selected_sample_historical_ratios(),
+                                         input$ratios_grafiek_zweef)
+        
+        associated_ratios <- semi_join(selected_sample_historical_ratios(),
+                                       hover_ratio, 
+                                       by = 'SAMPLE_ID')
+        plot_hovered_ratios(associated_ratios)
+        
+        associated_samples <- semi_join(selected_sample_historical_results(),
+                                        hover_ratio,
+                                        by = 'SAMPLE_ID')
+        plot_hovered_samples(associated_samples) #make sure to also highlight test results belonging to the same sample
+      }
+       })
+  })
+  
   
   #Triggers when user drags a "box" selection across datapoints in a ratios plot.
   observeEvent(input$ratios_grafiek_gebied, {
@@ -1351,7 +1401,7 @@ server <- function(input, output, session) {
 #' @param shape name of column (passed as string) to be used as shape categories.
 #'
 #' @return ggplot object as created by ggplot().
-  plot_builder <- function(data, x, y, current_data, clicked_data, facets, shape){
+  plot_builder <- function(data, x, y, current_data, clicked_data, hover_data, facets, shape){
     suppressWarnings({
   
         plot <- ggplot(data = data,
@@ -1373,7 +1423,22 @@ server <- function(input, output, session) {
             plot <- plot + geom_point(data = clicked_data, size = 2.7, alpha = 1, na.rm = TRUE)
           })
         }
-      })
+        if (isTruthy(hover_data)) {
+          hover_label <- input$instellingen_zweef_fiatteer_grafiek
+          
+          if (hover_label != "NIETS") {
+            isolate({
+              plot <- plot + geom_text(
+                data = hover_data,
+                aes(label = .data[[hover_label]], hjust = "top"),
+                size = 4,
+                fontface = "bold"
+              )
+            })
+          } 
+          
+        }
+    })
       return(plot)
   }
   
