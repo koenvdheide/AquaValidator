@@ -13,9 +13,9 @@ aquaApp(...)
 
 \item{results}{Original (full) results dataframe.}
 
-\item{n}{Maximum number of labnummers to return results for. So n = 10 means this returns the results of the 10 most recent labnummers.}
+\item{n}{Maximum number of samples to return results for. So n = 10 means this returns the results of the 10 most recent samples.}
 
-\item{full_results}{Dataframe containing the results we want the top n of}
+\item{full_results}{Dataframe containing the results we want the top n of.}
 
 \item{table_data}{Dataframe that we want to present as a datatable.}
 
@@ -55,11 +55,12 @@ The copied results dataframe is then wiped of all columns except NAAM, SAMPLINGD
 
 Same as results parameter.
 
-Simple function that gets rows that are UITVALLEND (meaning they need validation right now) and returns their LABNUMMER and TESTCODE.
+Simple function that gets rows that are UITVALLEND (meaning they need validation right now) and returns their SAMPLE_ID and TESTCODE.
 
-Same as results but with only LABNUMMER and TESTCODE columns.
-Returns the results belonging to n most recent labnummers for each monsterpuntcode.
-Nightmare code because we have to deal with three group layers, we want all the results (layer 1) of the n most recent labnummers (layer 2) for each monsterpuntcode (layer 3).
+Same as results but with only SAMPLE_ID and TESTCODE columns.
+Returns the results belonging to n most recent samples for each monsterpuntcode.
+Nightmare code because we have to deal with three group layers, we want all the results (layer 1) of the n most recent samples (layer 2) for each meetpunt (layer 3).
+Note that we get the 10 most recent labnummers (instead of sample id's) because sample id's are not necessarily incremental.
 
 Same as full_results.
 
