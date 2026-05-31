@@ -2,10 +2,9 @@ Package: aquavalidator
 Title: AquaValidator
 Version: 1.0
 Authors@R: 
-    person("Koen", "van der Heide", , "user@example.com", role = c("aut", "cre"))
+    person("Koen", "van der Heide", , "koenjvanderheide@gmail.com", role = c("aut", "cre"))
 Description: A GUI to clearly present water analysis results and provide tools to help judge whether these results are accurate and realistic.
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
@@ -18,7 +17,9 @@ Imports:
     magrittr,
     odbc,
     pkgload,
+    readr,
     readxl,
+    scales,
     shiny,
     shinyjs,
     tibble,

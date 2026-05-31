@@ -259,10 +259,10 @@ server <- function(input, output, session) {
   # sql_connection <- DBI::dbConnect(
   #   odbc::odbc(),
   #   Driver = 'Oracle in OraClient19Home1',
-  #   Host = 'db-host',
-  #   Service = QMP,
+  #   Host = '<db-host>',
+  #   Service = '<service>',
   #   #SVC    = "(schema)",
-  #   UID = 'user',
+  #   UID = '<user>',
   #   #PWD = askpass(prompt = "DB paswoord:"),
   #   Port = 1521
   # )
@@ -284,7 +284,7 @@ server <- function(input, output, session) {
   plot_highlighted_ratios <- reactiveVal() #filled when user does a double click or box drag selection for ratios plot
   plot_hovered_ratios <- reactiveVal() #filled when user hovers over points for ratios plot
   #output
-  export_path <- "output-folder"
+  export_path <- Sys.getenv("AQUAVALIDATOR_EXPORT_PATH", "validated_output")
     
   validated_samples <- tibble()
   validated_results <- tibble()
@@ -645,7 +645,7 @@ server <- function(input, output, session) {
       }
       
         labnr_widened_results <- labnr_pivot(RESULTAAT, add_comments_and_dates = TRUE)  %>% rename('Recentste Meetdatum' = MEASUREDATE,
-                                                                                                   'Recenste Samplingdatum' = SAMPLINGDATE,
+                                                                                                   'Recentste Samplingdatum' = SAMPLINGDATE,
                                                                                                    'Resultaat Opmerking' = RESULT_OPMERKING)
         #we need this dataframe to color rejected test results red
         labnr_widened_uitvallend <- labnr_pivot(UITVALLEND, remove_extra_columns = TRUE) 
@@ -768,7 +768,7 @@ server <- function(input, output, session) {
       return(pivoted_table)
     }
         test_widened_results <- tests_pivot(RESULTAAT, add_dates = TRUE) %>% rename('Recentste Meetdatum' = MEASUREDATE,
-                                                                                    'Recenste Samplingdatum' = SAMPLINGDATE)
+                                                                                    'Recentste Samplingdatum' = SAMPLINGDATE)
         #we need this dataframe to color rejected test results red
         test_widened_uitvallend <- tests_pivot(UITVALLEND, remove_extra_columns = TRUE) 
         #and we need this dataframe to color cancelled tests green

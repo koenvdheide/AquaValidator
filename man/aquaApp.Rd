@@ -2,7 +2,7 @@
 % Please edit documentation in R/app.R
 \name{aquaApp}
 \alias{aquaApp}
-\title{Just a wrapper for readxl's read_excel that includes some datatype casting for columns we expect to be in the file.}
+\title{aquaApp: read an Excel file with expected column types}
 \usage{
 aquaApp(...)
 }

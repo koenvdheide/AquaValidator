@@ -9,7 +9,7 @@
 A GUI to clearly present water analysis results and provide tools to help judge whether these results are accurate and realistic.
 }
 \author{
-\strong{Maintainer}: Koen van der Heide \email{user@example.com}
+\strong{Maintainer}: Koen van der Heide \email{koenjvanderheide@gmail.com}
 
 }
 \keyword{internal}
