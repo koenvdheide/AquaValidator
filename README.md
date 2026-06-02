@@ -44,7 +44,7 @@ Both forms must be run from the repository root: they call `pkgload::load_all(".
 - `R/app.R`: the Shiny UI and server, plus helper functions.
 - `R/` (other files): package startup and utilities.
 - `SQL Queries/`: SQL used to produce the source result lists.
-- `Documentatie/`: a usage guide for the validation workflow (`usage.md`).
+- `Documentatie/`: a usage guide for the validation workflow (`Documentatie/usage.md`).
 - `man/`: generated R documentation.
 - `tests/`: testthat tests.
 
