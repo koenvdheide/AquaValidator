@@ -44,10 +44,10 @@ Both forms must be run from the repository root: they call `pkgload::load_all(".
 - `R/app.R`: the Shiny UI and server, plus helper functions.
 - `R/` (other files): package startup and utilities.
 - `SQL Queries/`: SQL used to produce the source result lists.
-- `Documentatie/`: a Dutch user manual with screenshots of the interface.
+- `Documentatie/`: a usage guide for the validation workflow (`usage.md`).
 - `man/`: generated R documentation.
 - `tests/`: testthat tests.
 
 ## License
 
-The R source code is released under the MIT License (see `LICENSE` and `LICENSE.md`). The license covers the code only. The SQL queries, the user manual, and any water-quality measurement data are not relicensed and remain under their original terms.
+The R source code is released under the MIT License (see `LICENSE` and `LICENSE.md`). The license covers the code only. The SQL queries and any water-quality measurement data are not relicensed and remain under their original terms.

@@ -23,8 +23,8 @@ SOFTWARE.
 ---
 
 The MIT License above applies to the R source code in this repository. It does
-not relicense the SQL queries in `SQL Queries/`, the user manual in
-`Documentatie/`, the Aqualysis logo and reference images in `R/www/` and
+not relicense the SQL queries in `SQL Queries/`, the Aqualysis logo and
+reference images in `R/www/` and
 `R/referentie_afbeeldingen/`, or any water-quality measurement data, which
 remain under their original terms. The Aqualysis name and logo are included
 with permission and are not granted under the MIT License.
